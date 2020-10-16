@@ -1,0 +1,2 @@
+# deco
+Decorators for Deno
