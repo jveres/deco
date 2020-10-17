@@ -1,4 +1,5 @@
-import { Timeout, Trace, Retry, BackOffPolicy, sleep } from "./mod.ts";
+import { BackOffPolicy, Retry, sleep, Timeout, Trace } from "./mod.ts";
+import * as Colors from "https://deno.land/std@0.74.0/fmt/colors.ts";
 
 class Example {
   @Trace()
@@ -19,33 +20,33 @@ class Example {
   }
 
   @Retry({ maxAttempts: 3 })
+  @Trace()
   static async noDelayRetry(): Promise<void> {
-    console.info(`Calling noDelayRetry for the ${count++} time at ${new Date().toLocaleTimeString()}`);
-    throw new Error('I failed!');
+    throw new Error("I failed!");
   }
 
   @Retry({
     maxAttempts: 3,
     backOff: 1000,
     doRetry: (e: Error) => {
-      return e.message === 'Error: 429';
+      return e.message === "Error: 429";
     },
   })
+  @Trace()
   static async doRetry(): Promise<void> {
-    console.info(`Calling doRetry for the ${count++} time at ${new Date().toLocaleTimeString()}`);
-    throw new Error('Error: 429');
+    throw new Error("Error: 429");
   }
 
   @Retry({
     maxAttempts: 3,
     backOff: 1000,
     doRetry: (e: Error) => {
-      return e.message === 'Error: 429';
+      return e.message === "Error: 429";
     },
   })
+  @Trace()
   static async doNotRetry(): Promise<void> {
-    console.info(`Calling doNotRetry for the ${count++} time at ${new Date().toLocaleTimeString()}`);
-    throw new Error('Error: 404');
+    throw new Error("Error: 404");
   }
 
   @Retry({
@@ -53,9 +54,9 @@ class Example {
     backOffPolicy: BackOffPolicy.FixedBackOffPolicy,
     backOff: 1000,
   })
+  @Trace()
   static async fixedBackOffRetry(): Promise<void> {
-    console.info(`Calling fixedBackOffRetry 1s for the ${count++} time at ${new Date().toLocaleTimeString()}`);
-    throw new Error('I failed!');
+    throw new Error("I failed!");
   }
 
   @Retry({
@@ -64,20 +65,19 @@ class Example {
     backOff: 1000,
     exponentialOption: { maxInterval: 4000, multiplier: 3 },
   })
+  @Trace()
   static async ExponentialBackOffRetry(): Promise<void> {
-    console.info(`Calling ExponentialBackOffRetry backOff 1s, multiplier=3 for the ${count++} time at ${new Date().toLocaleTimeString()}`);
-    throw new Error('I failed!');
+    throw new Error("I failed!");
   }
 }
+
+// main entry
 
 try {
   await Example.timeoutTestStatic();
 } catch (e) {
   console.error(e);
 }
-
-let count = 1;
-const resetCount = () => count = 1;
 
 try {
   Example.traceTestStaticFunction();
@@ -87,35 +87,30 @@ try {
 }
 
 try {
-  resetCount();
   await Example.noDelayRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
 
 try {
-  resetCount();
   await Example.doRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
 
 try {
-  resetCount();
   await Example.doNotRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
 
 try {
-  resetCount();
   await Example.fixedBackOffRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
 
 try {
-  resetCount();
   await Example.ExponentialBackOffRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
