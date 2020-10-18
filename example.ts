@@ -1,5 +1,4 @@
-import { BackOffPolicy, Retry, sleep, Timeout, Trace } from "./mod.ts";
-import * as Colors from "https://deno.land/std@0.74.0/fmt/colors.ts";
+import { BackOffPolicy, Memoize, Retry, sleep, Timeout, Trace } from "./mod.ts";
 
 class Example {
   @Trace()
@@ -69,6 +68,14 @@ class Example {
   static async ExponentialBackOffRetry(): Promise<void> {
     throw new Error("I failed!");
   }
+
+  private i: number = 0;
+
+  @Memoize()
+  @Trace()
+  async testMemoize() {
+    return ++this.i;
+  }
 }
 
 // main entry
@@ -114,4 +121,9 @@ try {
   await Example.ExponentialBackOffRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
+}
+
+const example = new Example();
+for (let i = 0; i < 3; i++) {
+  console.log(`example.testMemoize() returns: ${await example.testMemoize()}`);
 }

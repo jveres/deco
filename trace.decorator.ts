@@ -26,9 +26,10 @@ export function Trace(options: TraceOptions = { stack: false }) {
       } ${Colors.bold("called")} ${options.stack ? "" : "from"} ${
         Colors.brightCyan(from ?? "n/a")
       } at ${Colors.bold(new Date().toISOString())}`);
+      let result;
       originalFn.constructor.name === "AsyncFunction"
-        ? await originalFn.apply(this, args)
-        : originalFn.apply(this, args);
+        ? result = await originalFn.apply(this, args)
+        : result = originalFn.apply(this, args);
       console.info(`${
         Colors.brightMagenta(
           propertyKey +
@@ -37,6 +38,7 @@ export function Trace(options: TraceOptions = { stack: false }) {
       } ${Colors.green("ended")} in ${
         Colors.brightYellow((performance.now() - p1).toFixed() + "ms")
       } at ${Colors.bold(new Date().toISOString())}`);
+      return result;
     };
     return descriptor;
   };
