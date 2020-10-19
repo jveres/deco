@@ -73,13 +73,13 @@ class Example {
 
   @Memoize()
   @Trace()
-  async testMemoize() {
+  testMemoize() {
     return ++this.i;
   }
 }
 
 // main entry
-
+/*
 try {
   await Example.timeoutTestStatic();
 } catch (e) {
@@ -122,7 +122,7 @@ try {
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
-
+*/
 const example = new Example();
 for (let i = 0; i < 3; i++) {
   console.log(`example.testMemoize() returns: ${await example.testMemoize()}`);

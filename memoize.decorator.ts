@@ -11,7 +11,7 @@ export function Memoize(options: MemoizeOptions = {}) {
   return function (
     target: Record<string, any>,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>,
+    descriptor: TypedPropertyDescriptor<any>,
   ) {
     let timeout = Number.POSITIVE_INFINITY;
     const originalFn: Function = descriptor.value as Function;
