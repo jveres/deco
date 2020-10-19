@@ -72,7 +72,18 @@ class Example {
   private i: number = 0;
 
   @Trace()
-  @Memoize({ttl: 2000})
+  @Memoize({
+    ttl: 2000,
+    resolver: (...args: any[]): string => {
+      return "key";
+    },
+    onAdded: (key: string, value: any) => {
+      console.log(`${key}=${value} added to cache`);
+    },
+    onFound: (key: string, value: any) => {
+      console.log(`${key}=${value} found in cache`);
+    },
+  })
   async testMemoize() {
     await sleep(1000);
     return ++this.i;
@@ -80,7 +91,14 @@ class Example {
 }
 
 // main entry
-/*
+
+const example = new Example();
+for (let i = 0; i < 10; i++) {
+  console.log(
+    `(${i + 1}) example.testMemoize() returns: ${await example.testMemoize()}`,
+  );
+}
+
 try {
   await Example.timeoutTestStatic();
 } catch (e) {
@@ -122,9 +140,4 @@ try {
   await Example.ExponentialBackOffRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
-}
-*/
-const example = new Example();
-for (let i = 0; i < 10; i++) {
-  console.log(`(${i+1}) example.testMemoize() returns: ${await example.testMemoize()}`);
 }

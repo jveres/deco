@@ -3,9 +3,9 @@ import { LruCache } from "./utils.ts";
 interface MemoizeOptions {
   resolver?: (...args: any[]) => string;
   ttl?: number;
+  onAdded?: (key: string, value: any) => void;
+  onFound?: (key: string, value: any) => void;
 }
-
-const memoizeMap = new Map();
 
 export function Memoize(options: MemoizeOptions = {}) {
   return function (
@@ -25,10 +25,13 @@ export function Memoize(options: MemoizeOptions = {}) {
         : JSON.stringify(args);
 
       if (cache.has(key) && (!options.ttl || timeout > Date.now())) {
-        return cache.get(key);
+        const value: any = cache.get(key);
+        options.onFound?.apply(this, [key, value]);
+        return value;
       } else {
         const result = await originalFn.apply(this, args);
         cache.put(key, result);
+        options.onAdded?.apply(this, [key, result]);
         return result;
       }
     };
