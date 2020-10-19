@@ -71,8 +71,8 @@ class Example {
 
   private i: number = 0;
 
-  @Memoize({ttl: 2000})
   @Trace()
+  @Memoize({ttl: 2000})
   async testMemoize() {
     await sleep(1000);
     return ++this.i;

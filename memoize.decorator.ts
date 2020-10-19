@@ -1,7 +1,7 @@
-import * as Colors from "https://deno.land/std@0.74.0/fmt/colors.ts";
+import { LruCache } from "./utils.ts";
 
 interface MemoizeOptions {
-  resolver?: (...args: any[]) => string | number;
+  resolver?: (...args: any[]) => string;
   ttl?: number;
 }
 
@@ -13,20 +13,22 @@ export function Memoize(options: MemoizeOptions = {}) {
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<any>,
   ) {
-    const timeout = options.ttl ? Date.now() + options.ttl : Number.POSITIVE_INFINITY;
+    const timeout = options.ttl
+      ? Date.now() + options.ttl
+      : Number.POSITIVE_INFINITY;
     const originalFn: Function = descriptor.value as Function;
-    const map = new Map();
+    const cache = new LruCache<any>();
 
     descriptor.value = async function (...args: any[]) {
       const key = options.resolver
         ? options.resolver.apply(this, args)
         : JSON.stringify(args);
 
-      if (map.has(key) && (!options.ttl || timeout > Date.now())) {
-        return map.get(key);
+      if (cache.has(key) && (!options.ttl || timeout > Date.now())) {
+        return cache.get(key);
       } else {
         const result = await originalFn.apply(this, args);
-        map.set(key, result);
+        cache.put(key, result);
         return result;
       }
     };
