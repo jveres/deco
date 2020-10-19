@@ -13,7 +13,7 @@ export function Memoize(options: MemoizeOptions = {}) {
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<any>,
   ) {
-    let timeout = Number.POSITIVE_INFINITY;
+    const timeout = options.ttl ? Date.now() + options.ttl : Number.POSITIVE_INFINITY;
     const originalFn: Function = descriptor.value as Function;
     const map = new Map();
 
@@ -27,7 +27,6 @@ export function Memoize(options: MemoizeOptions = {}) {
       } else {
         const result = await originalFn.apply(this, args);
         map.set(key, result);
-        if (options.ttl) timeout = Date.now() + options.ttl;
         return result;
       }
     };

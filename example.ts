@@ -71,9 +71,10 @@ class Example {
 
   private i: number = 0;
 
-  @Memoize()
+  @Memoize({ttl: 2000})
   @Trace()
-  testMemoize() {
+  async testMemoize() {
+    await sleep(1000);
     return ++this.i;
   }
 }
@@ -124,6 +125,6 @@ try {
 }
 */
 const example = new Example();
-for (let i = 0; i < 3; i++) {
-  console.log(`example.testMemoize() returns: ${await example.testMemoize()}`);
+for (let i = 0; i < 10; i++) {
+  console.log(`(${i+1}) example.testMemoize() returns: ${await example.testMemoize()}`);
 }
