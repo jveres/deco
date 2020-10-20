@@ -74,7 +74,7 @@ class Example {
   @Trace()
   @Memoize({
     ttl: 2000,
-    resolver: (...args: any[]): string => {
+    resolver: (): string => {
       return "key";
     },
     onAdded: (key: string, value: any) => {

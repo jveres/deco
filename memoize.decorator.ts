@@ -13,11 +13,9 @@ export function Memoize(options: MemoizeOptions = {}) {
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<any>,
   ) {
-    const timeout = options.ttl
-      ? Date.now() + options.ttl
-      : Number.POSITIVE_INFINITY;
     const originalFn: Function = descriptor.value as Function;
     const cache = new LruCache<any>();
+    let timeout = Number.POSITIVE_INFINITY;
 
     descriptor.value = async function (...args: any[]) {
       const key = options.resolver
@@ -32,6 +30,7 @@ export function Memoize(options: MemoizeOptions = {}) {
         const result = await originalFn.apply(this, args);
         cache.put(key, result);
         options.onAdded?.apply(this, [key, result]);
+        if (options.ttl) timeout = Date.now() + options.ttl;
         return result;
       }
     };
