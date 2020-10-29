@@ -1,4 +1,8 @@
-import * as Colors from "https://deno.land/std@0.74.0/fmt/colors.ts";
+// Copyright 2020 Janos Veres. All rights reserved.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file.
+
+import * as Colors from "https://deno.land/std@0.75.0/fmt/colors.ts";
 
 const DEFAULT_TIMEOUT_MS = 10000;
 

@@ -1,9 +1,14 @@
-import { sleep } from "./utils.ts";
-import * as Colors from "https://deno.land/std@0.74.0/fmt/colors.ts";
+// Copyright 2020 Janos Veres. All rights reserved.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file.
 
-const DEFAULT_BACKOFF_MS = 1000;
-const DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS = 2000;
-const DEFAULT_EXPONENTIAL_MULTIPLIER = 2;
+import { sleep } from "../utils.ts";
+import * as Colors from "https://deno.land/std@0.75.0/fmt/colors.ts";
+
+export const DEFAULT_MAX_ATTEMPTS = 3;
+export const DEFAULT_BACKOFF_MS = 1000;
+export const DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS = 2000;
+export const DEFAULT_EXPONENTIAL_MULTIPLIER = 2;
 
 export interface RetryOptions {
   maxAttempts: number;
@@ -23,7 +28,7 @@ export enum BackOffPolicy {
  *
  * @param options the 'RetryOptions'
  */
-export function Retry(options: RetryOptions) {
+export function Retry(options: RetryOptions = {maxAttempts: DEFAULT_MAX_ATTEMPTS}) {
   /**
    * target: The prototype of the class (Object)
    * propertyKey: The name of the method (string | symbol).
