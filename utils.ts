@@ -1,9 +1,9 @@
-export const sleep: Function = (ms: number) =>
+export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 export class LruCache<T> {
   private values: Map<string, T> = new Map<string, T>();
-  public maxEntries: number = 500;
+  public maxEntries = 500;
 
   public get(key: string): T | undefined {
     const entry: T | undefined = this.values.get(key);

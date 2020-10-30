@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import { LruCache } from "../utils.ts";
 
 interface MemoizeOptions {
@@ -17,7 +19,7 @@ export function Memoize(options: MemoizeOptions = {}) {
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<any>,
   ) {
-    const originalFn: Function = descriptor.value as Function;
+    const originalFn = descriptor.value;
     const cache = new LruCache<any>();
     let timeout = Number.POSITIVE_INFINITY;
 

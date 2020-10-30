@@ -1,3 +1,9 @@
+// Copyright 2020 Janos Veres. All rights reserved.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file.
+
+// deno-lint-ignore-file no-explicit-any
+
 import { BackOffPolicy, Memoize, Retry, sleep, Timeout, Trace } from "./mod.ts";
 
 class Example {
@@ -69,7 +75,7 @@ class Example {
     throw new Error("I failed!");
   }
 
-  private i: number = 0;
+  private i = 0;
 
   @Trace()
   @Memoize({

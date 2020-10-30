@@ -2,17 +2,19 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import * as Colors from "https://deno.land/std@0.75.0/fmt/colors.ts";
 
-const DEFAULT_TIMEOUT_MS = 10000;
+export const DEFAULT_TIMEOUT_MS = 10000;
 
 export function Timeout(timeout: number = DEFAULT_TIMEOUT_MS) {
   return function (
     target: Record<string, any>,
     propertyKey: string,
-    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>,
+    descriptor: TypedPropertyDescriptor<any>,
   ) {
-    const originalFn: Function = descriptor.value as Function;
+    const originalFn = descriptor.value;
     descriptor.value = async function (...args: any[]) {
       try {
         return await timeoutAsync.apply(
@@ -44,7 +46,7 @@ export function Timeout(timeout: number = DEFAULT_TIMEOUT_MS) {
 
 async function timeoutAsync(
   this: any,
-  fn: Function,
+  fn: (...args: any[]) => any,
   args: any[],
   timeout: number,
 ): Promise<any> {

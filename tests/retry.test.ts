@@ -47,6 +47,7 @@ Deno.test({
     try {
       await c.retryDefault();
     } catch (e: unknown) {
+      // shallow errors
     }
     assertEquals(c.i, DEFAULT_MAX_ATTEMPTS + 1);
   },
@@ -60,6 +61,7 @@ Deno.test({
     try {
       await c.retryWithMaxAttempts();
     } catch (e: unknown) {
+      // shallow errors
     }
     assertEquals(c.i, 2);
   },
@@ -74,6 +76,7 @@ Deno.test({
     try {
       await c.retryWithBackOff();
     } catch (e: unknown) {
+      // shallow errors
     }
     assertEquals(c.i, 2);
     assertEquals<boolean>(performance.now() - t >= 1000, true);

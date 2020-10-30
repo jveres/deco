@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import { sleep } from "../utils.ts";
 import * as Colors from "https://deno.land/std@0.75.0/fmt/colors.ts";
 
@@ -28,7 +30,9 @@ export enum BackOffPolicy {
  *
  * @param options the 'RetryOptions'
  */
-export function Retry(options: RetryOptions = {maxAttempts: DEFAULT_MAX_ATTEMPTS}) {
+export function Retry(
+  options: RetryOptions = { maxAttempts: DEFAULT_MAX_ATTEMPTS },
+) {
   /**
    * target: The prototype of the class (Object)
    * propertyKey: The name of the method (string | symbol).
@@ -39,12 +43,15 @@ export function Retry(options: RetryOptions = {maxAttempts: DEFAULT_MAX_ATTEMPTS
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<any>,
   ) {
-    const originalFn: Function = descriptor.value;
+    const originalFn = descriptor.value;
     // set default value for ExponentialBackOffPolicy
     if (options.backOffPolicy === BackOffPolicy.ExponentialBackOffPolicy) {
       !options.backOff && (options.backOff = DEFAULT_BACKOFF_MS);
       options.exponentialOption = {
-        ...{ maxInterval: DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS, multiplier: DEFAULT_EXPONENTIAL_MULTIPLIER },
+        ...{
+          maxInterval: DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS,
+          multiplier: DEFAULT_EXPONENTIAL_MULTIPLIER,
+        },
         ...options.exponentialOption,
       };
     }
@@ -75,7 +82,7 @@ export function Retry(options: RetryOptions = {maxAttempts: DEFAULT_MAX_ATTEMPTS
 
   async function retryAsync(
     this: any,
-    fn: Function,
+    fn: (...args: any[]) => any,
     args: any[],
     maxAttempts: number,
     backOff?: number,

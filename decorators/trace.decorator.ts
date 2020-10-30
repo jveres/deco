@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import * as Colors from "https://deno.land/std@0.75.0/fmt/colors.ts";
 
 interface TraceOptions {
@@ -14,7 +16,7 @@ export function Trace(options: TraceOptions = { stack: false }) {
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<any>,
   ) {
-    const originalFn: Function = descriptor.value as Function;
+    const originalFn = descriptor.value;
     descriptor.value = async function (...args: any[]) {
       const e = new Error();
       Error.captureStackTrace(e, options.stack ? undefined : descriptor.value);
