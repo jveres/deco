@@ -24,7 +24,7 @@ export function Trace(options: TraceOptions = { stack: false }) {
         ? "\n" + e.stack?.split("\n").slice(1).join("\n")
         : e.stack?.split("\n").slice(1)[0].replace("at", "").trim();
       const p1 = performance.now();
-      console.info(`${
+      console.log(`${
         Colors.brightMagenta(
           propertyKey +
             "(…)",
@@ -36,7 +36,7 @@ export function Trace(options: TraceOptions = { stack: false }) {
       originalFn.constructor.name === "AsyncFunction"
         ? result = await originalFn.apply(this, args)
         : result = originalFn.apply(this, args);
-      console.info(`${
+      console.log(`${
         Colors.brightMagenta(
           propertyKey +
             "(…)",

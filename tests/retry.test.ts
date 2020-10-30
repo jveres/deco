@@ -2,13 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import {
-  assert,
-  assertEquals,
-  assertMatch,
-} from "https://deno.land/std@0.75.0/testing/asserts.ts";
-
 import { DEFAULT_MAX_ATTEMPTS, Retry } from "../decorators/retry.decorator.ts";
+import { assertEquals } from "https://deno.land/std@0.75.0/testing/asserts.ts";
 
 class SomeClass {
   public i = 0;
