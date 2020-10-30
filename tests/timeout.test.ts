@@ -9,20 +9,28 @@ import { setColorEnabled } from "https://deno.land/std@0.75.0/fmt/colors.ts";
 
 class SomeClass {
   @Timeout(1000)
-  async doSomething() {
-    console.log("sleeping for 2000 ms");
-    await sleep(5000);
+  async doSomething(): Promise<string> {
+    await sleep(2000);
+    return "result";
+  }
+
+  async doSomethingElse(): Promise<string> {
+    console.log("start...");
+    const res = await this.doSomething();
+    console.log(`...done with "${res}"`);
+    return res;
   }
 }
 
 Deno.test({
   name: "@Timeout(1000)",
+  sanitizeResources: false,
   sanitizeOps: false,
   async fn(): Promise<void> {
     const c = new SomeClass();
     setColorEnabled(false);
     await assertThrowsAsync(
-      c.doSomething,
+      async (): Promise<void> => { await c.doSomethingElse() },
       Error,
       "Timeout (1000ms) exceeded for doSomething(…)",
     );
