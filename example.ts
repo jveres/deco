@@ -26,7 +26,7 @@ class Example {
 
   @Retry({ maxAttempts: 3 })
   @Trace()
-  static async noDelayRetry(): Promise<void> {
+  static noDelayRetry() {
     throw new Error("I failed!");
   }
 
@@ -38,7 +38,7 @@ class Example {
     },
   })
   @Trace()
-  static async doRetry(): Promise<void> {
+  static doRetry() {
     throw new Error("Error: 429");
   }
 
@@ -50,7 +50,7 @@ class Example {
     },
   })
   @Trace()
-  static async doNotRetry(): Promise<void> {
+  static doNotRetry() {
     throw new Error("Error: 404");
   }
 
@@ -60,7 +60,7 @@ class Example {
     backOff: 1000,
   })
   @Trace()
-  static async fixedBackOffRetry(): Promise<void> {
+  static fixedBackOffRetry() {
     throw new Error("I failed!");
   }
 
@@ -71,7 +71,7 @@ class Example {
     exponentialOption: { maxInterval: 4000, multiplier: 3 },
   })
   @Trace()
-  static async ExponentialBackOffRetry(): Promise<void> {
+  static ExponentialBackOffRetry() {
     throw new Error("I failed!");
   }
 
@@ -98,52 +98,55 @@ class Example {
 
 // main entry
 
-const example = new Example();
-for (let i = 0; i < 10; i++) {
-  console.log(
-    `(${i + 1}) example.testMemoize() returns: ${await example.testMemoize()}`,
-  );
-}
+(async () => {
+  const example = new Example();
+  for (let i = 0; i < 10; i++) {
+    console.log(
+      `(${i + 1}) example.testMemoize() returns: ${await example
+        .testMemoize()}`,
+    );
+  }
 
-try {
-  await Example.timeoutTestStatic();
-} catch (e) {
-  console.error(e);
-}
+  try {
+    await Example.timeoutTestStatic();
+  } catch (e) {
+    console.error(e);
+  }
 
-try {
-  Example.traceTestStaticFunction();
-  await new Example().timeoutTestMethod();
-} catch (e) {
-  console.error(e);
-}
+  try {
+    Example.traceTestStaticFunction();
+    await new Example().timeoutTestMethod();
+  } catch (e) {
+    console.error(e);
+  }
 
-try {
-  await Example.noDelayRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
+  try {
+    await Example.noDelayRetry();
+  } catch (e) {
+    console.info(`All retry done as expected, final message: '${e.message}'`);
+  }
 
-try {
-  await Example.doRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
+  try {
+    await Example.doRetry();
+  } catch (e) {
+    console.info(`All retry done as expected, final message: '${e.message}'`);
+  }
 
-try {
-  await Example.doNotRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
+  try {
+    await Example.doNotRetry();
+  } catch (e) {
+    console.info(`All retry done as expected, final message: '${e.message}'`);
+  }
 
-try {
-  await Example.fixedBackOffRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
+  try {
+    await Example.fixedBackOffRetry();
+  } catch (e) {
+    console.info(`All retry done as expected, final message: '${e.message}'`);
+  }
 
-try {
-  await Example.ExponentialBackOffRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
+  try {
+    await Example.ExponentialBackOffRetry();
+  } catch (e) {
+    console.info(`All retry done as expected, final message: '${e.message}'`);
+  }
+})();

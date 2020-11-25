@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { DEFAULT_MAX_ATTEMPTS, Retry } from "../decorators/retry.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.75.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.79.0/testing/asserts.ts";
 
 class SomeClass {
   public i = 0;
@@ -13,13 +13,13 @@ class SomeClass {
   }
 
   @Retry()
-  async retryDefault(): Promise<void> {
+  retryDefault() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
 
   @Retry({ maxAttempts: 1 })
-  async retryWithMaxAttempts(): Promise<void> {
+  retryWithMaxAttempts() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
@@ -28,7 +28,7 @@ class SomeClass {
     maxAttempts: 1,
     backOff: 1000,
   })
-  async retryWithBackOff(): Promise<void> {
+  retryWithBackOff() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }

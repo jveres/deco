@@ -2,12 +2,12 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { assertEquals } from "https://deno.land/std@0.75.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.79.0/testing/asserts.ts";
 import { LruCache } from "../utils.ts";
 
 Deno.test({
   name: "test LruCache<T> with 501 numbers",
-  async fn(): Promise<void> {
+  fn() {
     const c = new LruCache<number>();
     for (let i = 1; i < 501; i++) {
       c.put(`${i}`, i);
