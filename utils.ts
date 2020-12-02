@@ -125,19 +125,19 @@ export class Dequeue<T> {
 
 export interface Quota {
   /** interval (sliding window) over which API calls are counted, in milliseconds */
-  interval: number;
+  interval?: number;
   /** number of API calls allowed per interval */
-  rate: number;
+  rate?: number;
   /** number of concurrent API calls allowed */
-  concurrency: number;
+  concurrency?: number;
   /**
    * if a request is queued longer than this, it will be discarded and an error thrown
    * (default: 0, disabled)
    */
-  maxDelay: number;
+  maxDelay?: number;
 }
 
-class QuotaManager {
+export class QuotaManager {
   protected _activeCount = 0;
   protected history = new Dequeue<any>();
 
@@ -168,7 +168,7 @@ class QuotaManager {
    * @returns true if the invocation was allowed, false if not (you can try again later)
    */
   start() {
-    if (this._activeCount >= this._quota.concurrency) {
+    if (this._quota.concurrency !== undefined && this._activeCount >= this._quota.concurrency) {
       return false;
     }
 
@@ -189,6 +189,7 @@ class QuotaManager {
   }
 
   protected removeExpiredHistory() {
+    if (!this._quota.interval) return;
     const expired = Date.now() - this._quota.interval;
     while (this.history.length && (this.history.peekFront() < expired)) {
       this.history.shift();
