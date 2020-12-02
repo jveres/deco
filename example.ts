@@ -4,7 +4,16 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { BackOffPolicy, Memoize, Retry, sleep, Timeout, Trace } from "./mod.ts";
+import {
+  BackOffPolicy,
+  Memoize,
+  RateLimit,
+  RateLimitError,
+  Retry,
+  sleep,
+  Timeout,
+  Trace,
+} from "./mod.ts";
 
 class Example {
   @Trace()
@@ -94,59 +103,73 @@ class Example {
     await sleep(1000);
     return ++this.i;
   }
+
+  @RateLimit({ rps: 5})
+  @Trace()
+  async ratelimitTestMethod(): Promise<void> {
+    await sleep(1000);
+  }
 }
 
 // main entry
 
-(async () => {
-  const example = new Example();
-  for (let i = 0; i < 10; i++) {
-    console.log(
-      `(${i + 1}) example.testMemoize() returns: ${await example
-        .testMemoize()}`,
-    );
-  }
+const example = new Example();
 
-  try {
-    await Example.timeoutTestStatic();
-  } catch (e) {
-    console.error(e);
-  }
+for (let i = 0; i < 10; i++) {
+  example.ratelimitTestMethod()
+    .catch((e: unknown) => {
+      if (e instanceof RateLimitError) {
+        console.log("Error: rate limited");
+      }
+    });
+}
 
-  try {
-    Example.traceTestStaticFunction();
-    await new Example().timeoutTestMethod();
-  } catch (e) {
-    console.error(e);
-  }
+/*for (let i = 0; i < 10; i++) {
+  console.log(
+    `(${i + 1}) example.testMemoize() returns: ${await example
+      .testMemoize()}`,
+  );
+}
 
-  try {
-    await Example.noDelayRetry();
-  } catch (e) {
-    console.info(`All retry done as expected, final message: '${e.message}'`);
-  }
+try {
+  await Example.timeoutTestStatic();
+} catch (e) {
+  console.error(e);
+}
 
-  try {
-    await Example.doRetry();
-  } catch (e) {
-    console.info(`All retry done as expected, final message: '${e.message}'`);
-  }
+try {
+  Example.traceTestStaticFunction();
+  await new Example().timeoutTestMethod();
+} catch (e) {
+  console.error(e);
+}
 
-  try {
-    await Example.doNotRetry();
-  } catch (e) {
-    console.info(`All retry done as expected, final message: '${e.message}'`);
-  }
+try {
+  await Example.noDelayRetry();
+} catch (e) {
+  console.info(`All retry done as expected, final message: '${e.message}'`);
+}
 
-  try {
-    await Example.fixedBackOffRetry();
-  } catch (e) {
-    console.info(`All retry done as expected, final message: '${e.message}'`);
-  }
+try {
+  await Example.doRetry();
+} catch (e) {
+  console.info(`All retry done as expected, final message: '${e.message}'`);
+}
 
-  try {
-    await Example.ExponentialBackOffRetry();
-  } catch (e) {
-    console.info(`All retry done as expected, final message: '${e.message}'`);
-  }
-})();
+try {
+  await Example.doNotRetry();
+} catch (e) {
+  console.info(`All retry done as expected, final message: '${e.message}'`);
+}
+
+try {
+  await Example.fixedBackOffRetry();
+} catch (e) {
+  console.info(`All retry done as expected, final message: '${e.message}'`);
+}
+
+try {
+  await Example.ExponentialBackOffRetry();
+} catch (e) {
+  console.info(`All retry done as expected, final message: '${e.message}'`);
+}*/

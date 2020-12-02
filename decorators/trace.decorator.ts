@@ -5,6 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import * as Colors from "https://deno.land/std@0.79.0/fmt/colors.ts";
+import string_decoder from "https://dev.jspm.io/npm:@jspm/core@1.1.1/nodelibs/string_decoder.js";
 
 interface TraceOptions {
   stack?: boolean;
@@ -17,12 +18,14 @@ export function Trace(options: TraceOptions = { stack: false }) {
     descriptor: TypedPropertyDescriptor<any>,
   ) {
     const originalFn = descriptor.value;
+    let lastFrom: string | undefined;
+
     descriptor.value = async function (...args: any[]) {
       const e = new Error();
       Error.captureStackTrace(e, options.stack ? undefined : descriptor.value);
       const from = options.stack
         ? "\n" + e.stack?.split("\n").slice(1).join("\n")
-        : e.stack?.split("\n").slice(1)[0].replace("at", "").trim();
+        : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
       const p1 = performance.now();
       console.log(`${
         Colors.brightMagenta(
@@ -30,8 +33,13 @@ export function Trace(options: TraceOptions = { stack: false }) {
             "(…)",
         )
       } ${Colors.bold("called")} ${options.stack ? "" : "from"} ${
-        Colors.brightCyan(from ?? "n/a")
+        Colors.brightCyan(from ?? lastFrom ?? "unknown")
       } at ${Colors.bold(new Date().toISOString())}`);
+
+      // TODO: bundler does not support this, report as swc bug
+      // lastFrom ??= from;
+      if (from) lastFrom = from;
+
       let result;
       originalFn.constructor.name === "AsyncFunction"
         ? result = await originalFn.apply(this, args)
