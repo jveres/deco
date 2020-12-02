@@ -1,9 +1,14 @@
-# deco
+# deco (WIP)
 Decorators for Deno
+
+### Running example
+
+`deno run example.ts`
+
 
 ### Running tests
 
-`deno test -c tsconfig.json --unstable --coverage tests/*.test.ts`
+`deno test`
 
 ### Usage examples
 
@@ -28,7 +33,7 @@ class Example {
 
   @Retry({ maxAttempts: 3 })
   @Trace()
-  static async noDelayRetry(): Promise<void> {
+  static noDelayRetry() {
     throw new Error("I failed!");
   }
 
@@ -40,7 +45,7 @@ class Example {
     },
   })
   @Trace()
-  static async doRetry(): Promise<void> {
+  static doRetry() {
     throw new Error("Error: 429");
   }
 
@@ -52,7 +57,7 @@ class Example {
     },
   })
   @Trace()
-  static async doNotRetry(): Promise<void> {
+  static doNotRetry() {
     throw new Error("Error: 404");
   }
 
@@ -62,7 +67,7 @@ class Example {
     backOff: 1000,
   })
   @Trace()
-  static async fixedBackOffRetry(): Promise<void> {
+  static fixedBackOffRetry() {
     throw new Error("I failed!");
   }
 
@@ -73,11 +78,11 @@ class Example {
     exponentialOption: { maxInterval: 4000, multiplier: 3 },
   })
   @Trace()
-  static async ExponentialBackOffRetry(): Promise<void> {
+  static ExponentialBackOffRetry() {
     throw new Error("I failed!");
   }
 
-  private i: number = 0;
+  private i = 0;
 
   @Trace()
   @Memoize({
@@ -96,14 +101,31 @@ class Example {
     await sleep(1000);
     return ++this.i;
   }
+
+  @RateLimit({ rps: 5 })
+  @Trace()
+  async ratelimitTestMethod(): Promise<void> {
+    await sleep(1000);
+  }
 }
 
 // main entry
 
 const example = new Example();
+
+for (let i = 0; i < 10; i++) {
+  example.ratelimitTestMethod()
+    .catch((e: unknown) => {
+      if (e instanceof RateLimitError) {
+        console.log("Error: rate limited");
+      }
+    });
+}
+
 for (let i = 0; i < 10; i++) {
   console.log(
-    `(${i + 1}) example.testMemoize() returns: ${await example.testMemoize()}`,
+    `(${i + 1}) example.testMemoize() returns: ${await example
+      .testMemoize()}`,
   );
 }
 
@@ -149,4 +171,5 @@ try {
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
+
 ```

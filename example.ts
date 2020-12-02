@@ -104,7 +104,7 @@ class Example {
     return ++this.i;
   }
 
-  @RateLimit({ rps: 5})
+  @RateLimit({ rps: 5 })
   @Trace()
   async ratelimitTestMethod(): Promise<void> {
     await sleep(1000);
