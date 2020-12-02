@@ -124,7 +124,7 @@ for (let i = 0; i < 10; i++) {
     });
 }
 
-/*for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 10; i++) {
   console.log(
     `(${i + 1}) example.testMemoize() returns: ${await example
       .testMemoize()}`,
@@ -172,4 +172,4 @@ try {
   await Example.ExponentialBackOffRetry();
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
-}*/
+}
