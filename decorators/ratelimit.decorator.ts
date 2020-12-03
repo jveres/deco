@@ -14,9 +14,9 @@ export function RateLimit(options: Quota = DEFAULT_QUOTA) {
   ) {
     const originalFn = descriptor.value;
     const limit = rateLimit(options);
-
+  
     descriptor.value = async function (...args: any[]) {
-      return await limit(originalFn.bind(this, args));
+      return limit(() => originalFn.apply(this, args));
     };
 
     return descriptor;
