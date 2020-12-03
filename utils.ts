@@ -137,19 +137,18 @@ export interface Quota {
   maxDelay?: number;
 }
 
+export const DEFAULT_QUOTA: Quota = {
+  interval: 1000,
+  rate: 1,
+  concurrency: 1,
+  maxDelay: 1,
+};
+
 export class QuotaManager {
   protected _activeCount = 0;
   protected history = new Dequeue<any>();
 
-  constructor(
-    protected _quota: Quota = {
-      interval: 1000,
-      rate: 1,
-      concurrency: 1,
-      maxDelay: 1,
-    },
-  ) {
-  }
+  constructor(protected _quota: Quota = DEFAULT_QUOTA) {}
 
   get quota() {
     return Object.assign({}, this._quota);
@@ -168,7 +167,10 @@ export class QuotaManager {
    * @returns true if the invocation was allowed, false if not (you can try again later)
    */
   start() {
-    if (this._quota.concurrency !== undefined && this._activeCount >= this._quota.concurrency) {
+    if (
+      this._quota.concurrency !== undefined &&
+      this._activeCount >= this._quota.concurrency
+    ) {
       return false;
     }
 
