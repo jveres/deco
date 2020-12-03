@@ -96,29 +96,21 @@ export class Dequeue<T> {
   }
 
   shift(): T | undefined {
-    if (!this._length) {
-      return undefined;
-    }
+    if (!this._length) return undefined;
     const result = this.head;
     this.head = this.head?.next;
     this._length--;
-    if (!this._length) {
-      this.head = this.tail = undefined;
-    }
+    if (!this._length) this.head = this.tail = undefined;
     return result?.value;
   }
 
   peekFront(): T | undefined {
-    if (this._length) {
-      return this.head?.value;
-    }
+    if (this._length) return this.head?.value;
     return undefined;
   }
 
   peekBack(): T | undefined {
-    if (this._length) {
-      return this.tail?.value;
-    }
+    if (this._length) return this.tail?.value;
     return undefined;
   }
 }
@@ -137,21 +129,24 @@ export interface Quota {
   maxDelay?: number;
 }
 
-export const DEFAULT_QUOTA: Quota = {
+export const DEFAULT_QUOTA = {
   interval: 1000,
   rate: 1,
   concurrency: 1,
-  maxDelay: 1,
+  maxDelay: 0,
 };
 
 export class QuotaManager {
-  protected _activeCount = 0;
-  protected history = new Dequeue<any>();
+  private _quota: Quota;
+  private _activeCount = 0;
+  private history = new Dequeue<any>();
 
-  constructor(protected _quota: Quota = DEFAULT_QUOTA) {}
+  constructor(quota: Quota = DEFAULT_QUOTA) {
+    this._quota = Object.assign(DEFAULT_QUOTA, quota);
+  }
 
   get quota() {
-    return Object.assign({}, this._quota);
+    return this._quota;
   }
 
   get activeCount() {
@@ -176,9 +171,7 @@ export class QuotaManager {
 
     if (this._quota.interval !== undefined && this._quota.rate !== undefined) {
       this.removeExpiredHistory();
-      if (this.history.length >= this._quota.rate) {
-        return false;
-      }
+      if (this.history.length >= this._quota.rate) return false;
       this.history.push(Date.now());
     }
 
@@ -191,7 +184,7 @@ export class QuotaManager {
   }
 
   protected removeExpiredHistory() {
-    if (!this._quota.interval) return;
+    if (this._quota.interval === undefined) return;
     const expired = Date.now() - this._quota.interval;
     while (this.history.length && (this.history.peekFront() < expired)) {
       this.history.shift();
@@ -211,8 +204,8 @@ export function rateLimit(
 
   const next = () => {
     while (queue.length && quotaManager.start()) {
-      const shift = queue.shift();
-      if (shift) shift();
+      const fn = queue.shift();
+      if (fn) fn();
     }
 
     if (queue.length && !quotaManager.activeCount && !timerId) {
@@ -226,20 +219,23 @@ export function rateLimit(
   return <T>(fn: () => Promise<T>) => {
     return new Promise<T>((resolve, reject) => {
       let timerId: number | null = null;
-      if (quotaManager.maxDelay) {
+      if (quotaManager.maxDelay !== undefined) {
         timerId = setTimeout(() => {
           timerId = null;
-          reject(new RateLimitError("queue timemout exceeded"));
+          reject(new RateLimitError("Rate limit exceeded"));
           next();
         }, quotaManager.maxDelay);
       }
 
       const run = () => {
-        if (quotaManager.maxDelay) {
+        console.log("run")
+        if (quotaManager.maxDelay !== undefined) {
           if (timerId) {
             clearTimeout(timerId);
+            timerId = null;
           } else {
             // timeout already fired
+            quotaManager.end();
             return;
           }
         }

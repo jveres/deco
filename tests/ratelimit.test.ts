@@ -19,7 +19,7 @@ class SomeClass {
     this.count++;
   }
 
-  @RateLimit({ rate: 1, interval: 1000, maxDelay: 1 })
+  @RateLimit({ rate: 1, interval: 1000 })
   async asyncMethodTest2(ms: number) {
     sleep(ms);
     this.count++;
@@ -41,7 +41,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@RateLimit with { rate: 1, interval: 1000, maxDelay: 1 }",
+  name: "@RateLimit with { rate: 1, interval: 1000 }",
   sanitizeOps: false,
   async fn() {
     const c = new SomeClass();
