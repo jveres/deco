@@ -13,6 +13,7 @@ import {
   sleep,
   Timeout,
   Trace,
+  Try
 } from "./mod.ts";
 
 class Example {
@@ -109,12 +110,30 @@ class Example {
   async ratelimitTestMethod(): Promise<void> {
     await sleep(500);
   }
+
+  @Try({
+    catch: ["TypeError", "broken pipe error"],
+    onError: (e) => {
+      console.error("Error:", typeof e === "string" ? e : e.message);
+    },
+    onDone: () => {
+      console.log("done");
+    }
+  })
+  async tryCatchTest(flip: boolean): Promise<void> {
+    if (flip) throw TypeError("type error");
+    else throw "broken pipe error";
+  }
 }
 
 // main entry
 
 const example = new Example();
 
+await example.tryCatchTest(true);
+await example.tryCatchTest(false);
+
+/*
 for (let i = 0; i < 10; i++) {
   example.ratelimitTestMethod()
     .catch((e: unknown) => {
@@ -122,7 +141,7 @@ for (let i = 0; i < 10; i++) {
     });
   await sleep(1);
 }
-/*
+
 for (let i = 0; i < 10; i++) {
   console.log(
     `(${i + 1}) example.testMemoize() returns: ${await example

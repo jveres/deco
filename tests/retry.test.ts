@@ -64,6 +64,7 @@ Deno.test({
 
 Deno.test({
   name: "@Retry() with backOff=1000",
+  sanitizeOps: false,
   async fn(): Promise<void> {
     const c = new SomeClass();
     const t = performance.now();

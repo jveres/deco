@@ -27,7 +27,7 @@ export function RateLimit(options?: RateLimitOptions) {
       const now = Date.now();
       while (queue.peekFront() && (Date.now() - queue.peekFront() > (options?.interval ?? 1000))) queue.shift();
       if (queue.size() >= (options?.rate ?? 1)) {
-        throw new RateLimitError("rate limit exceeded");
+        throw new RateLimitError("Rate limit exceeded");
       }
       let result = undefined;
       queue.push(Date.now());

@@ -2,7 +2,13 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-export function Try() {
+interface TryOptions {
+  catch?: string[];
+  onError?: (e: any) => void;
+  onDone?: () => void;
+}
+
+export function Try(options?: TryOptions) {
   return function (
     target: Record<string, any>,
     propertyKey: string,
@@ -13,7 +19,13 @@ export function Try() {
     descriptor.value = async function (...args: any[]) {
       try {
         return await originalFn.apply(this, args);
-      } catch {}
+      } catch (e: unknown) {
+        if (e instanceof Error && options?.catch && !options.catch.includes(e.constructor.name)) throw e;
+        if (typeof e === "string" && options?.catch && !options.catch.includes(e)) throw e;
+        else if (options?.onError) options.onError(e);
+      } finally {
+        if (options?.onDone) options.onDone();
+      }
     };
 
     return descriptor;
