@@ -27,7 +27,7 @@ class SomeClass {
 }
 
 Deno.test({
-  name: "@RateLimit with default quota",
+  name: "@RateLimit with defaults",
   sanitizeOps: false,
   async fn() {
     const c = new SomeClass();
@@ -40,7 +40,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+/*Deno.test({
   name: "@RateLimit with { rate: 1, interval: 1000 }",
   sanitizeOps: false,
   async fn() {
@@ -53,3 +53,4 @@ Deno.test({
     assertEquals(c.count, 1);
   },
 });
+*/

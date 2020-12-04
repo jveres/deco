@@ -4,11 +4,11 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import { RateLimitError } from "./decorators/ratelimit.decorator.ts";
 import {
   BackOffPolicy,
   Memoize,
   RateLimit,
-  RateLimitError,
   Retry,
   sleep,
   Timeout,
@@ -104,10 +104,10 @@ class Example {
     return ++this.i;
   }
 
-  @RateLimit({ rps: 5 })
+  @RateLimit()
   @Trace()
   async ratelimitTestMethod(): Promise<void> {
-    await sleep(1000);
+    await sleep(500);
   }
 }
 
@@ -118,12 +118,11 @@ const example = new Example();
 for (let i = 0; i < 10; i++) {
   example.ratelimitTestMethod()
     .catch((e: unknown) => {
-      if (e instanceof RateLimitError) {
-        console.log("Error: rate limited");
-      }
+      if (e instanceof RateLimitError) console.log("rate limited");
     });
+  await sleep(1);
 }
-
+/*
 for (let i = 0; i < 10; i++) {
   console.log(
     `(${i + 1}) example.testMemoize() returns: ${await example
@@ -173,3 +172,4 @@ try {
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
+*/

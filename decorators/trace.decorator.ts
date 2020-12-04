@@ -5,7 +5,6 @@
 // deno-lint-ignore-file no-explicit-any
 
 import * as Colors from "https://deno.land/std@0.79.0/fmt/colors.ts";
-import string_decoder from "https://dev.jspm.io/npm:@jspm/core@1.1.1/nodelibs/string_decoder.js";
 
 interface TraceOptions {
   stack?: boolean;
