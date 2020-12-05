@@ -34,9 +34,9 @@ export function Trace(options: TraceOptions = { stack: false }) {
         }`,
       );
 
-      // NOTE: maybe bundler does not support this
-      lastFrom ??= from;
-      //if (from) lastFrom = from;
+      // TODO: swc bundler does not support this, report issue
+      // lastFrom ??= from;
+      if (from) lastFrom = from;
 
       let result;
       originalFn.constructor.name === "AsyncFunction"
