@@ -21,11 +21,15 @@ export function RateLimit(options?: RateLimitOptions) {
   ) {
     const originalFn = descriptor.value;
     const queue = new Denque();
-    let curRate = 0;
 
     descriptor.value = async function (...args: any[]) {
       const now = Date.now();
-      while (queue.peekFront() && (Date.now() - queue.peekFront() > (options?.interval ?? 1000))) queue.shift();
+      while (
+        queue.peekFront() &&
+        (Date.now() - queue.peekFront() > (options?.interval ?? 1000))
+      ) {
+        queue.shift();
+      }
       if (queue.size() >= (options?.rate ?? 1)) {
         throw new RateLimitError("Rate limit exceeded");
       }

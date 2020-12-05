@@ -34,7 +34,14 @@ export function Try(options?: TryOptions) {
         ) {
           throw e;
         } else {
-          if (options?.log) console.error(Colors.brightRed("Runtime exception caught:"), Colors.brightYellow(typeof e === "string" ? e : (e as any).message));
+          if (options?.log) {
+            console.error(
+              Colors.brightRed("Runtime exception caught:"),
+              Colors.brightYellow(
+                typeof e === "string" ? e : (e as any).message,
+              ),
+            );
+          }
           if (options?.onError) options.onError(e);
         }
       } finally {
