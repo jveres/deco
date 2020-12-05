@@ -13,7 +13,7 @@ import {
   sleep,
   Timeout,
   Trace,
-  Try
+  Try,
 } from "./mod.ts";
 
 class Example {
@@ -118,7 +118,7 @@ class Example {
     },
     onDone: () => {
       console.log("done");
-    }
+    },
   })
   async tryCatchTest(flip: boolean): Promise<void> {
     if (flip) throw TypeError("type error");
@@ -133,7 +133,6 @@ const example = new Example();
 await example.tryCatchTest(true);
 await example.tryCatchTest(false);
 
-/*
 for (let i = 0; i < 10; i++) {
   example.ratelimitTestMethod()
     .catch((e: unknown) => {
@@ -191,4 +190,3 @@ try {
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
-*/

@@ -26,18 +26,17 @@ export function Trace(options: TraceOptions = { stack: false }) {
         ? "\n" + e.stack?.split("\n").slice(1).join("\n")
         : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
       const p1 = performance.now();
-      console.log(`${
-        Colors.brightMagenta(
-          propertyKey +
-            "(…)",
-        )
-      } ${Colors.bold("called")} ${options.stack ? "" : "from"} ${
-        Colors.brightCyan(from ?? lastFrom ?? "unknown")
-      } at ${Colors.bold(new Date().toISOString())}`);
+      console.log(
+        `${Colors.brightMagenta(propertyKey + "(…)")} ${
+          Colors.bold("called")
+        } ${options.stack ? "" : "from"} ${
+          Colors.brightCyan(from ?? lastFrom ?? "unknown")
+        }`,
+      );
 
-      // TODO: bundler does not support this, report as swc bug
-      // lastFrom ??= from;
-      if (from) lastFrom = from;
+      // NOTE: maybe bundler does not support this
+      lastFrom ??= from;
+      //if (from) lastFrom = from;
 
       let result;
       originalFn.constructor.name === "AsyncFunction"
@@ -50,7 +49,7 @@ export function Trace(options: TraceOptions = { stack: false }) {
         )
       } ${Colors.green("ended")} in ${
         Colors.brightYellow((performance.now() - p1).toFixed() + "ms")
-      } at ${Colors.bold(new Date().toISOString())}`);
+      }`);
       return result;
     };
     return descriptor;

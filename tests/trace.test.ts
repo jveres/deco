@@ -29,7 +29,7 @@ Deno.test({
     SomeClass.doSomething();
     assert(
       term[0].startsWith(
-        "doSomething(…) called from fn (trace.test.ts:29:15) at",
+        "doSomething(…) called from fn (trace.test.ts:29:15)",
       ),
     );
     assertEquals(term[1], "logging for the console");
