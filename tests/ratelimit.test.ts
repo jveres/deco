@@ -4,10 +4,8 @@
 
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
 import {
-  assert,
   assertEquals,
-} from "https://deno.land/std@0.79.0/testing/asserts.ts";
-import { setColorEnabled } from "https://deno.land/std@0.79.0/fmt/colors.ts";
+} from "https://deno.land/std@0.83.0/testing/asserts.ts";
 import { sleep } from "../utils.ts";
 
 class SomeClass {

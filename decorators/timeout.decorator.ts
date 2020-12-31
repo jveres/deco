@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import * as Colors from "https://deno.land/std@0.79.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.83.0/fmt/colors.ts";
 
 export const DEFAULT_TIMEOUT_MS = 10000;
 

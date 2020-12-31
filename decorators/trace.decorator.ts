@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import * as Colors from "https://deno.land/std@0.79.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.83.0/fmt/colors.ts";
 
 interface TraceOptions {
   stack?: boolean;
@@ -34,8 +34,6 @@ export function Trace(options: TraceOptions = { stack: false }) {
         }`,
       );
 
-      // TODO: swc bundler does not support this, report issue
-      // lastFrom ??= from;
       if (from) lastFrom = from;
 
       let result;
