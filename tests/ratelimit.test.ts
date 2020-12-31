@@ -5,7 +5,7 @@
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
 import {
   assertEquals,
-} from "https://deno.land/std@0.83.0/testing/asserts.ts";
+} from "https://deno.land/std@0.82.0/testing/asserts.ts";
 import { sleep } from "../utils.ts";
 
 class SomeClass {

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { DEFAULT_MAX_ATTEMPTS, Retry } from "../decorators/retry.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.82.0/testing/asserts.ts";
 
 class SomeClass {
   public i = 0;
