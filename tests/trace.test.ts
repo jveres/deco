@@ -17,23 +17,22 @@ class SomeClass {
 }
 
 Deno.test({
-  name: "@Trace",
+  name: "@Trace()",
   fn() {
     setColorEnabled(false);
     const term: string[] = [];
     const log = console.log;
-    // deno-lint-ignore no-explicit-any
-    console.log = (x: any) => {
-      term.push(x);
+    console.log = (...args) => {
+      term.push(args.join(" "));
     };
     SomeClass.doSomething();
     assert(
       term[0].startsWith(
-        "doSomething(…) called from fn (trace.test.ts:29:15)",
+        "doSomething(…) called from fn (trace.test.ts:28:15)",
       ),
     );
     assertEquals(term[1], "logging for the console");
-    assert(term[2].startsWith("doSomething(…) ended in "));
+    assert(term[2].startsWith("doSomething(…) ended in"));
     console.log = log;
   },
 });

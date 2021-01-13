@@ -23,27 +23,24 @@ export function Try(options?: TryOptions) {
       try {
         return await originalFn.apply(this, args);
       } catch (e: unknown) {
-        if (
-          e instanceof Error && options?.catch &&
-          !options.catch.includes(e.constructor.name)
-        ) {
-          throw e;
-        }
-        if (
-          typeof e === "string" && options?.catch && !options.catch.includes(e)
-        ) {
-          throw e;
-        } else {
-          if (options?.log) {
-            console.error(
-              Colors.brightRed("Runtime exception caught:"),
-              Colors.brightYellow(
-                typeof e === "string" ? e : (e as any).message,
-              ),
-            );
+        if (options?.catch) {
+          if (
+            (e instanceof Error &&
+              !options.catch.includes(e.constructor.name)) ||
+            (typeof e === "string" && !options.catch.includes(e))
+          ) {
+            throw e;
           }
-          if (options?.onError) options.onError(e);
         }
+        if (options?.log) {
+          console.error(
+            Colors.brightRed("Runtime exception:"),
+            Colors.brightYellow(
+              typeof e === "string" ? e : (e as Error).message,
+            ),
+          );
+        }
+        if (options?.onError) options.onError(e);
       } finally {
         if (options?.onDone) options.onDone();
       }
