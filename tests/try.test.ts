@@ -46,9 +46,8 @@ Deno.test({
     setColorEnabled(false);
     const term: string[] = [];
     const error = console.error;
-    // deno-lint-ignore no-explicit-any
-    console.error = (x: any) => {
-      term.push(x);
+    console.error = (...args) => {
+      term.push(args.join(" "));
     };
     c.doSomething();
     assert(term.length === 0);
