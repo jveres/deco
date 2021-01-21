@@ -7,6 +7,7 @@
 import { RateLimitError } from "./decorators/ratelimit.decorator.ts";
 import {
   BackOffPolicy,
+  Concurrency,
   Memoize,
   RateLimit,
   Retry,
@@ -124,11 +125,65 @@ class Example {
     if (flip) throw TypeError("type error");
     else throw "broken pipe error";
   }
+
+  @Concurrency({
+    max: 1,
+    resolver: (wait: number) => {
+      return `${wait}`;
+    },
+  })
+  async concurrencyTest1(wait: number, throws = false) {
+    if (throws) throw `Exception (${wait})`;
+    console.info(`wait for ${wait}ms...`);
+    await sleep(wait);
+    return wait;
+  }
 }
 
 // main entry
 
 const example = new Example();
+
+const promises = [];
+for (let i = 0; i < 3; i++) {
+  promises.push(
+    example.concurrencyTest1((i + 1) * 1000).then((result) =>
+      console.log(`result=${result}`)
+    ).catch((err) => {
+      console.error(`error=${err}`);
+    }),
+  );
+}
+
+await Promise.all(promises);
+
+promises.splice(0, promises.length);
+
+for (let i = 0; i < 5; i++) {
+  promises.push(
+    example.concurrencyTest1(1000).then((result) =>
+      console.log(`result=${result}`)
+    ).catch((err) => {
+      console.error(`error=${err}`);
+    }),
+  );
+}
+
+await Promise.all(promises);
+
+promises.splice(0, promises.length);
+
+for (let i = 0; i < 5; i++) {
+  promises.push(
+    example.concurrencyTest1(1000, i > 0).then((result) =>
+      console.log(`result=${result}`)
+    ).catch((err) => {
+      console.error(`error=${err}`);
+    }),
+  );
+}
+
+await Promise.all(promises);
 
 await example.tryCatchTest(true);
 await example.tryCatchTest(false);
