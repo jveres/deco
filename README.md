@@ -1,10 +1,10 @@
 # deco (WIP)
+
 Decorators for Deno
 
 ### Running example
 
 `deno run example.ts`
-
 
 ### Running tests
 
@@ -171,5 +171,4 @@ try {
 } catch (e) {
   console.info(`All retry done as expected, final message: '${e.message}'`);
 }
-
 ```

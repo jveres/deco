@@ -3,9 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
-import {
-  assertEquals,
-} from "https://deno.land/std@0.82.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.82.0/testing/asserts.ts";
 import { sleep } from "../utils.ts";
 
 class SomeClass {
