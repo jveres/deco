@@ -7,6 +7,7 @@
 interface ConcurrencyOptions {
   max: number;
   resolver?: (...args: any[]) => string;
+  onPooled?: (key: string) => void;
 }
 
 interface PoolItem {
@@ -40,6 +41,7 @@ export function Concurrency(options: ConcurrencyOptions = { max: 1 }) {
       } else {
         const index = pool.map((e) => e.key).lastIndexOf(key);
         const promise = pool[index].promise;
+        options.onPooled?.apply(this, [key]);
         return promise;
       }
     };
