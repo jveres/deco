@@ -6,8 +6,8 @@ import { Trace } from "../decorators/trace.decorator.ts";
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.82.0/testing/asserts.ts";
-import { setColorEnabled } from "https://deno.land/std@0.82.0/fmt/colors.ts";
+} from "https://deno.land/std@0.107.0/testing/asserts.ts";
+import { setColorEnabled } from "https://deno.land/std@0.107.0/fmt/colors.ts";
 
 class SomeClass {
   @Trace()
@@ -27,8 +27,8 @@ Deno.test({
     };
     SomeClass.doSomething();
     assert(
-      term[0].startsWith(
-        "doSomething(…) called from fn (trace.test.ts:28:15)",
+      term[0].endsWith(
+        "tests/trace.test.ts:28:15)",
       ),
     );
     assertEquals(term[1], "logging for the console");

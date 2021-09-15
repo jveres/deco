@@ -13,6 +13,9 @@ export interface RateLimitOptions {
   rate?: number;
 }
 
+const DEFAULT_RATE_LIMIT = 1;
+const DEFAULT_RATE_INTERVAL = 1000;
+
 export function RateLimit(options?: RateLimitOptions) {
   return function (
     target: Record<string, any>,
@@ -22,20 +25,27 @@ export function RateLimit(options?: RateLimitOptions) {
     const originalFn = descriptor.value;
     const queue = new Denque();
 
-    descriptor.value = async function (...args: any[]) {
+    const getCurrentRate = (): number => {
       const now = Date.now();
       while (
         queue.peekFront() &&
-        (Date.now() - queue.peekFront() > (options?.interval ?? 1000))
+        (Date.now() - queue.peekFront() >
+          (options?.interval ?? DEFAULT_RATE_INTERVAL))
       ) {
         queue.shift();
       }
-      if (queue.size() >= (options?.rate ?? 1)) {
+      return queue.size();
+    };
+
+    descriptor.value = async function (...args: any[]) {
+      if (getCurrentRate() >= (options?.rate ?? DEFAULT_RATE_LIMIT)) {
         throw new RateLimitError("Rate limit exceeded");
       }
-      let result = undefined;
       queue.push(Date.now());
-      return await originalFn.apply(this, args);
+      return await originalFn.apply(
+        this,
+        args.concat([{ options, getCurrentRate }]),
+      );
     };
 
     return descriptor;

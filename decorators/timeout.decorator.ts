@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import * as Colors from "https://deno.land/std@0.82.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.107.0/fmt/colors.ts";
 
 export const DEFAULT_TIMEOUT_MS = 10000;
 
@@ -51,14 +51,16 @@ function timeoutAsync(
   timeout: number,
 ) {
   let id: number;
+  const abortController = new AbortController();
   return Promise.race([
     new Promise((_, reject) => {
       id = setTimeout(() => {
         clearTimeout(id);
+        abortController.abort();
         reject(new Error("timeout"));
       }, timeout);
     }),
-    fn.apply(this, args),
+    fn.apply(this, args.concat([{ timeout, abortController }])),
   ]).then((result) => {
     clearTimeout(id);
     return result;

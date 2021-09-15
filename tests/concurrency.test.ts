@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.82.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
 
 class SomeClass {
   @Concurrency()
