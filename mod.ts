@@ -5,4 +5,6 @@ export * from "./decorators/ratelimit.decorator.ts";
 export * from "./decorators/timeout.decorator.ts";
 export * from "./decorators/trace.decorator.ts";
 export * from "./decorators/try.decorator.ts";
+export * from "./decorators/throttle.decorator.ts";
+export * from "./decorators/debounce.decorator.ts";
 export * from "./utils.ts";

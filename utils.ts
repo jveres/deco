@@ -1,9 +1,13 @@
 import denque from "https://dev.jspm.io/denque";
+import _throttle from "https://dev.jspm.io/lodash.throttle";
+import _debounce from "https://dev.jspm.io/lodash.debounce";
 
 export const Denque = denque as any;
+export const throttle = _throttle as any;
+export const debounce = _debounce as any;
 
-export const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+export const sleep = (wait: number) =>
+  new Promise((resolve) => setTimeout(resolve, wait));
 
 export class LruCache<T> {
   private values: Map<string, T> = new Map<string, T>();
