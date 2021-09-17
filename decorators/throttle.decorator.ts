@@ -6,8 +6,14 @@ import { throttle } from "../utils.ts";
 
 export const DEFAULT_WAIT_MS = 100;
 
+export interface ThrottleOptions {
+  leading?: boolean; // Specify invoking on the leading edge of the timeout
+  trailing?: boolean; // Specify invoking on the trailing edge of the timeout
+}
+
 export function Throttle(
   wait: number = DEFAULT_WAIT_MS,
+  options: ThrottleOptions = { leading: true, trailing: true },
 ) {
   return function (
     target: Record<string, any>,

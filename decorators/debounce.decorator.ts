@@ -14,7 +14,7 @@ export interface DebounceOptions {
 
 export function Debounce(
   wait: number = DEFAULT_WAIT_MS,
-  options: DebounceOptions = {},
+  options: DebounceOptions = { trailing: true },
 ) {
   return function (
     target: Record<string, any>,
