@@ -4,7 +4,7 @@
 
 import { debounce } from "../utils.ts";
 
-export const DEFAULT_WAIT_MS = 100;
+export const DEFAULT_DEBOUNCE_WAIT_MS = 100;
 
 export interface DebounceOptions {
   leading?: boolean; // Specify invoking on the leading edge of the timeout
@@ -13,7 +13,7 @@ export interface DebounceOptions {
 }
 
 export function Debounce(
-  wait: number = DEFAULT_WAIT_MS,
+  wait: number = DEFAULT_DEBOUNCE_WAIT_MS,
   options: DebounceOptions = { trailing: true },
 ) {
   return function (

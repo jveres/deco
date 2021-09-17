@@ -4,7 +4,7 @@
 
 import { throttle } from "../utils.ts";
 
-export const DEFAULT_WAIT_MS = 100;
+export const DEFAULT_THROTTLE_WAIT_MS = 100;
 
 export interface ThrottleOptions {
   leading?: boolean; // Specify invoking on the leading edge of the timeout
@@ -12,7 +12,7 @@ export interface ThrottleOptions {
 }
 
 export function Throttle(
-  wait: number = DEFAULT_WAIT_MS,
+  wait: number = DEFAULT_THROTTLE_WAIT_MS,
   options: ThrottleOptions = { leading: true, trailing: true },
 ) {
   return function (

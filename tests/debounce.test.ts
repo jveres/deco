@@ -14,7 +14,7 @@ class SomeClass {
 
   @Debounce(100)
   static async doSomething2(arr: any[], data: any) {
-    return arr.push(data);
+    arr.push(data);
   }
 }
 
@@ -27,13 +27,13 @@ Deno.test({
     SomeClass.doSomething1(res, 1);
     SomeClass.doSomething1(res, 2);
     SomeClass.doSomething1(res, 3);
-    await sleep(300);
+    await sleep(150);
     assertEquals(res, [3]);
     res = [];
     for (let i = 4; i <= 6; i++) {
       await SomeClass.doSomething2(res, i);
     }
-    await sleep(300);
+    await sleep(150);
     assertEquals(res, [6]);
   },
 });
