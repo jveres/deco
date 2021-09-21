@@ -1,6 +1,6 @@
-import denque from "https://dev.jspm.io/denque";
-import _throttle from "https://dev.jspm.io/lodash.throttle";
-import _debounce from "https://dev.jspm.io/lodash.debounce";
+import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js";
+import _throttle from "https://cdn.skypack.dev/pin/lodash.throttle@v4.1.1-F50y3ZtJgnO9CirUfqrt/mode=imports,min/optimized/lodash.throttle.js";
+import _debounce from "https://cdn.skypack.dev/pin/lodash.debounce@v4.0.8-aOLIwnE2RethWPrEzTeR/mode=imports,min/optimized/lodash.debounce.js";
 
 export const Denque = denque as any;
 export const throttle = _throttle as any;
