@@ -9,9 +9,15 @@ export const debounce = _debounce as any;
 export const sleep = (wait: number) =>
   new Promise((resolve) => setTimeout(resolve, wait));
 
+export const DEFAULT_MAX_LRUCACHE_ENTRIES = 500;
+
 export class LruCache<T> {
   private values: Map<string, T> = new Map<string, T>();
-  public maxEntries = 500;
+  private maxEntries: number;
+
+  constructor(maxEntries: number = DEFAULT_MAX_LRUCACHE_ENTRIES) {
+    this.maxEntries = maxEntries;
+  }
 
   public get(key: string): T | undefined {
     const entry: T | undefined = this.values.get(key);
