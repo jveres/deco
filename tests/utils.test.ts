@@ -2,8 +2,17 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
-import { LruCache, sleep, throttle, debounce } from "../utils.ts";
+import {
+  assertEquals,
+  assertNotEquals,
+} from "https://deno.land/std@0.107.0/testing/asserts.ts";
+import {
+  consoleLogHook,
+  debounce,
+  LruCache,
+  sleep,
+  throttle,
+} from "../utils.ts";
 
 Deno.test({
   name: "LruCache<T> with 501 numbers",
@@ -63,6 +72,28 @@ Deno.test({
     fn(5);
     fn(6);
     await sleep(100);
-    assertEquals(calls, [3 ,6]);
+    assertEquals(calls, [3, 6]);
+  },
+});
+
+Deno.test({
+  name: "consoleLogHook()",
+  fn() {
+    const { "log": _log, "info": _info, "warn": _warn, "error": _error } =
+      console;
+    consoleLogHook({ logPrefix: " LOG " });
+    console.log("testing console log hook");
+    assertNotEquals(console.log, _log);
+    assertEquals(console.info, _info);
+    assertEquals(console.warn, _warn);
+    assertEquals(console.error, _error);
+    consoleLogHook({ errorPrefix: " ERROR " });
+    console.error("testing console error hook");
+    assertNotEquals(console.error, _error);
+    consoleLogHook({infoPrefix: " INFO ", warnPrefix: " WARN "});
+    console.info("testinng console info hook");
+    console.warn("testinng console warn hook");
+    assertNotEquals(console.info, _info);
+    assertNotEquals(console.warn, _warn);
   },
 });

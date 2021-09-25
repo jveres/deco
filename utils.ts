@@ -1,6 +1,9 @@
+// deno-lint-ignore-file no-explicit-any
+
 import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js";
 import _throttle from "https://cdn.skypack.dev/pin/lodash.throttle@v4.1.1-F50y3ZtJgnO9CirUfqrt/mode=imports,min/optimized/lodash.throttle.js";
 import _debounce from "https://cdn.skypack.dev/pin/lodash.debounce@v4.0.8-aOLIwnE2RethWPrEzTeR/mode=imports,min/optimized/lodash.debounce.js";
+import * as Colors from "https://deno.land/std@0.107.0/fmt/colors.ts";
 
 export const Denque = denque as any;
 export const throttle = _throttle as any;
@@ -38,5 +41,53 @@ export class LruCache<T> {
       this.values.delete(keyToDelete);
     }
     this.values.set(key, value);
+  }
+}
+
+// Save original console log functions as globals
+const { "log": _log, "info": _info, "warn": _warn, "error": _error } = console;
+
+export interface ConsoleLogHookOptions {
+  logPrefix?: string;
+  infoPrefix?: string;
+  warnPrefix?: string;
+  errorPrefix?: string;
+}
+
+export function consoleLogHook(options: ConsoleLogHookOptions) {
+  if (options.logPrefix) {
+    console.log = function () {
+      _log.apply(console, [
+        options.logPrefix,
+        ...arguments,
+      ]);
+    };
+  }
+
+  if (options.infoPrefix) {
+    console.info = function () {
+      _info.apply(console, [
+        options.infoPrefix,
+        ...arguments,
+      ]);
+    };
+  }
+
+  if (options.warnPrefix) {
+    console.warn = function () {
+      _warn.apply(console, [
+        options.warnPrefix,
+        ...arguments,
+      ]);
+    };
+  }
+
+  if (options.errorPrefix) {
+    console.error = function () {
+      _error.apply(console, [
+        options.errorPrefix,
+        ...arguments,
+      ]);
+    };
   }
 }
