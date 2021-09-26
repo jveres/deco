@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { Trace } from "../decorators/trace.decorator.ts";
+import { Trace } from "../../decorators/trace.decorator.ts";
 import {
   assert,
   assertEquals,
@@ -28,7 +28,7 @@ Deno.test({
     SomeClass.doSomething();
     assert(
       term[0].endsWith(
-        "tests/trace.test.ts:28:15)",
+        "tests/decorators/trace.test.ts:28:15)",
       ),
     );
     assertEquals(term[1], "logging for the console");

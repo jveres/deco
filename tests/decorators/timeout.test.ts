@@ -2,9 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { Timeout } from "../decorators/timeout.decorator.ts";
+import { Timeout } from "../../decorators/timeout.decorator.ts";
 import { assertThrowsAsync } from "https://deno.land/std@0.107.0/testing/asserts.ts";
-import { sleep } from "../utils.ts";
+import { sleep } from "../../utils.ts";
 import { setColorEnabled } from "https://deno.land/std@0.107.0/fmt/colors.ts";
 
 class SomeClass {

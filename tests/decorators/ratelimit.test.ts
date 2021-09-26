@@ -2,9 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { RateLimit } from "../decorators/ratelimit.decorator.ts";
+import { RateLimit } from "../../decorators/ratelimit.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
-import { sleep } from "../utils.ts";
+import { sleep } from "../../utils.ts";
 
 class SomeClass {
   public count = 0;

@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { Metadata } from "../decorators/metadata.decorator.ts";
+import { Metadata } from "../../decorators/metadata.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
 
 Deno.test({

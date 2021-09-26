@@ -4,8 +4,8 @@
 
 import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
 
-import { Memoize } from "../decorators/memoize.decorator.ts";
-import { sleep } from "../utils.ts";
+import { Memoize } from "../../decorators/memoize.decorator.ts";
+import { sleep } from "../../utils.ts";
 
 class SomeClass {
   #i = 0;

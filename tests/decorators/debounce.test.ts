@@ -2,9 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { Debounce } from "../decorators/debounce.decorator.ts";
+import { Debounce } from "../../decorators/debounce.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
-import { sleep } from "../utils.ts";
+import { sleep } from "../../utils.ts";
 
 class SomeClass {
   @Debounce(100)
