@@ -13,12 +13,12 @@ interface MemoizeOptions {
   onFound?: (key: string, value: any) => void;
 }
 
-export function Memoize(options: MemoizeOptions = {}) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+export const Memoize = (options: MemoizeOptions = {}): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     const cache = new LruCache<any>();
     let timeout = Number.POSITIVE_INFINITY;
@@ -40,7 +40,4 @@ export function Memoize(options: MemoizeOptions = {}) {
         return result;
       }
     };
-
-    return descriptor;
   };
-}

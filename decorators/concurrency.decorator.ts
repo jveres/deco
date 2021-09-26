@@ -15,19 +15,21 @@ interface PoolItem {
   promise: Promise<unknown>;
 }
 
-export function Concurrency(options: ConcurrencyOptions = { max: 1 }) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+export const Concurrency = (
+  options: ConcurrencyOptions = { max: 1 },
+): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     const pool: PoolItem[] = [];
 
     descriptor.value = async function (...args: any[]) {
       const key = options.resolver
         ? options.resolver.apply(this, args)
-        : propertyKey;
+        : propertyKey.toString();
       const count = pool.filter((e) => e.key === key).length;
       if (count < options.max) {
         const promise = originalFn.apply(this, args);
@@ -45,7 +47,4 @@ export function Concurrency(options: ConcurrencyOptions = { max: 1 }) {
         return promise;
       }
     };
-
-    return descriptor;
   };
-}

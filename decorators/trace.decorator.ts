@@ -10,12 +10,14 @@ interface TraceOptions {
   stack?: boolean;
 }
 
-export function Trace(options: TraceOptions = { stack: false }) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+export const Trace = (
+  options: TraceOptions = { stack: false },
+): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     let lastFrom: string | undefined;
 
@@ -50,6 +52,4 @@ export function Trace(options: TraceOptions = { stack: false }) {
       }`);
       return result;
     };
-    return descriptor;
   };
-}

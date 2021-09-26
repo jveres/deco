@@ -11,12 +11,12 @@ interface TryOptions {
   onDone?: () => void;
 }
 
-export function Try(options?: TryOptions) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+export const Try = (options?: TryOptions): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -45,7 +45,4 @@ export function Try(options?: TryOptions) {
         if (options?.onDone) options.onDone();
       }
     };
-
-    return descriptor;
   };
-}

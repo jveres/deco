@@ -11,17 +11,15 @@ export interface ThrottleOptions {
   trailing?: boolean; // Specify invoking on the trailing edge of the timeout
 }
 
-export function Throttle(
+export const Throttle = (
   wait: number = DEFAULT_THROTTLE_WAIT_MS,
   options: ThrottleOptions = { leading: true, trailing: true },
-) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     descriptor.value = throttle(originalFn, wait, { "trailing": false });
-    return descriptor;
   };
-}

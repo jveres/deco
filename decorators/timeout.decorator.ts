@@ -8,14 +8,39 @@ import * as Colors from "https://deno.land/std@0.107.0/fmt/colors.ts";
 
 export const DEFAULT_TIMEOUT_MS = 10000;
 
-export function Timeout(timeout: number = DEFAULT_TIMEOUT_MS) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+export const Timeout = (
+  timeout: number = DEFAULT_TIMEOUT_MS,
+): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     descriptor.value = async function (...args: any[]) {
+      // Timeout wrapper function
+      const timeoutAsync = (
+        fn: (...args: any[]) => any,
+        args: any[],
+        timeout: number,
+      ) => {
+        let id: number;
+        const abortController = new AbortController();
+        return Promise.race([
+          new Promise((_, reject) => {
+            id = setTimeout(() => {
+              clearTimeout(id);
+              abortController.abort();
+              reject(new Error("timeout"));
+            }, timeout);
+          }),
+          fn.apply(this, args.concat([{ timeout, abortController }])),
+        ]).then((result) => {
+          clearTimeout(id);
+          return result;
+        });
+      };
+
       try {
         return await timeoutAsync.apply(
           this,
@@ -40,29 +65,4 @@ export function Timeout(timeout: number = DEFAULT_TIMEOUT_MS) {
         throw e;
       }
     };
-    return descriptor;
   };
-}
-
-function timeoutAsync(
-  this: any,
-  fn: (...args: any[]) => any,
-  args: any[],
-  timeout: number,
-) {
-  let id: number;
-  const abortController = new AbortController();
-  return Promise.race([
-    new Promise((_, reject) => {
-      id = setTimeout(() => {
-        clearTimeout(id);
-        abortController.abort();
-        reject(new Error("timeout"));
-      }, timeout);
-    }),
-    fn.apply(this, args.concat([{ timeout, abortController }])),
-  ]).then((result) => {
-    clearTimeout(id);
-    return result;
-  });
-}

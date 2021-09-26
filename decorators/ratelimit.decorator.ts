@@ -16,12 +16,12 @@ export interface RateLimitOptions {
 const DEFAULT_RATE_LIMIT = 1;
 const DEFAULT_RATE_INTERVAL = 1000;
 
-export function RateLimit(options?: RateLimitOptions) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     const queue = new Denque();
 
@@ -47,7 +47,4 @@ export function RateLimit(options?: RateLimitOptions) {
         args.concat([{ options, getCurrentRate }]),
       );
     };
-
-    return descriptor;
   };
-}

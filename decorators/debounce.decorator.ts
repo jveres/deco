@@ -12,17 +12,15 @@ export interface DebounceOptions {
   trailing?: boolean; // Specify invoking on the trailing edge of the timeout
 }
 
-export function Debounce(
+export const Debounce = (
   wait: number = DEFAULT_DEBOUNCE_WAIT_MS,
   options: DebounceOptions = { trailing: true },
-) {
-  return function (
-    target: Record<string, any>,
-    propertyKey: string,
+): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
-  ) {
+  ): void => {
     const originalFn = descriptor.value;
     descriptor.value = debounce(originalFn, wait, options);
-    return descriptor;
   };
-}
