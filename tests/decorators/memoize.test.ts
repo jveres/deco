@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { assertEquals } from "https://deno.land/std@0.107.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.108.0/testing/asserts.ts";
 
 import { Memoize } from "../../decorators/memoize.decorator.ts";
 import { sleep } from "../../utils.ts";
