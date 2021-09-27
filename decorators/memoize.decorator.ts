@@ -13,7 +13,7 @@ interface MemoizeOptions {
   onFound?: (key: string, value: any) => void;
 }
 
-export const Memoize = (options: MemoizeOptions = {}): MethodDecorator =>
+export const Memoize = (options?: MemoizeOptions): MethodDecorator =>
   (
     target: Object,
     propertyKey: string | Symbol,
@@ -24,19 +24,17 @@ export const Memoize = (options: MemoizeOptions = {}): MethodDecorator =>
     let timeout = Number.POSITIVE_INFINITY;
 
     descriptor.value = async function (...args: any[]) {
-      const key = options.resolver
-        ? options.resolver.apply(this, args)
-        : JSON.stringify(args);
+      const key = options?.resolver?.(args) ?? JSON.stringify(args);
 
-      if (cache.has(key) && (!options.ttl || timeout > Date.now())) {
+      if (cache.has(key) && (!options?.ttl || timeout > Date.now())) {
         const value: any = cache.get(key);
-        options.onFound?.apply(this, [key, value]);
+        options?.onFound?.(key, value);
         return value;
       } else {
         const result = await originalFn.apply(this, args);
         cache.put(key, result);
-        options.onAdded?.apply(this, [key, result]);
-        if (options.ttl) timeout = Date.now() + options.ttl;
+        options?.onAdded?.(key, result);
+        if (options?.ttl) timeout = Date.now() + options.ttl;
         return result;
       }
     };

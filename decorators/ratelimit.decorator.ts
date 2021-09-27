@@ -14,7 +14,7 @@ export interface RateLimitOptions {
 }
 
 const DEFAULT_RATE_LIMIT = 1;
-const DEFAULT_RATE_INTERVAL = 1000;
+const DEFAULT_RATE_INTERVAL_MS = 1000;
 
 export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
   (
@@ -30,7 +30,7 @@ export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
       while (
         queue.peekFront() &&
         (Date.now() - queue.peekFront() >
-          (options?.interval ?? DEFAULT_RATE_INTERVAL))
+          (options?.interval ?? DEFAULT_RATE_INTERVAL_MS))
       ) {
         queue.shift();
       }

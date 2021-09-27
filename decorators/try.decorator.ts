@@ -40,9 +40,9 @@ export const Try = (options?: TryOptions): MethodDecorator =>
             ),
           );
         }
-        if (options?.onError) options.onError(e);
+        options?.onError?.(e);
       } finally {
-        if (options?.onDone) options.onDone();
+        options?.onDone?.();
       }
     };
   };
