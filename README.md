@@ -1,3 +1,5 @@
+[![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco@0.5.5/mod.ts)
+
 # deco (WIP)
 
 Decorators for Deno

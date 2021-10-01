@@ -5,14 +5,15 @@
 import {
   assertEquals,
   assertNotEquals,
-} from "https://deno.land/std@0.108.0/testing/asserts.ts";
+} from "https://deno.land/std@0.109.0/testing/asserts.ts";
 import {
   consoleLogHook,
   debounce,
   LruCache,
   sleep,
   throttle,
-} from "../utils.ts";
+} from "../utils/utils.ts";
+import Node from "../utils/tree.js";
 
 Deno.test({
   name: "LruCache<T> with 501 numbers",
@@ -90,10 +91,37 @@ Deno.test({
     consoleLogHook({ errorPrefix: " ERROR " });
     console.error("testing console error hook");
     assertNotEquals(console.error, _error);
-    consoleLogHook({infoPrefix: " INFO ", warnPrefix: " WARN "});
+    consoleLogHook({ infoPrefix: " INFO ", warnPrefix: " WARN " });
     console.info("testinng console info hook");
     console.warn("testinng console warn hook");
     assertNotEquals(console.info, _info);
     assertNotEquals(console.warn, _warn);
+  },
+});
+
+Deno.test({
+  name: "Node() with static, named and catch-all patterns",
+  fn() {
+    const n = new Node(); // Radix tree
+    const h = () => {};
+    n.addRoute("/static", h);
+    n.addRoute("/named/:id", h);
+    n.addRoute("/catch-all/*param", h);
+    {
+      const { handle, params } = n.search("/static");
+      console.log(handle);
+      assertNotEquals(handle, null);
+      assertEquals(params, []);
+    }
+    {
+      const { handle, params } = n.search("/named/123456");
+      assertNotEquals(handle, null);
+      assertEquals(params, [{ key: "id", value: "123456" }]);
+    }
+    {
+      const { handle, params } = n.search("/catch-all/test/param");
+      assertNotEquals(handle, null);
+      assertEquals(params, [{ key: "param", value: "/test/param" }]);
+    }
   },
 });

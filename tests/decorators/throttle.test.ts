@@ -3,8 +3,8 @@
 // license that can be found in the LICENSE file.
 
 import { Throttle } from "../../decorators/throttle.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.108.0/testing/asserts.ts";
-import { sleep } from "../../utils.ts";
+import { assertEquals } from "https://deno.land/std@0.109.0/testing/asserts.ts";
+import { sleep } from "../../utils/utils.ts";
 
 class SomeClass {
   @Throttle(100)

@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { debounce } from "../utils.ts";
+import { debounce } from "../utils/utils.ts";
 
 export const DEFAULT_DEBOUNCE_WAIT_MS = 100;
 

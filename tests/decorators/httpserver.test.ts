@@ -7,16 +7,15 @@ import {
   HttpServer,
   serve,
 } from "../../decorators/httpserver.decorator.ts";
-import { sleep } from "../../utils.ts";
 import { assertEquals } from "https://deno.land/std@0.108.0/testing/asserts.ts";
+
+const message = "Hello from Deco!";
 
 @HttpServer()
 class HttpController {
   @Get("/")
   get() {
-    return {
-      message: "Hello from Deco!",
-    };
+    return message;
   }
 }
 
@@ -25,8 +24,10 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    serve({ controllers: [HttpController] });
-    const resp = await fetch("http://localhost:8080");
-    assertEquals(await resp.text(), "Hello from Deco!");
+    const port = 8090;
+    serve({ port, controllers: [HttpController] });
+    const resp = await fetch(`http://localhost:${port}`);
+    const text = await resp.text();
+    assertEquals(text, message);
   },
 });

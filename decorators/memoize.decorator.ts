@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { LruCache } from "../utils.ts";
+import { LruCache } from "../utils/utils.ts";
 
 interface MemoizeOptions {
   resolver?: (...args: any[]) => string;

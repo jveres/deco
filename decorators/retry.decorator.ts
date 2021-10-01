@@ -4,8 +4,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { sleep } from "../utils.ts";
-import * as Colors from "https://deno.land/std@0.108.0/fmt/colors.ts";
+import { sleep } from "../utils/utils.ts";
+import * as Colors from "https://deno.land/std@0.109.0/fmt/colors.ts";
 
 export const DEFAULT_MAX_ATTEMPTS = 3;
 export const DEFAULT_BACKOFF_MS = 1000;

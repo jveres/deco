@@ -8,4 +8,4 @@ export * from "./decorators/try.decorator.ts";
 export * from "./decorators/throttle.decorator.ts";
 export * from "./decorators/debounce.decorator.ts";
 export * from "./decorators/metadata.decorator.ts";
-export * from "./utils.ts";
+export * from "./utils/utils.ts";

@@ -5,14 +5,12 @@
 import { Get, HttpServer, serve } from "./decorators/httpserver.decorator.ts";
 
 @HttpServer()
-class HttpController {
-  @Get("/")
-  get() {
-    return {
-      message: "Hello from Deco!",
-    };
+class HttpServerController {
+  @Get()
+  hello() {
+    return { body: "Hello from Deco!" };
   }
 }
 
-console.log("Server running...");
-serve({ controllers: [HttpController] });
+console.log("Server started...");
+serve({ controllers: [HttpServerController] });

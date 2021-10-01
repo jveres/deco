@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { Denque } from "../utils.ts";
+import { Denque } from "../utils/utils.ts";
 
 export class RateLimitError extends Error {}
 
