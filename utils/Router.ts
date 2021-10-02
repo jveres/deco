@@ -8,7 +8,7 @@ import Node from "../utils/tree.js";
 
 export type HttpMethod = "GET" | "POST";
 export type HttpResponse = { body: string; status?: number };
-export type HttpFunction = (params: Object) => HttpResponse;
+export type HttpFunction = (params?: Object) => HttpResponse;
 
 const NOT_ALLOWED_RESPONSE: HttpResponse = {
   body: "method not allowed",
@@ -20,7 +20,7 @@ export class Router {
 
   add(method: HttpMethod, path: string, handler: HttpFunction) {
     if (!this.methods[method]) this.methods[method] = new Node();
-    this.methods[method].addRoute(path, handler);
+    this.methods[method].addRoute(path, handler, true);
   }
 
   find(method: string, path: string) {

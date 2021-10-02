@@ -1,6 +1,7 @@
 {
     "deno.enable": true,
     "deno.suggest.imports.hosts": {
-        "https://cdn.skypack.dev": false
+        "https://cdn.skypack.dev": false,
+        "https://deno.land": false
     }
 }

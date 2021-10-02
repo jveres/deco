@@ -132,8 +132,9 @@ export default class Node {
    * Adds a node with the given handle to the path
    * @param {string} path
    * @param {function} handle
+   * @param {boolean} allowOverwrite
    */
-  addRoute(path, handle) {
+  addRoute(path, handle, allowOverwrite = false) {
     let n = this;
     let fullPath = path;
     n.priority++;
@@ -231,9 +232,13 @@ export default class Node {
       }
 
       if (n.handle !== null) {
-        throw new Error(
-          "A handle is already registered for path '" + fullPath + "'"
-        );
+        if (allowOverwrite === false) {
+          throw new Error(
+            "A handle is already registered for path '" + fullPath + "'"
+          );
+        } else {
+          return true;
+        }
       }
       n.handle = handle;
       return;
@@ -250,7 +255,11 @@ export default class Node {
 
     while (true) {
       // Find prefix until first wildcard
-      let { wildcard, i, valid } = findWildcard(path);
+      let {
+        wildcard,
+        i,
+        valid
+      } = findWildcard(path);
       if (i < 0) {
         break;
       }
@@ -258,28 +267,28 @@ export default class Node {
       if (!valid) {
         throw new Error(
           "only one wildcard per path segment is allowed, has: '" +
-            wildcard +
-            "' in path '" +
-            fullPath +
-            "'"
+          wildcard +
+          "' in path '" +
+          fullPath +
+          "'"
         );
       }
 
       if (wildcard.length < 2) {
         throw new Error(
           "wildcards must be named with a non-empty name in path '" +
-            fullPath +
-            "'"
+          fullPath +
+          "'"
         );
       }
 
       if (n.children.length > 0) {
         throw new Error(
           "wildcard route '" +
-            wildcard +
-            "' conflicts with existing children in path '" +
-            fullPath +
-            "'"
+          wildcard +
+          "' conflicts with existing children in path '" +
+          fullPath +
+          "'"
         );
       }
 
@@ -314,16 +323,16 @@ export default class Node {
         if (i + wildcard.length != path.length) {
           throw new Error(
             "catch-all routes are only allowed at the end of the path in path '" +
-              fullPath +
-              "'"
+            fullPath +
+            "'"
           );
         }
 
         if (n.path.length > 0 && n.path[n.path.length - 1] === "/") {
           throw new Error(
             "catch-all conflicts with existing handle for the path segment root in path '" +
-              fullPath +
-              "'"
+            fullPath +
+            "'"
           );
         }
 
@@ -388,7 +397,10 @@ export default class Node {
             }
 
             // Nothing found.
-            return { handle, params };
+            return {
+              handle,
+              params
+            };
           }
 
           // Handle wildcard child
@@ -402,7 +414,10 @@ export default class Node {
               }
 
               // Save param value
-              params.push({ key: n.path.slice(1), value: path.slice(0, end) });
+              params.push({
+                key: n.path.slice(1),
+                value: path.slice(0, end)
+              });
 
               // We need to go deeper!
               if (end < path.length) {
@@ -413,18 +428,28 @@ export default class Node {
                 }
 
                 // ... but we can't
-                return { handle, params };
+                return {
+                  handle,
+                  params
+                };
               }
 
               handle = n.handle;
 
-              return { handle, params };
+              return {
+                handle, params
+              };
 
             case CATCH_ALL:
-              params.push({ key: n.path.slice(2), value: path });
+              params.push({
+                key: n.path.slice(2),
+                value: path
+              });
 
               handle = n.handle;
-              return { handle, params };
+              return {
+                handle, params
+              };
 
             default:
               throw new Error("invalid node type");
@@ -434,8 +459,10 @@ export default class Node {
         handle = n.handle;
       }
 
-      return { handle, params };
+      return {
+        handle,
+        params
+      };
     }
   }
 }
-

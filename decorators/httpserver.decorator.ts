@@ -2,14 +2,39 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpResponse, Router } from "../utils/Router.ts";
+import { HttpMethod, Router } from "../utils/Router.ts";
+import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 const router = new Router();
 
-export const HttpServer = (): ClassDecorator =>
+interface HttpServerOptions {
+  openAPI?: string;
+}
+
+export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
   (
     target: Function,
   ): void => {
+    (async () => {
+      if (options.openAPI) {
+        const api = await loadOpenApiSpecification(options.openAPI);
+        //console.log(api);
+        for (const endpoint of api) {
+          // TODO: create mock response generator in openapi.ts
+          const method: string = (endpoint.method as string).toUpperCase();
+          const path: string = endpoint.path;
+          const status = parseInt(endpoint.responses?.[0]?.code) || 200;
+          const body = endpoint.responses?.[0]?.contents?.[0]?.examples?.[0]?.value || "Mock response";
+          router.add(
+            method as HttpMethod,
+            path,
+            (() => {
+              return { body, status  };
+            }),
+          );
+        }
+      }
+    })();
   };
 
 export const Get = (
@@ -60,7 +85,7 @@ export const serve = async (
         const { body, status = 200 } = handle(params);
         //console.log(http.request, handle, params);
         http.respondWith(new Response(body, { status })).catch((e) =>
-          console.log(`Error in respondWith`, e)
+          console.error("Error during response:", e)
         );
       }
     })();
