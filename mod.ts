@@ -1,3 +1,4 @@
+export const DECO_VERSION = "0.5.5-6-gbcc5347"; // git describe --tags
 export * from "./decorators/concurrency.decorator.ts";
 export * from "./decorators/memoize.decorator.ts";
 export * from "./decorators/retry.decorator.ts";

@@ -7,12 +7,12 @@
 import Node from "../utils/tree.js";
 
 export type HttpMethod = "GET" | "POST";
-export type HttpResponse = { body: string; status?: number };
+export type HttpResponse = { body: string; init?: ResponseInit };
 export type HttpFunction = (params?: Object) => HttpResponse;
 
 const NOT_ALLOWED_RESPONSE: HttpResponse = {
-  body: "method not allowed",
-  "status": 405,
+  body: "",
+  init: { status: 405 },
 };
 
 export class Router {

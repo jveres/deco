@@ -10,7 +10,7 @@ paths:
         '200':
           description: ''
           content:
-            application/json:
+            text/plain:
               schema:
                 type: string
                 example: Example result

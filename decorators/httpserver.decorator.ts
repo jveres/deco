@@ -2,6 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+import { DECO_VERSION } from "../mod.ts";
 import { HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
@@ -21,15 +22,22 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
         //console.log(api);
         for (const endpoint of api) {
           // TODO: create mock response generator in openapi.ts
+          //console.dir(endpoint.responses);
           const method: string = (endpoint.method as string).toUpperCase();
           const path: string = endpoint.path;
           const status = parseInt(endpoint.responses?.[0]?.code) || 200;
-          const body = endpoint.responses?.[0]?.contents?.[0]?.examples?.[0]?.value || "Mock response";
+          const mime = endpoint.responses?.[0]?.contents?.[0].mediaType ||
+            "text/plain";
+          const body =
+            endpoint.responses?.[0]?.contents?.[0]?.examples?.[0]?.value ||
+            "Hello from mock endpoint.";
+          const headers = { "content-type": mime };
+          const init: ResponseInit = { status, headers };
           router.add(
             method as HttpMethod,
             path,
             (() => {
-              return { body, status  };
+              return { body, init };
             }),
           );
         }
@@ -82,9 +90,9 @@ export const serve = async (
           http.request.method,
           url.pathname,
         );
-        const { body, status = 200 } = handle(params);
+        const { body, init } = handle(params);
         //console.log(http.request, handle, params);
-        http.respondWith(new Response(body, { status })).catch((e) =>
+        http.respondWith(new Response(body, init)).catch((e) =>
           console.error("Error during response:", e)
         );
       }

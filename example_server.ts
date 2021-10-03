@@ -8,7 +8,10 @@ import { Get, HttpServer, serve } from "./decorators/httpserver.decorator.ts";
 class HttpServerController {
   @Get("/deco")
   deco() {
-    return { body: "Hello from Deco!" };
+    return {
+      body: '{ "message": "Hello from Deco!" }',
+      init: { headers: { "content-type": "application/json" } },
+    };
   }
 }
 
