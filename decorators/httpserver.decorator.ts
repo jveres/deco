@@ -2,8 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { DECO_VERSION } from "../mod.ts";
-import { HttpMethod, Router } from "../utils/Router.ts";
+import { HttpMethod, Router } from "../utils/Router2.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 const router = new Router();
@@ -86,15 +85,12 @@ export const serve = async (
     (async () => {
       for await (const http of Deno.serveHttp(conn)) {
         const url = new URL(http.request.url);
-        const { handle, params } = router.find(
+        const { handler, params } = router.find(
           http.request.method,
           url.pathname,
         );
-        const { body, init } = handle(params);
-        //console.log(http.request, handle, params);
-        http.respondWith(new Response(body, init)).catch((e) =>
-          console.error("Error during response:", e)
-        );
+        const { body, init } = handler(params);
+        http.respondWith(new Response(body, init)).catch();
       }
     })();
   }

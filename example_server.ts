@@ -9,8 +9,7 @@ class HttpServerController {
   @Get("/deco")
   deco() {
     return {
-      body: '{ "message": "Hello from Deco!" }',
-      init: { headers: { "content-type": "application/json" } },
+      body: "Hello from Deco!",
     };
   }
 }
