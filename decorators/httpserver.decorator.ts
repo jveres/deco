@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpMethod, Router } from "../utils/Router2.ts";
+import { HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 const router = new Router();
@@ -21,7 +21,9 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
         //console.log(api);
         for (const endpoint of api) {
           const examples: string[] = [];
-          endpoint.responses?.[0]?.contents?.[0]?.examples?.map((example: any) => examples.push(example["value"]));
+          endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
+            example: any,
+          ) => examples.push(example["value"]));
           const method: string = (endpoint.method as string).toUpperCase();
           const path: string = endpoint.path;
           const status = parseInt(endpoint.responses?.[0]?.code) || 200;
@@ -36,7 +38,10 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
             method as HttpMethod,
             path,
             (() => {
-              return { body: examples[Math.floor(Math.random() * examples.length)], init };
+              return {
+                body: examples[Math.floor(Math.random() * examples.length)],
+                init,
+              };
             }),
           );
         }
@@ -90,7 +95,7 @@ export const serve = async (
           url.pathname,
         );
         const { body, init } = handler(params);
-        http.respondWith(new Response(body, init)).catch();
+        http.respondWith(new Response(body, init)).catch(() => {});
       }
     })();
   }
