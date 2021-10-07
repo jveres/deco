@@ -5,7 +5,7 @@ info:
 paths:
   /deco:
     get:
-      operationId: get-test
+      operationId: get-deco
       responses:
         '200':
           description: ''
@@ -13,4 +13,14 @@ paths:
             text/plain:
               schema:
                 type: string
-                example: Example result
+                example: "Hello from /deco \U0001F389"
+              examples:
+                example-1:
+                  summary: This is a valid example
+                  value: Hello from example response 1️⃣
+                example-2:
+                  summary: This is a valid example
+                  value: Hello from example response 2️⃣
+                example-3:
+                  summary: This is a valid example
+                  value: Hello from example response 3️⃣

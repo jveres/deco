@@ -20,8 +20,8 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
         const api = await loadOpenApiSpecification(options.schema);
         //console.log(api);
         for (const endpoint of api) {
-          // TODO: create mock response generator in openapi.ts
-          //console.dir(endpoint.responses);
+          const examples: string[] = [];
+          endpoint.responses?.[0]?.contents?.[0]?.examples?.map((example: any) => examples.push(example["value"]));
           const method: string = (endpoint.method as string).toUpperCase();
           const path: string = endpoint.path;
           const status = parseInt(endpoint.responses?.[0]?.code) || 200;
@@ -36,7 +36,7 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
             method as HttpMethod,
             path,
             (() => {
-              return { body, init };
+              return { body: examples[Math.floor(Math.random() * examples.length)], init };
             }),
           );
         }
