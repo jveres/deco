@@ -4,7 +4,7 @@
 
 import { Get, HttpServer, serve } from "./decorators/httpserver.decorator.ts";
 
-@HttpServer({ openAPI: "api.yaml" })
+@HttpServer({ schema: "api.yaml" })
 class HttpServerController {
   @Get("/deco")
   deco() {

@@ -8,7 +8,7 @@ import { loadOpenApiSpecification } from "../utils/openapi.ts";
 const router = new Router();
 
 interface HttpServerOptions {
-  openAPI?: string;
+  schema?: string;
 }
 
 export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
@@ -16,8 +16,8 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
     target: Function,
   ): void => {
     (async () => {
-      if (options.openAPI) {
-        const api = await loadOpenApiSpecification(options.openAPI);
+      if (options.schema) {
+        const api = await loadOpenApiSpecification(options.schema);
         //console.log(api);
         for (const endpoint of api) {
           // TODO: create mock response generator in openapi.ts
