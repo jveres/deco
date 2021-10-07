@@ -7,7 +7,7 @@ import {
   HttpServer,
   serve,
 } from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.109.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.110.0/testing/asserts.ts";
 
 const message = "Hello from Deco!";
 

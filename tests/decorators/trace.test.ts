@@ -6,8 +6,8 @@ import { Trace } from "../../decorators/trace.decorator.ts";
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.109.0/testing/asserts.ts";
-import { setColorEnabled } from "https://deno.land/std@0.109.0/fmt/colors.ts";
+} from "https://deno.land/std@0.110.0/testing/asserts.ts";
+import { setColorEnabled } from "https://deno.land/std@0.110.0/fmt/colors.ts";
 
 class SomeClass {
   @Trace()

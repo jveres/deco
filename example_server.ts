@@ -6,10 +6,10 @@ import { Get, HttpServer, serve } from "./decorators/httpserver.decorator.ts";
 
 @HttpServer({ schema: "api.yaml" })
 class HttpServerController {
-  @Get("/deco")
+  @Get("/api")
   deco() {
     return {
-      body: "Hello from Deco!",
+      body: "Hello from implemented API 😎",
     };
   }
 }
