@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpMethod, Router } from "../utils/Router.ts";
+import { HttpMethod, Router } from "../utils/Router2.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 const router = new Router();
@@ -43,6 +43,7 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
                 init,
               };
             }),
+            false,
           );
         }
       }

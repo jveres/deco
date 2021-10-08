@@ -16,18 +16,23 @@ const NOT_ALLOWED_RESPONSE: HttpResponse = {
 export class Router {
   #router = new _Router();
 
-  add(method: HttpMethod, pathname: string, handler: HttpFunction) {
+  add(
+    method: HttpMethod,
+    pathname: string,
+    handler: HttpFunction,
+    upsert: boolean = true,
+  ) {
     const store = this.#router.register(pathname);
-    store[method] = handler;
+    upsert ? store[method] = handler : store[method] ??= handler;
   }
 
-  find(method: string, path: string) {
-    const res = this.#router.find(path); 
+  find(method: string, pathname: string) {
+    const res = this.#router.find(pathname);
     return {
       handler: res?.store[method] || (() => {
         return NOT_ALLOWED_RESPONSE;
       }),
-      params: res?.store[method]?.params
+      params: res?.store[method]?.params,
     };
   }
 }
