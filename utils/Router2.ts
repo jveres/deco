@@ -32,7 +32,7 @@ export class Router {
       handler: res?.store[method] || (() => {
         return NOT_ALLOWED_RESPONSE;
       }),
-      params: res?.store[method]?.params,
+      params: res?.params,
     };
   }
 }

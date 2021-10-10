@@ -65,6 +65,15 @@ export const Get = (
     );
   };
 
+export const PathParam = (name: string): ParameterDecorator =>
+  (
+    target: Object,
+    propertyKey: string | symbol,
+    parameterIndex: number,
+  ): void => {
+    console.log(target, propertyKey, parameterIndex);
+  };
+
 export const DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
 export const DEFAULT_SERVER_PORT = 8080;
 
@@ -95,7 +104,7 @@ export const serve = async (
           http.request.method,
           url.pathname,
         );
-        const { body, init } = handler(params);
+        const { body, init } = handler({ ...params, url});
         http.respondWith(new Response(body, init)).catch(() => {});
       }
     })();
