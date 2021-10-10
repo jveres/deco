@@ -1,0 +1,17 @@
+@baseUrl = http://localhost:8080
+@limit = 100
+
+# random mock response
+GET {{baseUrl}}/api
+###
+
+# path parameter
+GET {{baseUrl}}/api/{{$randomInt 1 10000}}
+###
+
+# query parameters
+GET {{baseUrl}}/api/{{$randomInt 1 10000}}?offset={{$randomInt 1 10}}&limit={{limit}}
+###
+
+# static pathname
+GET {{baseUrl}}/static/test
