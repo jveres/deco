@@ -14,7 +14,16 @@ class HttpServerController {
   @Get("/api/:id")
   deco({ id, url }: { id: string; url: URL }) {
     return {
-      body: `Hello from implemented API 😎 (got id: "${id}", query: "${decodeURIComponent(url.searchParams.toString())}")`,
+      body: `[/api/:id] 😎 (got id: "${id}", query: "${
+        decodeURIComponent(url.searchParams.toString())
+      }")`,
+    };
+  }
+
+  @Get("/static/*")
+  assets({ "*": path }: { "*": string }) {
+    return {
+      body: `[/static/*] 😎 (got path: "${path}")`,
     };
   }
 }

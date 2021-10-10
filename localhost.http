@@ -14,4 +14,4 @@ GET {{baseUrl}}/api/{{$randomInt 1 10000}}?offset={{$randomInt 1 10}}&limit={{li
 ###
 
 # static pathname
-GET {{baseUrl}}/static/test
+GET {{baseUrl}}/static/asset-{{$guid}}
