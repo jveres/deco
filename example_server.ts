@@ -5,16 +5,25 @@
 import {
   Get,
   HttpServer,
-  PathParam,
+  Post,
   serve,
 } from "./decorators/httpserver.decorator.ts";
 
 @HttpServer({ schema: "api.yaml" })
 class HttpServerController {
   @Get("/api/:id")
-  deco({ id, url }: { id: string; url: URL }) {
+  get({ id, url }: { id: string; url: URL }) {
     return {
-      body: `[/api/:id] 😎 (got id: "${id}", query: "${
+      body: `[GET /api/:id] 😎 (got id: "${id}", query: "${
+        decodeURIComponent(url.searchParams.toString())
+      }")`,
+    };
+  }
+
+  @Post("/api")
+  async post({ url, request }: { url: URL; request: Request }) {
+    return {
+      body: `[POST /api/:id] 😎 (got data: "${await request.text()}", query: "${
         decodeURIComponent(url.searchParams.toString())
       }")`,
     };
@@ -23,7 +32,7 @@ class HttpServerController {
   @Get("/static/*")
   assets({ "*": path }: { "*": string }) {
     return {
-      body: `[/static/*] 😎 (got path: "${path}")`,
+      body: `[GET /static/*] 😎 (got path: "${path}")`,
     };
   }
 }

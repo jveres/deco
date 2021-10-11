@@ -1,17 +1,25 @@
 @baseUrl = http://localhost:8080
 @limit = 100
 
-# random mock response
+# get random mock response
 GET {{baseUrl}}/api
 ###
 
-# path parameter
+# use path parameter
 GET {{baseUrl}}/api/{{$randomInt 1 10000}}
 ###
 
-# query parameters
+# get query parameters
 GET {{baseUrl}}/api/{{$randomInt 1 10000}}?offset={{$randomInt 1 10}}&limit={{limit}}
 ###
 
 # static pathname
 GET {{baseUrl}}/static/asset-{{$guid}}
+###
+POST {{baseUrl}}/api
+content-type: text/plain
+
+{
+  "sample_string": "{{$guid}}",
+  "sample_integer": {{$randomInt 1 10000}}
+}
