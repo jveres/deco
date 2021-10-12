@@ -2,9 +2,14 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// dapr --app-id deno-app --app-port 3000 run -- deno run -A --unstable --watch example_dapr.ts
+// Run the example:
+//    dapr --app-id deno-app --app-port 3000 run -- deno run -A --unstable --watch example_dapr.ts
+// Start Dapr sidecar in local environment:
+//    dapr run --app-id sidecar --dapr-http-port 3500
+// Publish messages through the sidecar:
+//    dapr publish --publish-app-id sidecar --pubsub pubsub --topic A --data '{"data": "message for topic A"}'
 
-import * as Dapr from "../decorators/dapr.decorator.ts";
+import * as Dapr from "../../decorators/dapr.decorator.ts";
 
 const pubSubName = "pubsub";
 
