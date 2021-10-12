@@ -2,10 +2,10 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpMethod, Router } from "../utils/Router2.ts";
+import { HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
-const router = new Router();
+export const router = new Router();
 
 interface HttpServerOptions {
   schema?: string;
@@ -84,20 +84,15 @@ export const Get = (
 export const DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
 export const DEFAULT_SERVER_PORT = 8080;
 
-interface Newable<T> {
-  new (...args: any[]): T;
-}
-
 export interface ServeOptions {
   hostname?: string;
   port?: number;
-  controllers?: Newable<any>[];
+  controllers?: Function[];
 }
 
 export const serve = async (
   options: ServeOptions,
 ) => {
-  options.controllers?.map((controller) => new controller());
   for await (
     const conn of Deno.listen({
       port: options.port ?? DEFAULT_SERVER_PORT,

@@ -2,13 +2,11 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// Based on https://github.com/steambap/koa-tree-router
-
-import Node from "../utils/tree.js";
+import _Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
 
 export type HttpMethod = "GET" | "POST";
 export type HttpResponse = { body: string; init?: ResponseInit };
-export type HttpFunction = (params?: Object) => HttpResponse;
+export type HttpFunction = (params?: any) => HttpResponse | Promise<HttpResponse>;
 
 const NOT_ALLOWED_RESPONSE: HttpResponse = {
   body: "",
@@ -16,18 +14,22 @@ const NOT_ALLOWED_RESPONSE: HttpResponse = {
 };
 
 export class Router {
-  private methods = {} as { [id: string]: Node };
+  #router = new _Router();
 
-  add(method: HttpMethod, path: string, handler: HttpFunction) {
-    if (!this.methods[method]) this.methods[method] = new Node();
-    this.methods[method].addRoute(path, handler, true);
+  add(
+    method: HttpMethod,
+    pathname: string,
+    handler: HttpFunction,
+    upsert: boolean = true,
+  ) {
+    const store = this.#router.register(pathname);
+    upsert ? store[method] = handler : store[method] ??= handler;
   }
 
-  find(method: string, path: string) {
-    const node = this.methods[method];
-    const res = node?.search(path);
+  find(method: string, pathname: string) {
+    const res = this.#router.find(pathname);
     return {
-      handler: res?.handle as HttpFunction || (() => {
+      handler: res?.store[method] || (() => {
         return NOT_ALLOWED_RESPONSE;
       }),
       params: res?.params,

@@ -10,7 +10,7 @@ import {
 } from "./decorators/httpserver.decorator.ts";
 
 @HttpServer({ schema: "api.yaml" })
-class HttpServerController {
+class ServerController {
   @Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
@@ -38,4 +38,4 @@ class HttpServerController {
 }
 
 console.log("Server started...");
-serve({ controllers: [HttpServerController] });
+serve({ controllers: [ServerController] });
