@@ -28,6 +28,11 @@ class DaprClient {
   topicC(raw: any) {
     console.log("topicC =>", raw);
   }
+
+  @Dapr.Bind("tweets")
+  tweets({ text }: { text: string }) {
+    console.log(text);
+  }
 }
 
 console.log("Dapr app started...");

@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import * as Http from "./httpserver.decorator.ts";
+import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
 
@@ -29,13 +30,33 @@ export const Subscribe = (
       `/${subscription.route}`,
       async ({ request }: { request: Request }) => {
         descriptor.value(await request.json());
-        return {
-          body: JSON.stringify({ success: "true" }),
-          init: { headers: { "content-type": "application/json" } },
-        };
+        return HTTP_RESPONSE_200;
       },
     );
     subscriptions.push(subscription);
+  };
+
+export const Bind = (
+  name: string,
+): MethodDecorator =>
+  (
+    target: Object,
+    propertyKey: string | Symbol,
+    descriptor: TypedPropertyDescriptor<any>,
+  ): void => {
+    Http.router.add(
+      "OPTIONS",
+      `/${name}`,
+      () => HTTP_RESPONSE_200,
+    );
+    Http.router.add(
+      "POST",
+      `/${name}`,
+      async ({ request }: { request: Request }) => {
+        descriptor.value(await request.json());
+        return HTTP_RESPONSE_200
+      },
+    );
   };
 
 export const start = (controllers: Function[]) => {

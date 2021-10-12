@@ -1,2 +1,2 @@
 .DS_Store
-./examples/dapr/twitter-example.yaml
+/examples/dapr/components/twitter.yaml

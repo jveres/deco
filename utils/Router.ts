@@ -4,11 +4,16 @@
 
 import _Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
 
-export type HttpMethod = "GET" | "POST";
+export type HttpMethod = "GET" | "POST" | "OPTIONS";
 export type HttpResponse = { body: string; init?: ResponseInit };
 export type HttpFunction = (params?: any) => HttpResponse | Promise<HttpResponse>;
 
-const NOT_ALLOWED_RESPONSE: HttpResponse = {
+export const HTTP_RESPONSE_200: HttpResponse = {
+  body: "",
+  init: { status: 200 },
+};
+
+export const HTTP_RESPONSE_405: HttpResponse = {
   body: "",
   init: { status: 405 },
 };
@@ -30,7 +35,7 @@ export class Router {
     const res = this.#router.find(pathname);
     return {
       handler: res?.store[method] || (() => {
-        return NOT_ALLOWED_RESPONSE;
+        return HTTP_RESPONSE_405;
       }),
       params: res?.params,
     };
