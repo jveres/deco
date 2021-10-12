@@ -3,37 +3,41 @@
 // license that can be found in the LICENSE file.
 
 // Run the example:
-//    dapr --app-id deno-app --app-port 3000 run -- deno run -A --unstable --watch example_dapr.ts
+//    dapr --app-id deco-app --app-port 3000 --components-path components run -- deno run -A --unstable --watch example_dapr.ts
 // Start Dapr sidecar in local environment:
 //    dapr run --app-id sidecar --dapr-http-port 3500
 // Publish messages through the sidecar:
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic A --data '{"data": "message for topic A"}'
 
-import * as Dapr from "../../decorators/dapr.decorator.ts";
+import {
+  Bind,
+  publish,
+  start,
+  Subscribe,
+} from "../../decorators/dapr.decorator.ts";
 
 const pubSubName = "pubsub";
 
-class DaprClient {
-  @Dapr.Subscribe({ pubSubName, topic: "A" })
+class DaprApp {
+  @Subscribe({ pubSubName, topic: "A" })
   topicA({ data }: { data: any }) {
     console.log("topicA =>", data);
   }
 
-  @Dapr.Subscribe({ pubSubName, topic: "B" })
-  topicB({ data }: { data: any }) {
-    console.log("topicB =>", data);
-  }
-
-  @Dapr.Subscribe({ pubSubName, topic: "C", metadata: { rawPayload: "true" } })
+  @Subscribe({ pubSubName, topic: "B", metadata: { rawPayload: "true" } })
   topicC(raw: any) {
-    console.log("topicC =>", raw);
+    console.log("topicB =>", raw);
   }
 
-  @Dapr.Bind("tweets")
+  @Bind("tweets")
   tweets({ text }: { text: string }) {
-    console.log(text);
+    publish({
+      data: { text },
+      pubSubName,
+      topic: "A",
+    });
   }
 }
 
 console.log("Dapr app started...");
-Dapr.start([DaprClient]);
+start({ appPort: 3000, daprPort: 3500, controllers: [DaprApp] });
