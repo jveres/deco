@@ -7,7 +7,7 @@ import {
   HttpServer,
   Post,
   serve,
-} from "./decorators/httpserver.decorator.ts";
+} from "../decorators/httpserver.decorator.ts";
 
 @HttpServer({ schema: "api.yaml" })
 class ServerController {

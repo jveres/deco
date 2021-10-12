@@ -2,19 +2,26 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import * as Dapr from "./decorators/dapr.decorator.ts";
+// dapr --app-id deno-app --app-port 3000 run -- deno run -A --unstable --watch example_dapr.ts
+
+import * as Dapr from "../decorators/dapr.decorator.ts";
 
 const pubSubName = "pubsub";
 
 class DaprClient {
   @Dapr.Subscribe({ pubSubName, topic: "A" })
-  async topicA({ data }: { data: any }) {
+  topicA({ data }: { data: any }) {
     console.log("topicA =>", data);
   }
 
   @Dapr.Subscribe({ pubSubName, topic: "B" })
-  async topicB({ data }: { data: any }) {
+  topicB({ data }: { data: any }) {
     console.log("topicB =>", data);
+  }
+
+  @Dapr.Subscribe({ pubSubName, topic: "C", metadata: { rawPayload: "true" } })
+  topicC(raw: any) {
+    console.log("topicC =>", raw);
   }
 }
 

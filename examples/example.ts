@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { RateLimitError } from "./decorators/ratelimit.decorator.ts";
+import { RateLimitError } from "../decorators/ratelimit.decorator.ts";
 import {
   BackOffPolicy,
   Concurrency,
@@ -15,7 +15,7 @@ import {
   Timeout,
   Trace,
   Try,
-} from "./mod.ts";
+} from "../mod.ts";
 
 class Example {
   @Trace()

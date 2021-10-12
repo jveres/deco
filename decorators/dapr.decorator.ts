@@ -10,6 +10,7 @@ interface Subscription {
   pubSubName: string;
   topic: string;
   route?: string;
+  metadata?: {};
 }
 
 const subscriptions: Subscription[] = [];
@@ -29,7 +30,7 @@ export const Subscribe = (
       async ({ request }: { request: Request }) => {
         descriptor.value(await request.json());
         return {
-          body: JSON.stringify({ success: true }),
+          body: JSON.stringify({ success: "true" }),
           init: { headers: { "content-type": "application/json" } },
         };
       },
