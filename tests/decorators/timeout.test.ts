@@ -3,9 +3,9 @@
 // license that can be found in the LICENSE file.
 
 import { Timeout } from "../../decorators/timeout.decorator.ts";
-import { assertThrowsAsync } from "https://deno.land/std@0.110.0/testing/asserts.ts";
+import { assertThrowsAsync } from "https://deno.land/std@0.111.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
-import { setColorEnabled } from "https://deno.land/std@0.110.0/fmt/colors.ts";
+import { setColorEnabled } from "https://deno.land/std@0.111.0/fmt/colors.ts";
 
 class SomeClass {
   @Timeout(1000)

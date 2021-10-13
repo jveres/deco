@@ -1,5 +1,5 @@
-import { parse as yamlParse } from "https://deno.land/std@0.110.0/encoding/yaml.ts";
-import * as path from "https://deno.land/std@0.110.0/path/mod.ts";
+import { parse as yamlParse } from "https://deno.land/std@0.111.0/encoding/yaml.ts";
+import * as path from "https://deno.land/std@0.111.0/path/mod.ts";
 
 import {
   transformOas3Operation,
