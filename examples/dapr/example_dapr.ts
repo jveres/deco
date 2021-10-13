@@ -11,6 +11,7 @@
 
 import {
   Bind,
+  binding,
   publish,
   start,
   Subscribe,
@@ -18,19 +19,37 @@ import {
 
 const pubSubName = "pubsub";
 
+const TELEGRAM_CHATID = Deno.env.get("TELEGRAM_CHATID");
+const TELEGRAM_TOKEN = Deno.env.get("TELEGRAM_TOKEN");
+
 class DaprApp {
   @Subscribe({ pubSubName, topic: "A" })
   topicA({ data }: { data: any }) {
     console.log("topicA =>", data);
   }
 
-  @Subscribe({ pubSubName, topic: "B", metadata: { rawPayload: "true" } })
+  @Subscribe({ pubSubName, topic: "B" })
+  topicB({ data }: { data: any }) {
+    console.log("topicB =>", data);
+    // deno-fmt-ignore
+    if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
+      const { text } = data;
+      const path = `/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHATID}&text=${text}`;
+      binding({
+        name: "telegram",
+        operation: "get",
+        metadata: { path },
+      });
+    }
+  }
+
+  @Subscribe({ pubSubName, topic: "C", metadata: { rawPayload: "true" } })
   topicC(raw: any) {
-    console.log("topicB =>", raw);
+    console.log("topicC =>", raw);
   }
 
   @Bind("tweets")
-  tweets({ text }: { text: string }) {
+  async tweets({ text }: { text: any }) {
     publish({
       data: { text },
       pubSubName,
@@ -40,4 +59,4 @@ class DaprApp {
 }
 
 console.log("Dapr app started...");
-start({ appPort: 3000, daprPort: 3500, controllers: [DaprApp] });
+start({ appPort: 3000, controllers: [DaprApp] });

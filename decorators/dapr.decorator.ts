@@ -84,15 +84,30 @@ export const publish = async (options: PublishData) => {
   );
 };
 
+interface BindingData {
+  name: string;
+  data?: any;
+  metadata?: {};
+  operation?: string;
+}
+
+export const binding = async (options: BindingData) => {
+  // deno-fmt-ignore
+  const url = `http://localhost:${daprPort}/v1.0/bindings/${options.name}`;
+  console.log(url);
+  return fetch(
+    url,
+    { method: "POST", body: JSON.stringify({ ...options }) },
+  );
+};
+
 interface startOptions {
   appPort?: number;
-  daprPort?: number;
   controllers: Function[];
 }
 
 export const start = (options: startOptions) => {
   appPort = options.appPort ?? DEFAULT_DAPR_APP_PORT;
-  daprPort = options.daprPort ?? DEFAULT_DAPR_HTTP_PORT;
   router.add("GET", "/dapr/subscribe", () => {
     return {
       body: JSON.stringify(subscriptions),
