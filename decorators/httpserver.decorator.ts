@@ -13,23 +13,9 @@ interface HttpServerOptions {
   schema?: string;
 }
 
-const addToRouter = (
-  method: HttpMethod,
-  path: string,
-  action: HttpFunction,
-  upsert = true,
-) => {
-  router.add(
-    method,
-    path,
-    action,
-    upsert,
-  );
-};
-
 export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
   (
-    _target: Function,
+    target: Function,
   ): void => {
     (async () => {
       if (options.schema) {
@@ -46,37 +32,59 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
             "text/plain";
           const headers = { "content-type": mime };
           const init: ResponseInit = { status, headers };
-          addToRouter(method as HttpMethod, path, () => {
-            return {
-              body: examples[Math.floor(Math.random() * examples.length)],
-              init,
-            };
-          }, false);
+          addToRouter(
+            method as HttpMethod,
+            path,
+            () => {
+              return {
+                body: examples[Math.floor(Math.random() * examples.length)],
+                init,
+              };
+            },
+            target,
+            false,
+          );
         }
       }
     })();
   };
 
+const addToRouter = (
+  method: HttpMethod,
+  path: string,
+  handler: HttpFunction,
+  object: Object,
+  upsert = true,
+) => {
+  const target = Reflect.construct(object.constructor, []);
+  router.add(
+    method,
+    path,
+    { handler, target },
+    upsert,
+  );
+};
+
 export const Get = (
   path = "/",
 ): MethodDecorator =>
   (
-    _target: Object,
+    target: Object,
     _propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
-    addToRouter("GET", path, descriptor.value);
+    addToRouter("GET", path, descriptor.value, target);
   };
 
 export const Post = (
   path = "/",
 ): MethodDecorator =>
   (
-    _target: Object,
+    target: Object,
     _propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
-    addToRouter("POST", path, descriptor.value);
+    addToRouter("POST", path, descriptor.value, target);
   };
 
 export const DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
@@ -85,7 +93,7 @@ export const DEFAULT_SERVER_PORT = 8080;
 export interface ServeConfig {
   hostname?: string;
   port?: number;
-  controller: object;
+  controllers: Object[];
 }
 
 export const serve = async (
@@ -104,9 +112,10 @@ export const serve = async (
           http.request.method,
           url.pathname,
         );
-        const { body, init } = await action.apply(config.controller, [
-          { ...params, url, request: http.request },
-        ]);
+        const { body, init } = await action.handler.apply(
+          action.target,
+          [{ ...params, url, request: http.request }],
+        );
         http.respondWith(new Response(body, init)).catch(() => {});
       }
     })();

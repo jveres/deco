@@ -38,4 +38,4 @@ class ServerController {
 }
 
 console.log("Server started...");
-serve({ controller: ServerController });
+serve({ controllers: [ServerController] });
