@@ -24,12 +24,12 @@ const TELEGRAM_TOKEN = Deno.env.get("TELEGRAM_TOKEN");
 
 class DaprApp {
   @Subscribe({ pubSubName, topic: "A" })
-  topicA({ data }: { data: any }) {
+  topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
   @Subscribe({ pubSubName, topic: "B" })
-  topicB({ data }: { data: any }) {
+  topicB({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     // deno-fmt-ignore
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
@@ -44,12 +44,12 @@ class DaprApp {
   }
 
   @Subscribe({ pubSubName, topic: "C", metadata: { rawPayload: "true" } })
-  topicC(raw: any) {
+  topicC(raw: Record<string, unknown>) {
     console.log("topicC =>", raw);
   }
 
   @Bind("tweets")
-  async tweets({ text }: { text: any }) {
+  tweets({ text }: { text: Record<string, unknown> }) {
     publish({
       data: { text },
       pubSubName,
