@@ -94,7 +94,6 @@ interface BindingData {
 export const binding = async (options: BindingData) => {
   // deno-fmt-ignore
   const url = `http://localhost:${daprPort}/v1.0/bindings/${options.name}`;
-  console.log(url);
   return fetch(
     url,
     { method: "POST", body: JSON.stringify({ ...options }) },

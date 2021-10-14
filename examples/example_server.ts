@@ -35,6 +35,20 @@ class ServerController {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
     };
   }
+
+  @Get("/grip")
+  stream({ request }: { request: Request }) {
+    return {
+      body: "hello\n",
+      init: {
+        headers: {
+          "content-type": "text/event-stream",
+          "grip-hold": "stream",
+          "grip-channel": "stream",
+        },
+      },
+    };
+  }
 }
 
 console.log("Server started...");

@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file no-explicit-any ban-types
 
 import { Denque } from "../utils/utils.ts";
 
@@ -18,15 +18,14 @@ const DEFAULT_RATE_INTERVAL_MS = 1000;
 
 export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
   (
-    target: Object,
-    propertyKey: string | Symbol,
+    _target: Object,
+    _propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalFn = descriptor.value;
     const queue = new Denque();
 
     const getCurrentRate = (): number => {
-      const now = Date.now();
       while (
         queue.peekFront() &&
         (Date.now() - queue.peekFront() >

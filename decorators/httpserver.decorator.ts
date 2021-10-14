@@ -2,7 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpMethod, Router } from "../utils/Router.ts";
+// deno-lint-ignore-file ban-types no-explicit-any
+
+import { HttpFunction, HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 export const router = new Router();
@@ -11,14 +13,27 @@ interface HttpServerOptions {
   schema?: string;
 }
 
+const addToRouter = (
+  method: HttpMethod,
+  path: string,
+  action: HttpFunction,
+  upsert = true,
+) => {
+  router.add(
+    method,
+    path,
+    action,
+    upsert,
+  );
+};
+
 export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
   (
-    target: Function,
+    _target: Function,
   ): void => {
     (async () => {
       if (options.schema) {
         const api = await loadOpenApiSpecification(options.schema);
-        //console.log(api);
         for (const endpoint of api) {
           const examples: string[] = [];
           endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
@@ -29,84 +44,69 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
           const status = parseInt(endpoint.responses?.[0]?.code) || 200;
           const mime = endpoint.responses?.[0]?.contents?.[0].mediaType ||
             "text/plain";
-          const body =
-            endpoint.responses?.[0]?.contents?.[0]?.examples?.[0]?.value ||
-            "Hello from mock endpoint.";
           const headers = { "content-type": mime };
           const init: ResponseInit = { status, headers };
-          router.add(
-            method as HttpMethod,
-            path,
-            (() => {
-              return {
-                body: examples[Math.floor(Math.random() * examples.length)],
-                init,
-              };
-            }),
-            false,
-          );
+          addToRouter(method as HttpMethod, path, () => {
+            return {
+              body: examples[Math.floor(Math.random() * examples.length)],
+              init,
+            };
+          }, false);
         }
       }
     })();
   };
 
 export const Get = (
-  path: string = "/",
+  path = "/",
 ): MethodDecorator =>
   (
-    target: Object,
-    propertyKey: string | Symbol,
+    _target: Object,
+    _propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
-    router.add(
-      "GET",
-      path,
-      descriptor.value,
-    );
+    addToRouter("GET", path, descriptor.value);
   };
 
-  export const Post = (
-    path: string = "/",
-  ): MethodDecorator =>
-    (
-      target: Object,
-      propertyKey: string | Symbol,
-      descriptor: TypedPropertyDescriptor<any>,
-    ): void => {
-      router.add(
-        "POST",
-        path,
-        descriptor.value,
-      );
-    };
-
+export const Post = (
+  path = "/",
+): MethodDecorator =>
+  (
+    _target: Object,
+    _propertyKey: string | Symbol,
+    descriptor: TypedPropertyDescriptor<any>,
+  ): void => {
+    addToRouter("POST", path, descriptor.value);
+  };
 
 export const DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
 export const DEFAULT_SERVER_PORT = 8080;
 
-export interface ServeOptions {
+export interface ServeConfig {
   hostname?: string;
   port?: number;
-  controllers?: Function[];
+  controller: object;
 }
 
 export const serve = async (
-  options: ServeOptions,
+  config: ServeConfig,
 ) => {
   for await (
     const conn of Deno.listen({
-      port: options.port ?? DEFAULT_SERVER_PORT,
-      hostname: options.hostname ?? DEFAULT_SERVER_HOSTNAME,
+      port: config.port ?? DEFAULT_SERVER_PORT,
+      hostname: config.hostname ?? DEFAULT_SERVER_HOSTNAME,
     })
   ) {
     (async () => {
       for await (const http of Deno.serveHttp(conn)) {
         const url = new URL(http.request.url);
-        const { handler, params } = router.find(
+        const { action, params } = router.find(
           http.request.method,
           url.pathname,
         );
-        const { body, init } = await handler({ ...params, url, request: http.request});
+        const { body, init } = await action.apply(config.controller, [
+          { ...params, url, request: http.request },
+        ]);
         http.respondWith(new Response(body, init)).catch(() => {});
       }
     })();
