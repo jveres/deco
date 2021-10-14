@@ -11,7 +11,7 @@ export type HttpResponse = { body: string; init?: ResponseInit };
 export type HttpFunction = (
   params?: any,
 ) => HttpResponse | Promise<HttpResponse>;
-export type HttpAction = { handler: HttpFunction; target: Function };
+export type HttpAction = { handler: HttpFunction; target: Function | undefined };
 
 export const HTTP_RESPONSE_200: HttpResponse = {
   body: "",

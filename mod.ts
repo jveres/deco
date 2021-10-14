@@ -1,3 +1,7 @@
+// Copyright 2020 Janos Veres. All rights reserved.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file.
+
 export * from "./decorators/concurrency.decorator.ts";
 export * from "./decorators/memoize.decorator.ts";
 export * from "./decorators/retry.decorator.ts";

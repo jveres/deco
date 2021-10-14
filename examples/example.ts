@@ -121,7 +121,7 @@ class Example {
       console.log("done");
     },
   })
-  async tryCatchTest(flip: boolean): Promise<void> {
+  tryCatchTest(flip: boolean): Promise<void> {
     if (flip) throw TypeError("type error");
     else throw "broken pipe error";
   }

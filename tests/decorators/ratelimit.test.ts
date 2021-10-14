@@ -11,13 +11,13 @@ class SomeClass {
 
   @RateLimit()
   async asyncMethodTest1(ms: number) {
-    sleep(ms);
+    await sleep(ms);
     this.count++;
   }
 
   @RateLimit({ rate: 1, interval: 1000 })
   async asyncMethodTest2(ms: number) {
-    sleep(ms);
+    await sleep(ms);
     this.count++;
   }
 }
@@ -30,7 +30,7 @@ Deno.test({
     for (let i = 0; i < 10; ++i) {
       try {
         await c.asyncMethodTest1(100);
-      } catch {}
+      } catch {(_: unknown) => {}}
     }
     assertEquals(c.count, 1);
   },
@@ -44,7 +44,7 @@ Deno.test({
     for (let i = 0; i < 2; ++i) {
       try {
         await c.asyncMethodTest2(100);
-      } catch {}
+      } catch {(_: unknown) => {}}
     }
     assertEquals(c.count, 1);
   },

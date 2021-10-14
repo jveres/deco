@@ -13,6 +13,22 @@ interface HttpServerOptions {
   schema?: string;
 }
 
+const addToRouter = (
+  method: HttpMethod,
+  path: string,
+  handler: HttpFunction,
+  object: Object,
+  upsert = true,
+) => {
+  const target = Reflect.construct(object.constructor, []);
+  router.add(
+    method,
+    path,
+    { handler, target },
+    upsert,
+  );
+};
+
 export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
   (
     target: Function,
@@ -49,22 +65,6 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
     })();
   };
 
-const addToRouter = (
-  method: HttpMethod,
-  path: string,
-  handler: HttpFunction,
-  object: Object,
-  upsert = true,
-) => {
-  const target = Reflect.construct(object.constructor, []);
-  router.add(
-    method,
-    path,
-    { handler, target },
-    upsert,
-  );
-};
-
 export const Get = (
   path = "/",
 ): MethodDecorator =>
@@ -90,10 +90,14 @@ export const Post = (
 export const DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
 export const DEFAULT_SERVER_PORT = 8080;
 
+export interface Newable<T> {
+  new (...args: any[]): T;
+}
+
 export interface ServeConfig {
   hostname?: string;
   port?: number;
-  controllers: Object[];
+  controllers: Newable<any>[];
 }
 
 export const serve = async (

@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import {
   assertEquals,
   assertNotEquals,
@@ -35,7 +37,7 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    let calls: any = [];
+    const calls: any = [];
     const fn = throttle((arg: any) => calls.push(arg), 100);
     fn(1);
     await sleep(50);
@@ -62,7 +64,7 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    let calls: any = [];
+    const calls: any = [];
     const fn = debounce((arg: any) => calls.push(arg), 100);
     fn(1);
     fn(2);

@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file no-explicit-any ban-types
 
 import { sleep } from "../utils/utils.ts";
 import * as Colors from "https://deno.land/std@0.111.0/fmt/colors.ts";
@@ -34,7 +34,7 @@ export const Retry = (
   options: RetryOptions = { maxAttempts: DEFAULT_MAX_ATTEMPTS },
 ): MethodDecorator =>
   (
-    target: Object,
+    _target: Object,
     propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {

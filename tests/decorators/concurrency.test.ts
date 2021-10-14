@@ -2,12 +2,14 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import { Concurrency } from "../../decorators/concurrency.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.111.0/testing/asserts.ts";
 
 class SomeClass {
   @Concurrency()
-  static async doSomething(arg: any) {
+  static doSomething(arg: any) {
     return arg;
   }
 
@@ -17,14 +19,14 @@ class SomeClass {
       return `${arg}`;
     },
   })
-  static async doSomething1(arg: number) {
+  static doSomething1(arg: number) {
     return arg;
   }
 
   @Concurrency({
     max: 3,
   })
-  static async doSomething2(arg: number) {
+  static doSomething2(arg: number) {
     return arg;
   }
 }

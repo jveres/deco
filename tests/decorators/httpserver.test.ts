@@ -15,7 +15,7 @@ const message = "Hello from Deco!";
 class HttpController {
   @Get("/")
   get() {
-    return message;
+    return { body: message };
   }
 }
 

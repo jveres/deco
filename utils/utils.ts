@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js";
 import _throttle from "https://cdn.skypack.dev/pin/lodash.throttle@v4.1.1-F50y3ZtJgnO9CirUfqrt/mode=imports,min/optimized/lodash.throttle.js";
 import _debounce from "https://cdn.skypack.dev/pin/lodash.debounce@v4.0.8-aOLIwnE2RethWPrEzTeR/mode=imports,min/optimized/lodash.debounce.js";

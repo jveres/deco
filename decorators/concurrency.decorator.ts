@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file no-explicit-any ban-types
 
 interface ConcurrencyOptions {
   max: number;
@@ -19,7 +19,7 @@ export const Concurrency = (
   options: ConcurrencyOptions = { max: 1 },
 ): MethodDecorator =>
   (
-    target: Object,
+    _target: Object,
     propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {

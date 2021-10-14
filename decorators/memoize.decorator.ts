@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file no-explicit-any ban-types
 
 import { LruCache } from "../utils/utils.ts";
 
@@ -15,8 +15,8 @@ interface MemoizeOptions {
 
 export const Memoize = (options?: MemoizeOptions): MethodDecorator =>
   (
-    target: Object,
-    propertyKey: string | Symbol,
+    _target: Object,
+    _propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalFn = descriptor.value;

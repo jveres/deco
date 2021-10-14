@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import { Throttle } from "../../decorators/throttle.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.111.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
@@ -13,7 +15,7 @@ class SomeClass {
   }
 
   @Throttle(100)
-  static async doSomething2(arg: any) {
+  static doSomething2(arg: any) {
     return arg;
   }
 

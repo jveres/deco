@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any ban-types
+
 import * as Colors from "https://deno.land/std@0.111.0/fmt/colors.ts";
 
 interface TryOptions {
@@ -13,8 +15,8 @@ interface TryOptions {
 
 export const Try = (options?: TryOptions): MethodDecorator =>
   (
-    target: Object,
-    propertyKey: string | Symbol,
+    _target: Object,
+    _propertyKey: string | Symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalFn = descriptor.value;
