@@ -9,9 +9,7 @@ import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 export const router = new Router();
 
-interface HttpServerOptions {
-  schema?: string;
-}
+const TARGET_KEY = "__target";
 
 const addToRouter = (
   method: HttpMethod,
@@ -20,7 +18,7 @@ const addToRouter = (
   object: Object,
   upsert = true,
 ) => {
-  const target = Reflect.construct(object.constructor, []);
+  const target = Reflect.get(object, TARGET_KEY);
   router.add(
     method,
     path,
@@ -29,10 +27,17 @@ const addToRouter = (
   );
 };
 
+export interface HttpServerOptions {
+  schema?: string;
+}
+
 export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
   (
     target: Function,
   ): void => {
+    Reflect.defineProperty(target, TARGET_KEY, {
+      value: Reflect.construct(target, [])
+    });
     (async () => {
       if (options.schema) {
         const api = await loadOpenApiSpecification(options.schema);
