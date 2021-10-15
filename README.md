@@ -6,11 +6,11 @@ Decorators for Deno
 
 ### Running example
 
-`deno run example.ts`
+`deno run examples/example.ts`
 
 ### Running tests
 
-`deno test`
+`deno test --allow-net`
 
 ### Usage examples
 

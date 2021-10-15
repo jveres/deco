@@ -9,13 +9,16 @@ import {
 } from "../../decorators/httpserver.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.111.0/testing/asserts.ts";
 
-const message = "Hello from Deco!";
+const MESSAGE = "Hello from Deco!";
 
 @HttpServer()
 class HttpController {
+  
+  #message = MESSAGE;
+  
   @Get("/")
   get() {
-    return { body: message };
+    return { body: this.#message };
   }
 }
 
@@ -28,6 +31,6 @@ Deno.test({
     serve({ port, controllers: [HttpController] });
     const resp = await fetch(`http://localhost:${port}`);
     const text = await resp.text();
-    assertEquals(text, message);
+    assertEquals(text, MESSAGE);
   },
 });
