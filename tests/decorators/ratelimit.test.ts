@@ -30,7 +30,7 @@ Deno.test({
     for (let i = 0; i < 10; ++i) {
       try {
         await c.asyncMethodTest1(100);
-      } catch {(_: unknown) => {}}
+      } catch {() => {}}
     }
     assertEquals(c.count, 1);
   },
@@ -44,7 +44,7 @@ Deno.test({
     for (let i = 0; i < 2; ++i) {
       try {
         await c.asyncMethodTest2(100);
-      } catch {(_: unknown) => {}}
+      } catch {() => {}}
     }
     assertEquals(c.count, 1);
   },
