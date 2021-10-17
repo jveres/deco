@@ -12,9 +12,6 @@ import {
 @HttpServer({ schema: "api.yaml" })
 class ServerController {
 
-  constructor() {
-    console.log("ctr")
-  }
   @Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
@@ -34,7 +31,7 @@ class ServerController {
   }
 
   @Get("/static/*")
-  assets({ "*": path }: { "*": string }) {
+  static({ "*": path }: { "*": string }) {
     return {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
     };

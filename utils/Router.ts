@@ -11,35 +11,36 @@ export type HttpResponse = { body?: string; init?: ResponseInit };
 export type HttpFunction = (
   params?: any,
 ) => HttpResponse | Promise<HttpResponse>;
-export type HttpAction = { handler: HttpFunction; object: Object | undefined };
+export type HttpAction = { handler: HttpFunction; target: Object | undefined };
 
 export const HTTP_RESPONSE_200: HttpResponse = {
   init: { status: 200 },
 };
 
-export const HTTP_RESPONSE_405: HttpResponse = { 
+export const HTTP_RESPONSE_405: HttpResponse = {
   init: { status: 405 },
 };
 
 export class Router {
   #router = new _Router();
 
-  add(
-    method: HttpMethod,
-    pathname: string,
-    action: HttpAction,
-    upsert = true,
-  ) {
-    const store = this.#router.register(pathname);
+  add({ method, path, action }: {
+    method: HttpMethod;
+    path: string;
+    action: HttpAction;
+  }, upsert = true) {
+    const store = this.#router.register(path);
     upsert ? store[method] = action : store[method] ??= action;
   }
 
   find(method: string, pathname: string) {
     const res = this.#router.find(pathname);
     return {
-      action: res?.store[method] || { handler: (() => {
-        return HTTP_RESPONSE_405;
-      }), object: undefined},
+      action: res?.store[method] || {
+        handler: (() => {
+          return HTTP_RESPONSE_405;
+        }),
+      },
       params: res?.params,
     };
   }
