@@ -34,14 +34,16 @@ export const Subscribe = (
   ): void => {
     subscription.route ??= subscription.topic;
     router.add(
-      "POST",
-      `/${subscription.route}`,
       {
-        handler: async ({ request }: { request: Request }) => {
-          descriptor.value(await request.json());
-          return HTTP_RESPONSE_200;
+        method: "POST",
+        path: `/${subscription.route}`,
+        action: {
+          handler: async ({ request }: { request: Request }) => {
+            descriptor.value(await request.json());
+            return HTTP_RESPONSE_200;
+          },
+          target: target.constructor,
         },
-        target: target.constructor,
       },
     );
     subscriptions.push(subscription);
@@ -56,19 +58,26 @@ export const Bind = (
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     router.add(
-      "OPTIONS",
-      `/${name}`,
-      { handler: () => HTTP_RESPONSE_200, target: target.constructor },
+      {
+        method: "OPTIONS",
+        path: `/${name}`,
+        action: {
+          handler: () => HTTP_RESPONSE_200,
+          target: target.constructor,
+        },
+      },
     );
     router.add(
-      "POST",
-      `/${name}`,
       {
-        handler: async ({ request }: { request: Request }) => {
-          descriptor.value(await request.json());
-          return HTTP_RESPONSE_200;
+        method: "POST",
+        path: `/${name}`,
+        action: {
+          handler: async ({ request }: { request: Request }) => {
+            descriptor.value(await request.json());
+            return HTTP_RESPONSE_200;
+          },
+          target: target.constructor,
         },
-        target: target.constructor,
       },
     );
   };
@@ -108,6 +117,46 @@ export const binding = (options: BindingData) => {
   );
 };
 
+interface SecretsGetMetadata extends Record<string, any> {
+  // deno-lint-ignore camelcase
+  version_id: string;
+}
+
+export class Secrets {
+  static async get(
+    { store, key, metadata }: {
+      store: string;
+      key: string;
+      metadata?: SecretsGetMetadata;
+    },
+  ) {
+    const url = `http://localhost:${daprPort}/v1.0/secrets/${store}/${key}` +
+      (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
+    const res = await fetch(url);
+    let ret = undefined;
+    if (res.status === 200) {
+      const secret = await res.json();
+      ret = secret[key];
+    }
+    return ret;
+  }
+
+  static async getAll(
+    store: string,
+  ) {
+    const url = `http://localhost:${daprPort}/v1.0/secrets/${store}/bulk`;
+    const res = await fetch(url);
+    const ret: Record<string, string> = {};
+    if (res.status === 200) {
+      const secrets = await res.json();
+      for (const key in secrets) {
+        ret[key] = secrets[key][key];
+      }
+    }
+    return ret;
+  }
+}
+
 interface startOptions {
   appPort?: number;
   controllers: Newable<any>[];
@@ -115,14 +164,17 @@ interface startOptions {
 
 export const start = (options: startOptions) => {
   appPort = options.appPort ?? DEFAULT_DAPR_APP_PORT;
-  router.add("GET", "/dapr/subscribe", {
-    handler: () => {
-      return {
-        body: JSON.stringify(subscriptions),
-        init: { headers: { "content-type": "application/*+json" } },
-      };
+  router.add({
+    method: "GET",
+    path: "/dapr/subscribe",
+    action: {
+      handler: () => {
+        return {
+          body: JSON.stringify(subscriptions),
+          init: { headers: { "content-type": "application/*+json" } },
+        };
+      },
     },
-    target: undefined,
   });
   serve({ port: appPort, controllers: options.controllers });
 };
