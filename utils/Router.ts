@@ -7,19 +7,17 @@
 import _Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS";
-export type HttpResponse = { body: string; init?: ResponseInit };
+export type HttpResponse = { body?: string; init?: ResponseInit };
 export type HttpFunction = (
   params?: any,
 ) => HttpResponse | Promise<HttpResponse>;
-export type HttpAction = { handler: HttpFunction; target: Function | undefined };
+export type HttpAction = { handler: HttpFunction; object: Object | undefined };
 
 export const HTTP_RESPONSE_200: HttpResponse = {
-  body: "",
   init: { status: 200 },
 };
 
-export const HTTP_RESPONSE_405: HttpResponse = {
-  body: "",
+export const HTTP_RESPONSE_405: HttpResponse = { 
   init: { status: 405 },
 };
 
@@ -41,7 +39,7 @@ export class Router {
     return {
       action: res?.store[method] || { handler: (() => {
         return HTTP_RESPONSE_405;
-      }), target: undefined},
+      }), object: undefined},
       params: res?.params,
     };
   }

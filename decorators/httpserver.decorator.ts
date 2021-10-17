@@ -18,11 +18,10 @@ const addToRouter = (
   object: Object,
   upsert = true,
 ) => {
-  const target = Reflect.get(object, TARGET_KEY);
   router.add(
     method,
     path,
-    { handler, target },
+    { handler, object },
     upsert,
   );
 };
@@ -35,8 +34,8 @@ export const HttpServer = (options: HttpServerOptions = {}): ClassDecorator =>
   (
     target: Function,
   ): void => {
-    Reflect.defineProperty(target, TARGET_KEY, {
-      value: Reflect.construct(target, [])
+    Reflect.defineProperty(target.prototype, TARGET_KEY, {
+      value: Reflect.construct(target, []),
     });
     (async () => {
       if (options.schema) {
@@ -122,10 +121,10 @@ export const serve = async (
           url.pathname,
         );
         const { body, init } = await action.handler.apply(
-          action.target,
+          action.object && Reflect.get(action.object, TARGET_KEY),
           [{ ...params, url, request: http.request }],
         );
-        http.respondWith(new Response(body, init)).catch(() => {});
+        http.respondWith(new Response(body || "", init)).catch(() => {});
       }
     })();
   }
