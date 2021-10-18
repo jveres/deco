@@ -13,7 +13,7 @@ export const DEFAULT_DAPR_HTTP_PORT = 3500;
 let appPort = DEFAULT_DAPR_APP_PORT;
 const daprPort = Deno.env.get("DAPR_HTTP_PORT") ?? DEFAULT_DAPR_HTTP_PORT;
 
-interface SubscriptionData {
+interface PubSubSubscriptionConfig {
   pubSubName: string;
   topic: string;
   route?: string;
@@ -22,67 +22,9 @@ interface SubscriptionData {
   };
 }
 
-const subscriptions: SubscriptionData[] = [];
+const PUBSUB_SUBSCRIPTIONS: PubSubSubscriptionConfig[] = [];
 
-export const Subscribe = (
-  subscription: SubscriptionData,
-): MethodDecorator =>
-  (
-    target: Object,
-    _propertyKey: string | Symbol,
-    descriptor: TypedPropertyDescriptor<any>,
-  ): void => {
-    subscription.route ??= subscription.topic;
-    router.add(
-      {
-        method: "POST",
-        path: `/${subscription.route}`,
-        action: {
-          handler: async ({ request }: { request: Request }) => {
-            descriptor.value(await request.json());
-            return HTTP_RESPONSE_200;
-          },
-          target: target.constructor,
-        },
-      },
-    );
-    subscriptions.push(subscription);
-  };
-
-export const Bind = (
-  name: string,
-): MethodDecorator =>
-  (
-    target: Object,
-    _propertyKey: string | Symbol,
-    descriptor: TypedPropertyDescriptor<any>,
-  ): void => {
-    router.add(
-      {
-        method: "OPTIONS",
-        path: `/${name}`,
-        action: {
-          handler: () => HTTP_RESPONSE_200,
-          target: target.constructor,
-        },
-      },
-    );
-    router.add(
-      {
-        method: "POST",
-        path: `/${name}`,
-        action: {
-          handler: async ({ request }: { request: Request }) => {
-            descriptor.value(await request.json());
-            return HTTP_RESPONSE_200;
-          },
-          target: target.constructor,
-        },
-      },
-    );
-  };
-
-export interface PublishData {
+export interface PubSubPublishConfig {
   pubSubName: string;
   topic: string;
   data: any;
@@ -92,14 +34,41 @@ export interface PublishData {
   };
 }
 
-export const publish = (options: PublishData) => {
-  // deno-fmt-ignore
-  const url = `http://localhost:${daprPort}/v1.0/publish/${options.pubSubName}/${options.topic}` + (options.metadata ? ("?" + new URLSearchParams(options.metadata as any).toString()): "");
-  return fetch(
-    url,
-    { method: "POST", body: JSON.stringify(options.data) },
-  );
-};
+export class PubSub {
+  static publish = (config: PubSubPublishConfig) => {
+    // deno-fmt-ignore
+    const url = `http://localhost:${daprPort}/v1.0/publish/${config.pubSubName}/${config.topic}` + (config.metadata ? ("?" + new URLSearchParams(config.metadata as any).toString()): "");
+    return fetch(
+      url,
+      { method: "POST", body: JSON.stringify(config.data) },
+    );
+  };
+
+  static Subscribe = (
+    config: PubSubSubscriptionConfig,
+  ): MethodDecorator =>
+    (
+      target: Object,
+      _propertyKey: string | Symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      config.route ??= config.topic; // TODO: slugify
+      router.add(
+        {
+          method: "POST",
+          path: `/${config.route}`,
+          action: {
+            handler: async ({ request }: { request: Request }) => {
+              descriptor.value(await request.json());
+              return HTTP_RESPONSE_200;
+            },
+            target: target.constructor,
+          },
+        },
+      );
+      PUBSUB_SUBSCRIPTIONS.push(config);
+    };
+}
 
 interface BindingInvocationConfig {
   name: string;
@@ -116,7 +85,40 @@ export class Bindings {
       url,
       { method: "POST", body: JSON.stringify({ ...config }) },
     );
-  }  
+  }
+
+  static BindTo = (
+    name: string,
+  ): MethodDecorator =>
+    (
+      target: Object,
+      _propertyKey: string | Symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      router.add(
+        {
+          method: "OPTIONS",
+          path: `/${name}`,
+          action: {
+            handler: () => HTTP_RESPONSE_200,
+            target: target.constructor,
+          },
+        },
+      );
+      router.add(
+        {
+          method: "POST",
+          path: `/${name}`,
+          action: {
+            handler: async ({ request }: { request: Request }) => {
+              descriptor.value(await request.json());
+              return HTTP_RESPONSE_200;
+            },
+            target: target.constructor,
+          },
+        },
+      );
+    };
 }
 
 interface SecretsGetMetadata extends Record<string, any> {
@@ -166,14 +168,14 @@ interface startOptions {
 
 export const start = (options: startOptions) => {
   appPort = options.appPort ?? DEFAULT_DAPR_APP_PORT;
-  if (subscriptions.length > 0) { // TODO: move out to a function
+  if (PUBSUB_SUBSCRIPTIONS.length > 0) { // TODO: move out to a function
     router.add({
       method: "GET",
       path: "/dapr/subscribe",
       action: {
         handler: () => {
           return {
-            body: JSON.stringify(subscriptions),
+            body: JSON.stringify(PUBSUB_SUBSCRIPTIONS),
             init: { headers: { "content-type": "application/*+json" } },
           };
         },

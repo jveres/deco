@@ -14,31 +14,24 @@
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic C --data '{"raw": "raw message for topic C"}'
 
 import {
-  Bind,
   Bindings,
-  publish,
+  PubSub,
   Secrets,
   start,
-  Subscribe,
 } from "../../decorators/dapr.decorator.ts";
 
-const TELEGRAM_CHATID = await Secrets.get({
-  store: "example-secrets-store",
-  key: "TELEGRAM_CHATID",
-});
-const TELEGRAM_TOKEN = await Secrets.get({
-  store: "example-secrets-store",
-  key: "TELEGRAM_TOKEN",
-});
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
+  "example-secrets-store",
+);
 const PUBSUBNAME = "pubsub";
 
 class DaprApp {
-  @Subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
+  @PubSub.Subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
-  @Subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
+  @PubSub.Subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
   topicB({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
@@ -53,7 +46,7 @@ class DaprApp {
     }
   }
 
-  @Subscribe({
+  @PubSub.Subscribe({
     pubSubName: PUBSUBNAME,
     topic: "C",
     metadata: { rawPayload: "true" },
@@ -62,9 +55,9 @@ class DaprApp {
     console.log("topicC =>", raw);
   }
 
-  @Bind("tweets")
+  @Bindings.BindTo("tweets")
   tweets({ text }: { text: Record<string, unknown> }) {
-    publish({
+    PubSub.publish({
       data: { text },
       pubSubName: PUBSUBNAME,
       topic: "A",
