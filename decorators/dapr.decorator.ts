@@ -101,21 +101,23 @@ export const publish = (options: PublishData) => {
   );
 };
 
-interface BindingData {
+interface BindingInvocationConfig {
   name: string;
   data?: any;
   metadata?: {};
   operation?: string;
 }
 
-export const binding = (options: BindingData) => {
-  // deno-fmt-ignore
-  const url = `http://localhost:${daprPort}/v1.0/bindings/${options.name}`;
-  return fetch(
-    url,
-    { method: "POST", body: JSON.stringify({ ...options }) },
-  );
-};
+export class Bindings {
+  static invoke(config: BindingInvocationConfig) {
+    // deno-fmt-ignore
+    const url = `http://localhost:${daprPort}/v1.0/bindings/${config.name}`;
+    return fetch(
+      url,
+      { method: "POST", body: JSON.stringify({ ...config }) },
+    );
+  }  
+}
 
 interface SecretsGetMetadata extends Record<string, any> {
   // deno-lint-ignore camelcase
@@ -164,17 +166,19 @@ interface startOptions {
 
 export const start = (options: startOptions) => {
   appPort = options.appPort ?? DEFAULT_DAPR_APP_PORT;
-  router.add({
-    method: "GET",
-    path: "/dapr/subscribe",
-    action: {
-      handler: () => {
-        return {
-          body: JSON.stringify(subscriptions),
-          init: { headers: { "content-type": "application/*+json" } },
-        };
+  if (subscriptions.length > 0) { // TODO: move out to a function
+    router.add({
+      method: "GET",
+      path: "/dapr/subscribe",
+      action: {
+        handler: () => {
+          return {
+            body: JSON.stringify(subscriptions),
+            init: { headers: { "content-type": "application/*+json" } },
+          };
+        },
       },
-    },
-  });
+    });
+  }
   serve({ port: appPort, controllers: options.controllers });
 };

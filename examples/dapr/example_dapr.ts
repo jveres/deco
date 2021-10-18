@@ -15,7 +15,7 @@
 
 import {
   Bind,
-  binding,
+  Bindings,
   publish,
   Secrets,
   start,
@@ -45,7 +45,7 @@ class DaprApp {
       const { text } = data;
       const path =
         `/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHATID}&text=${text}`;
-      binding({
+      Bindings.invoke({
         name: "telegram",
         operation: "get",
         metadata: { path },
