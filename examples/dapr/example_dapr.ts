@@ -26,12 +26,12 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
 const PUBSUBNAME = "pubsub";
 
 class DaprApp {
-  @PubSub.Subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
+  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
-  @PubSub.Subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
+  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
   topicB({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
@@ -46,7 +46,7 @@ class DaprApp {
     }
   }
 
-  @PubSub.Subscribe({
+  @PubSub.subscribe({
     pubSubName: PUBSUBNAME,
     topic: "C",
     metadata: { rawPayload: "true" },
@@ -55,7 +55,7 @@ class DaprApp {
     console.log("topicC =>", raw);
   }
 
-  @Bindings.BindTo("tweets")
+  @Bindings.listenTo("tweets")
   tweets({ text }: { text: Record<string, unknown> }) {
     PubSub.publish({
       data: { text },

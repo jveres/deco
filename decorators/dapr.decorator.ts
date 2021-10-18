@@ -9,9 +9,10 @@ import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
 export const DEFAULT_DAPR_HTTP_PORT = 3500;
+export const daprPort = Deno.env.get("DAPR_HTTP_PORT") ??
+  DEFAULT_DAPR_HTTP_PORT;
 
-let appPort = DEFAULT_DAPR_APP_PORT;
-const daprPort = Deno.env.get("DAPR_HTTP_PORT") ?? DEFAULT_DAPR_HTTP_PORT;
+export let appPort = DEFAULT_DAPR_APP_PORT;
 
 interface PubSubSubscriptionConfig {
   pubSubName: string;
@@ -21,8 +22,6 @@ interface PubSubSubscriptionConfig {
     rawPayload: "true" | "false";
   };
 }
-
-const PUBSUB_SUBSCRIPTIONS: PubSubSubscriptionConfig[] = [];
 
 export interface PubSubPublishConfig {
   pubSubName: string;
@@ -35,6 +34,8 @@ export interface PubSubPublishConfig {
 }
 
 export class PubSub {
+  static readonly subscriptions: PubSubSubscriptionConfig[] = [];
+
   static publish = (config: PubSubPublishConfig) => {
     // deno-fmt-ignore
     const url = `http://localhost:${daprPort}/v1.0/publish/${config.pubSubName}/${config.topic}` + (config.metadata ? ("?" + new URLSearchParams(config.metadata as any).toString()): "");
@@ -44,7 +45,7 @@ export class PubSub {
     );
   };
 
-  static Subscribe = (
+  static subscribe = (
     config: PubSubSubscriptionConfig,
   ): MethodDecorator =>
     (
@@ -66,7 +67,7 @@ export class PubSub {
           },
         },
       );
-      PUBSUB_SUBSCRIPTIONS.push(config);
+      PubSub.subscriptions.push(config);
     };
 }
 
@@ -87,7 +88,7 @@ export class Bindings {
     );
   }
 
-  static BindTo = (
+  static listenTo = (
     name: string,
   ): MethodDecorator =>
     (
@@ -161,26 +162,26 @@ export class Secrets {
   }
 }
 
-interface startOptions {
+interface StartConfig {
   appPort?: number;
   controllers: Newable<any>[];
 }
 
-export const start = (options: startOptions) => {
-  appPort = options.appPort ?? DEFAULT_DAPR_APP_PORT;
-  if (PUBSUB_SUBSCRIPTIONS.length > 0) { // TODO: move out to a function
+export const start = (config: StartConfig) => {
+  appPort = config.appPort ?? DEFAULT_DAPR_APP_PORT;
+  if (PubSub.subscriptions.length > 0) { // TODO: move out to a function
     router.add({
       method: "GET",
       path: "/dapr/subscribe",
       action: {
         handler: () => {
           return {
-            body: JSON.stringify(PUBSUB_SUBSCRIPTIONS),
+            body: JSON.stringify(PubSub.subscriptions),
             init: { headers: { "content-type": "application/*+json" } },
           };
         },
       },
     });
   }
-  serve({ port: appPort, controllers: options.controllers });
+  serve({ port: appPort, controllers: config.controllers });
 };
