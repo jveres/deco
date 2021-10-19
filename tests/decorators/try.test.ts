@@ -7,7 +7,7 @@ import {
   assert,
   assertEquals,
   assertThrowsAsync,
-} from "https://deno.land/std@0.111.0/testing/asserts.ts";
+} from "https://deno.land/std@0.112.0/testing/asserts.ts";
 import { setColorEnabled } from "https://deno.land/std@0.111.0/fmt/colors.ts";
 
 class SomeClass {
