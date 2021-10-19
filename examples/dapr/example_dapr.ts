@@ -15,9 +15,9 @@
 
 import {
   Bindings,
+  Dapr,
   PubSub,
   Secrets,
-  start,
 } from "../../decorators/dapr.decorator.ts";
 
 const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
@@ -66,4 +66,4 @@ class DaprApp {
 }
 
 console.log("Dapr app started...");
-start({ appPort: 3000, controllers: [DaprApp] });
+Dapr.start({ appPort: 3000, controllers: [DaprApp] });

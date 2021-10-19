@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file ban-types no-explicit-any
 
-import { Newable, router, serve } from "./httpserver.decorator.ts";
+import { Http, Newable } from "./httpserver.decorator.ts";
 import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
@@ -54,7 +54,7 @@ export class PubSub {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       config.route ??= config.topic; // TODO: slugify
-      router.add(
+      Http.router.add(
         {
           method: "POST",
           path: `/${config.route}`,
@@ -96,7 +96,7 @@ export class Bindings {
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      router.add(
+      Http.router.add(
         {
           method: "OPTIONS",
           path: `/${name}`,
@@ -106,7 +106,7 @@ export class Bindings {
           },
         },
       );
-      router.add(
+      Http.router.add(
         {
           method: "POST",
           path: `/${name}`,
@@ -162,26 +162,28 @@ export class Secrets {
   }
 }
 
-interface StartConfig {
+interface DaprStartConfig {
   appPort?: number;
   controllers: Newable<any>[];
 }
 
-export const start = (config: StartConfig) => {
-  appPort = config.appPort ?? DEFAULT_DAPR_APP_PORT;
-  if (PubSub.subscriptions.length > 0) { // TODO: move out to a function
-    router.add({
-      method: "GET",
-      path: "/dapr/subscribe",
-      action: {
-        handler: () => {
-          return {
-            body: JSON.stringify(PubSub.subscriptions),
-            init: { headers: { "content-type": "application/*+json" } },
-          };
+export class Dapr {
+  static start = (config: DaprStartConfig) => {
+    appPort = config.appPort ?? DEFAULT_DAPR_APP_PORT;
+    if (PubSub.subscriptions.length > 0) { // TODO: move out to a function
+      Http.router.add({
+        method: "GET",
+        path: "/dapr/subscribe",
+        action: {
+          handler: () => {
+            return {
+              body: JSON.stringify(PubSub.subscriptions),
+              init: { headers: { "content-type": "application/*+json" } },
+            };
+          },
         },
-      },
-    });
-  }
-  serve({ port: appPort, controllers: config.controllers });
-};
+      });
+    }
+    Http.serve({ port: appPort, controllers: config.controllers });
+  };
+}

@@ -3,16 +3,18 @@
 // license that can be found in the LICENSE file.
 
 import {
-  Get,
-  HttpServer,
-  Post,
-  serve,
+  Http
 } from "../decorators/httpserver.decorator.ts";
 
-@HttpServer({ schema: "api.yaml" })
-class ServerController {
+@Http.Server({ schema: "api.yaml" })
+class Server {
 
-  @Get("/api/:id")
+  @Http.Get("/api")
+  res() {
+    return {}
+  }
+
+  @Http.Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
       body: `[GET /api/:id] 😎 (got id: "${id}", query: "${
@@ -21,7 +23,7 @@ class ServerController {
     };
   }
 
-  @Post("/api")
+  @Http.Post("/api")
   async post({ url, request }: { url: URL; request: Request }) {
     return {
       body: `[POST /api/:id] 😎 (got data: "${await request.text()}", query: "${
@@ -30,7 +32,7 @@ class ServerController {
     };
   }
 
-  @Get("/static/*")
+  @Http.Get("/static/*")
   static({ "*": path }: { "*": string }) {
     return {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
@@ -39,4 +41,4 @@ class ServerController {
 }
 
 console.log("Server started...");
-serve({ controllers: [ServerController] });
+Http.serve({ controllers: [Server] });
