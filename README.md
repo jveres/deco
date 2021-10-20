@@ -1,6 +1,6 @@
 [![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco@0.6.2/mod.ts)
 
-# Deco (**deh** · kow) is a helper library for [Deno](https://deno.land) developers (still work in progress)
+# Deco (**deh** · kow) is a lightweight helper library for [Deno](https://deno.land) developers (still work in progress)
 
 - Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Memoize)
 - REST API helpers (@Http.xxx) with OpenAPI support
