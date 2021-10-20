@@ -4,7 +4,7 @@
 
 - Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Memoize)
 - REST API helpers (@Http.xxx) with OpenAPI support
-- Dapr helpers (@Dapr.xxx)
+- Dapr helpers (@Dapr.xxx) for resilient cloud native Deno microservices/actors
 
 ## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
 ```typescript
