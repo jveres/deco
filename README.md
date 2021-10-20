@@ -1,176 +1,62 @@
-[![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco@0.5.5/mod.ts)
+[![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco@0.6.2/mod.ts)
 
-# deco (WIP)
+# Deco (**deh** · kow) is a helper library for [Deno](https://deno.land) developers (still work in progress)
 
-Decorators for Deno
+- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit)
+- REST API helpers (@Http.xxx, @Concurrecy, @Memoize, ) with OpenAPI support
+- Dapr helpers (@Dapr.xxx)
 
-### Running example
-
-`deno run examples/example.ts`
-
-### Running tests
-
-`deno test --allow-net`
-
-### Usage examples
-
+## Dapr [example](examples/dapr/example_dapr.ts)
 ```typescript
-class Example {
-  @Trace()
-  @Timeout(1000)
-  static async timeoutTestStatic(): Promise<void> {
-    await sleep(2000);
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
+  "example-secrets-store",
+);
+const PUBSUBNAME = "pubsub";
+
+class DaprApp {
+  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
+  topicA({ data }: { data: unknown }) {
+    console.log("topicA =>", data);
   }
 
-  @Trace()
-  static traceTestStaticFunction(): void {
-    console.info("testing...");
+  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
+  topicB({ data }: { data: Record<string, unknown> }) {
+    console.log("topicB =>", data);
+    if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
+      const { text } = data;
+      const path =
+        `/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHATID}&text=${text}`;
+      Bindings.invoke({
+        name: "telegram",
+        operation: "get",
+        metadata: { path },
+      });
+    }
   }
 
-  @Trace({ stack: true })
-  @Timeout(3000)
-  async timeoutTestMethod(): Promise<void> {
-    await sleep(2000);
-  }
-
-  @Retry({ maxAttempts: 3 })
-  @Trace()
-  static noDelayRetry() {
-    throw new Error("I failed!");
-  }
-
-  @Retry({
-    maxAttempts: 3,
-    backOff: 1000,
-    doRetry: (e: Error) => {
-      return e.message === "Error: 429";
-    },
+  @PubSub.subscribe({
+    pubSubName: PUBSUBNAME,
+    topic: "C",
+    metadata: { rawPayload: "true" },
   })
-  @Trace()
-  static doRetry() {
-    throw new Error("Error: 429");
+  topicC(raw: Record<string, unknown>) {
+    console.log("topicC =>", raw);
   }
 
-  @Retry({
-    maxAttempts: 3,
-    backOff: 1000,
-    doRetry: (e: Error) => {
-      return e.message === "Error: 429";
-    },
-  })
-  @Trace()
-  static doNotRetry() {
-    throw new Error("Error: 404");
-  }
-
-  @Retry({
-    maxAttempts: 3,
-    backOffPolicy: BackOffPolicy.FixedBackOffPolicy,
-    backOff: 1000,
-  })
-  @Trace()
-  static fixedBackOffRetry() {
-    throw new Error("I failed!");
-  }
-
-  @Retry({
-    maxAttempts: 3,
-    backOffPolicy: BackOffPolicy.ExponentialBackOffPolicy,
-    backOff: 1000,
-    exponentialOption: { maxInterval: 4000, multiplier: 3 },
-  })
-  @Trace()
-  static ExponentialBackOffRetry() {
-    throw new Error("I failed!");
-  }
-
-  private i = 0;
-
-  @Trace()
-  @Memoize({
-    ttl: 2000,
-    resolver: (): string => {
-      return "key";
-    },
-    onAdded: (key: string, value: any) => {
-      console.log(`${key}=${value} added to cache`);
-    },
-    onFound: (key: string, value: any) => {
-      console.log(`${key}=${value} found in cache`);
-    },
-  })
-  async testMemoize() {
-    await sleep(1000);
-    return ++this.i;
-  }
-
-  @RateLimit({ rps: 5 })
-  @Trace()
-  async ratelimitTestMethod(): Promise<void> {
-    await sleep(1000);
-  }
-}
-
-// main entry
-
-const example = new Example();
-
-for (let i = 0; i < 10; i++) {
-  example.ratelimitTestMethod()
-    .catch((e: unknown) => {
-      if (e instanceof RateLimitError) {
-        console.log("Error: rate limited");
-      }
+  @Bindings.listenTo("tweets")
+  tweets({ text }: { text: Record<string, unknown> }) {
+    PubSub.publish({
+      data: { text },
+      pubSubName: PUBSUBNAME,
+      topic: "A",
     });
+  }
 }
 
-for (let i = 0; i < 10; i++) {
-  console.log(
-    `(${i + 1}) example.testMemoize() returns: ${await example
-      .testMemoize()}`,
-  );
-}
-
-try {
-  await Example.timeoutTestStatic();
-} catch (e) {
-  console.error(e);
-}
-
-try {
-  Example.traceTestStaticFunction();
-  await new Example().timeoutTestMethod();
-} catch (e) {
-  console.error(e);
-}
-
-try {
-  await Example.noDelayRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
-
-try {
-  await Example.doRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
-
-try {
-  await Example.doNotRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
-
-try {
-  await Example.fixedBackOffRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
-
-try {
-  await Example.ExponentialBackOffRetry();
-} catch (e) {
-  console.info(`All retry done as expected, final message: '${e.message}'`);
-}
+console.log("Dapr app started...");
+Dapr.start({ appPort: 3000, controllers: [DaprApp] });
+```
+## Running tests
+```sh
+deno test --allow-net
 ```
