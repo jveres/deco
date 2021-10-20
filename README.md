@@ -6,7 +6,7 @@
 - REST API helpers (@Http.xxx) with OpenAPI support
 - Dapr helpers (@Dapr.xxx)
 
-## Dapr [example](examples/dapr/example_dapr.ts)
+## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
 ```typescript
 const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
   "example-secrets-store",
@@ -60,3 +60,5 @@ Dapr.start({ appPort: 3000, controllers: [DaprApp] });
 ```sh
 deno test --allow-net
 ```
+## Http server performance (~19k RPS)
+![Http server benchmark](images/bench.png)
