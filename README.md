@@ -2,8 +2,8 @@
 
 # Deco (**deh** · kow) is a helper library for [Deno](https://deno.land) developers (still work in progress)
 
-- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit)
-- REST API helpers (@Http.xxx, @Concurrecy, @Memoize, ) with OpenAPI support
+- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Memoize)
+- REST API helpers (@Http.xxx) with OpenAPI support
 - Dapr helpers (@Dapr.xxx)
 
 ## Dapr [example](examples/dapr/example_dapr.ts)
