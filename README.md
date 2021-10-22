@@ -8,12 +8,12 @@
 
 ## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
 ```typescript
-const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
-  "example-secrets-store",
-);
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll({
+  store: "example-secrets-store",
+});
 const PUBSUBNAME = "pubsub";
 
-class DaprApp {
+class _ {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -43,7 +43,7 @@ class DaprApp {
     console.log("topicC =>", raw);
   }
 
-  @Bindings.listenTo("tweets")
+  @Bindings.listenTo({ name: "tweets" })
   tweets({ text }: { text: Record<string, unknown> }) {
     PubSub.publish({
       data: { text },
@@ -54,7 +54,7 @@ class DaprApp {
 }
 
 console.log("Dapr app started...");
-Dapr.start({ appPort: 3000, controllers: [DaprApp] });
+Dapr.start({ appPort: 3000 });
 ```
 ## Running tests
 ```sh
