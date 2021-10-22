@@ -14,6 +14,11 @@ export const daprPort = Deno.env.get("DAPR_HTTP_PORT") ??
 
 export let appPort = DEFAULT_DAPR_APP_PORT;
 
+export type Consistency = "eventual" | "strong";
+export type Concurrency = "first-write" | "last-write";
+export type Metadata = Record<string, string>;
+export type ETag = string;
+
 interface PubSubSubscriptionConfig {
   pubSubName: string;
   topic: string;
@@ -36,19 +41,22 @@ export interface PubSubPublishConfig {
 export class PubSub {
   static readonly subscriptions: PubSubSubscriptionConfig[] = [];
 
-  static publish = (config: PubSubPublishConfig) => {
-    // deno-fmt-ignore
-    const url = `http://localhost:${daprPort}/v1.0/publish/${config.pubSubName}/${config.topic}` + (config.metadata ? ("?" + new URLSearchParams(config.metadata as any).toString()): "");
+  static publish(config: PubSubPublishConfig) {
+    const url =
+      `http://localhost:${daprPort}/v1.0/publish/${config.pubSubName}/${config.topic}` +
+      (config.metadata
+        ? ("?" + new URLSearchParams(config.metadata as Metadata).toString())
+        : "");
     return fetch(
       url,
       { method: "POST", body: JSON.stringify(config.data) },
     );
-  };
+  }
 
-  static subscribe = (
+  static subscribe(
     config: PubSubSubscriptionConfig,
-  ): MethodDecorator =>
-    (
+  ): MethodDecorator {
+    return (
       target: Object,
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
@@ -69,18 +77,18 @@ export class PubSub {
       );
       PubSub.subscriptions.push(config);
     };
+  }
 }
 
 interface BindingInvocationConfig {
   name: string;
   data?: any;
-  metadata?: {};
+  metadata?: Metadata;
   operation?: string;
 }
 
 export class Bindings {
   static invoke(config: BindingInvocationConfig) {
-    // deno-fmt-ignore
     const url = `http://localhost:${daprPort}/v1.0/bindings/${config.name}`;
     return fetch(
       url,
@@ -88,10 +96,10 @@ export class Bindings {
     );
   }
 
-  static listenTo = (
-    name: string,
-  ): MethodDecorator =>
-    (
+  static listenTo({name}: {
+    name: string}
+  ): MethodDecorator {
+    return (
       target: Object,
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
@@ -120,9 +128,10 @@ export class Bindings {
         },
       );
     };
+  }
 }
 
-interface SecretsGetMetadata extends Record<string, any> {
+interface SecretsGetMetadata extends Metadata {
   // deno-lint-ignore camelcase
   version_id: string;
 }
@@ -146,9 +155,9 @@ export class Secrets {
     return ret;
   }
 
-  static async getAll(
-    store: string,
-  ) {
+  static async getAll({ store }: {
+    store: string;
+  }) {
     const url = `http://localhost:${daprPort}/v1.0/secrets/${store}/bulk`;
     const res = await fetch(url);
     const ret: Record<string, string> = {};
@@ -162,13 +171,93 @@ export class Secrets {
   }
 }
 
+interface StateObject {
+  key: string;
+  value: any;
+  etag?: ETag;
+  metadata?: Metadata;
+  options?: {
+    "concurrency": Concurrency;
+    "consistency": Consistency;
+  };
+}
+
+const prepMetadata = (
+  metadata: Metadata,
+  prepWith = "metadata",
+) => {
+  const ret: Metadata = {};
+  Object.keys(metadata).map((key: string) => {
+    ret[`${prepWith}.${key}`] = metadata[key];
+  });
+  return ret;
+};
+
+export class State {
+  static set(
+    { storename, data }: { storename: string; data: StateObject[] },
+  ) {
+    const url = `http://localhost:${daprPort}/v1.0/state/${storename}`;
+    return fetch(
+      url,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "content-type": "application/json",
+        },
+      },
+    );
+  }
+
+  static get({ storename, key, consistency, metadata }: {
+    storename: string;
+    key: string;
+    consistency?: Consistency;
+    metadata?: Metadata;
+  }) {
+    const url = `http://localhost:${daprPort}/v1.0/state/${storename}/${key}` +
+      (consistency || metadata
+        ? ("?" +
+          new URLSearchParams(
+            {
+              ...metadata && prepMetadata(metadata),
+              ...consistency && { consistency },
+            } as Metadata,
+          ).toString())
+        : "");
+    return fetch(url);
+  }
+
+  static getAll({ storename, data, metadata }: {
+    storename: string;
+    data: any;
+    metadata?: Metadata;
+  }) {
+    const url = `http://localhost:${daprPort}/v1.0/state/${storename}/bulk` +
+      (metadata
+        ? ("?" + new URLSearchParams(prepMetadata(metadata)).toString())
+        : "");
+    return fetch(
+      url,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "content-type": "application/json",
+        },
+      },
+    );
+  }
+}
+
 interface DaprStartConfig {
   appPort?: number;
   controllers: Newable<any>[];
 }
 
 export class Dapr {
-  static start = (config: DaprStartConfig) => {
+  static start(config: DaprStartConfig) {
     appPort = config.appPort ?? DEFAULT_DAPR_APP_PORT;
     if (PubSub.subscriptions.length > 0) { // TODO: move out to a function
       Http.router.add({
@@ -185,5 +274,5 @@ export class Dapr {
       });
     }
     Http.serve({ port: appPort, controllers: config.controllers });
-  };
+  }
 }

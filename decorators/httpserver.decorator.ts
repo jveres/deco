@@ -30,14 +30,14 @@ export class Http {
 
   static readonly router = new Router();
 
-  static addRouteToObject = (
+  static addRouteToObject(
     { method, path, handler }: {
       method: HttpMethod;
       path: string;
       handler: HttpFunction;
     },
     object: Object,
-  ) => {
+  ) {
     if (!Reflect.has(object, Http.ROUTES_KEY)) {
       Reflect.defineProperty(object, Http.ROUTES_KEY, {
         value: [],
@@ -45,12 +45,10 @@ export class Http {
     }
     const routes = Reflect.get(object, Http.ROUTES_KEY) as any[];
     routes.push({ method, path, handler });
-  };
+  }
 
-  static Server = (options: HttpServerOptions = {}): ClassDecorator =>
-    (
-      target: Function,
-    ): void => {
+  static Server(options: HttpServerOptions = {}): ClassDecorator {
+    return (target: Function): void => {
       const routes: any[] = Reflect.get(target.prototype, Http.ROUTES_KEY);
       (async () => {
         if (options.schema) {
@@ -104,38 +102,36 @@ export class Http {
         });
       });
     };
+  }
 
-  static Get = (
-    path = "/",
-  ): MethodDecorator =>
-    (
+  static Route(method: HttpMethod, path: string): MethodDecorator {
+    return (
       target: Object,
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       Http.addRouteToObject(
-        { method: "GET", path, handler: descriptor.value },
+        { method, path, handler: descriptor.value },
         target,
       );
     };
+  }
 
-  static Post = (
+  static Get(
     path = "/",
-  ): MethodDecorator =>
-    (
-      target: Object,
-      _propertyKey: string | Symbol,
-      descriptor: TypedPropertyDescriptor<any>,
-    ): void => {
-      Http.addRouteToObject(
-        { method: "POST", path, handler: descriptor.value },
-        target,
-      );
-    };
+  ): MethodDecorator {
+    return Http.Route("GET", path);
+  }
 
-  static serve = async (
+  static Post(
+    path = "/",
+  ): MethodDecorator {
+    return Http.Route("POST", path);
+  }
+
+  static async serve(
     config: ServeConfig,
-  ) => {
+  ) {
     for await (
       const conn of Deno.listen({
         port: config.port ?? Http.DEFAULT_SERVER_PORT,
@@ -157,5 +153,5 @@ export class Http {
         }
       })();
     }
-  };
+  }
 }

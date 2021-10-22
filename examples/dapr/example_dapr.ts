@@ -20,9 +20,9 @@ import {
   Secrets,
 } from "../../decorators/dapr.decorator.ts";
 
-const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll(
-  "example-secrets-store",
-);
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll({
+  store: "example-secrets-store",
+});
 const PUBSUBNAME = "pubsub";
 
 class DaprApp {
@@ -55,7 +55,7 @@ class DaprApp {
     console.log("topicC =>", raw);
   }
 
-  @Bindings.listenTo("tweets")
+  @Bindings.listenTo({ name: "tweets" })
   tweets({ text }: { text: Record<string, unknown> }) {
     PubSub.publish({
       data: { text },

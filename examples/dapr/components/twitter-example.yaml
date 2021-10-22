@@ -2,6 +2,7 @@
 # kind: Component
 # metadata:
 #  name: tweets
+#  namespace: default
 # spec:
 #   type: bindings.twitter
 #   metadata:
