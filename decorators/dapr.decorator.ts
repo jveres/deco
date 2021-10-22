@@ -4,15 +4,13 @@
 
 // deno-lint-ignore-file ban-types no-explicit-any
 
-import { Http, Newable } from "./httpserver.decorator.ts";
+import { Http } from "./httpserver.decorator.ts";
 import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
 export const DEFAULT_DAPR_HTTP_PORT = 3500;
 export const daprPort = Deno.env.get("DAPR_HTTP_PORT") ??
   DEFAULT_DAPR_HTTP_PORT;
-
-export let appPort = DEFAULT_DAPR_APP_PORT;
 
 export type Consistency = "eventual" | "strong";
 export type Concurrency = "first-write" | "last-write";
@@ -96,9 +94,9 @@ export class Bindings {
     );
   }
 
-  static listenTo({name}: {
-    name: string}
-  ): MethodDecorator {
+  static listenTo({ name }: {
+    name: string;
+  }): MethodDecorator {
     return (
       target: Object,
       _propertyKey: string | Symbol,
@@ -251,14 +249,9 @@ export class State {
   }
 }
 
-interface DaprStartConfig {
-  appPort?: number;
-  controllers: Newable<any>[];
-}
-
 export class Dapr {
-  static start(config: DaprStartConfig) {
-    appPort = config.appPort ?? DEFAULT_DAPR_APP_PORT;
+  static start({ appPort }: { appPort?: number } = {}) {
+    appPort ??= DEFAULT_DAPR_APP_PORT;
     if (PubSub.subscriptions.length > 0) { // TODO: move out to a function
       Http.router.add({
         method: "GET",
@@ -273,6 +266,6 @@ export class Dapr {
         },
       });
     }
-    Http.serve({ port: appPort, controllers: config.controllers });
+    Http.serve({ port: appPort });
   }
 }

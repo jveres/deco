@@ -7,7 +7,7 @@ import {
 } from "../decorators/httpserver.decorator.ts";
 
 @Http.Server({ schema: "api.yaml" })
-class Server {
+class ___ {
 
   @Http.Get("/api")
   res() {
@@ -41,4 +41,4 @@ class Server {
 }
 
 console.log("Server started...");
-Http.serve({ controllers: [Server] });
+Http.serve();

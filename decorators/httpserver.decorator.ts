@@ -7,19 +7,9 @@
 import { HttpFunction, HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
-export interface HttpServerOptions {
-  schema?: string;
-}
-
-export interface Newable<T> {
+/*export interface Newable<T> {
   new (...args: any[]): T;
-}
-
-export interface ServeConfig {
-  hostname?: string;
-  port?: number;
-  controllers: Newable<any>[];
-}
+}*/
 
 export class Http {
   static readonly TARGET_KEY = "__target__";
@@ -47,12 +37,12 @@ export class Http {
     routes.push({ method, path, handler });
   }
 
-  static Server(options: HttpServerOptions = {}): ClassDecorator {
+  static Server({ schema }: { schema?: string } = {}): ClassDecorator {
     return (target: Function): void => {
       const routes: any[] = Reflect.get(target.prototype, Http.ROUTES_KEY);
       (async () => {
-        if (options.schema) {
-          const api = await loadOpenApiSpecification(options.schema);
+        if (schema) {
+          const api = await loadOpenApiSpecification(schema);
           for (const endpoint of api) {
             const examples: string[] = [];
             endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
@@ -104,7 +94,9 @@ export class Http {
     };
   }
 
-  static Route(method: HttpMethod, path: string): MethodDecorator {
+  static Route(
+    { method, path }: { method: HttpMethod; path: string },
+  ): MethodDecorator {
     return (
       target: Object,
       _propertyKey: string | Symbol,
@@ -120,22 +112,25 @@ export class Http {
   static Get(
     path = "/",
   ): MethodDecorator {
-    return Http.Route("GET", path);
+    return Http.Route({ method: "GET", path });
   }
 
   static Post(
     path = "/",
   ): MethodDecorator {
-    return Http.Route("POST", path);
+    return Http.Route({ method: "POST", path });
   }
 
   static async serve(
-    config: ServeConfig,
+    { hostname, port }: {
+      hostname?: string;
+      port?: number;
+    } = {},
   ) {
     for await (
       const conn of Deno.listen({
-        port: config.port ?? Http.DEFAULT_SERVER_PORT,
-        hostname: config.hostname ?? Http.DEFAULT_SERVER_HOSTNAME,
+        port: port ?? Http.DEFAULT_SERVER_PORT,
+        hostname: hostname ?? Http.DEFAULT_SERVER_HOSTNAME,
       })
     ) {
       (async () => {

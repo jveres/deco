@@ -25,7 +25,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll({
 });
 const PUBSUBNAME = "pubsub";
 
-class DaprApp {
+class ___ {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -66,4 +66,4 @@ class DaprApp {
 }
 
 console.log("Dapr app started...");
-Dapr.start({ appPort: 3000, controllers: [DaprApp] });
+Dapr.start({ appPort: 3000 });
