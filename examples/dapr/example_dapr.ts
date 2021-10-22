@@ -18,9 +18,10 @@ import {
   Dapr,
   PubSub,
   Secrets,
+  State,
 } from "../../decorators/dapr.decorator.ts";
 
-const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll({
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
   store: "example-secrets-store",
 });
 const PUBSUBNAME = "pubsub";
@@ -64,6 +65,36 @@ class _ {
     });
   }
 }
+
+// Setting and getting state
+await State.set({
+  storename: "example-state-store",
+  data: [{ key: "key1", value: "value1" }, { key: "key3", value: "value3" }],
+});
+console.log(
+  `key1=${
+    JSON.stringify(
+      await State.get({ storename: "example-state-store", key: "key1" }),
+    )
+  }`,
+);
+console.log(
+  `missing=${
+    JSON.stringify(
+      await State.get({ storename: "example-state-store", key: "missing" }),
+    )
+  }`,
+);
+console.log(
+  `bulk=${
+    JSON.stringify(
+      await State.getBulk({
+        storename: "example-state-store",
+        data: { keys: ["key1", "missing", "key3"] },
+      }),
+    )
+  }`,
+);
 
 console.log("Dapr app started...");
 Dapr.start({ appPort: 3000 });

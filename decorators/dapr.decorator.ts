@@ -17,48 +17,29 @@ export type Concurrency = "first-write" | "last-write";
 export type Metadata = Record<string, string>;
 export type ETag = string;
 
-interface PubSubSubscriptionConfig {
+interface PubSubSubscription {
   pubSubName: string;
   topic: string;
   route?: string;
   metadata?: Metadata;
 }
 
-export interface PubSubPublishConfig {
-  pubSubName: string;
-  topic: string;
-  data: any;
-  metadata?: Metadata;
-}
-
 export class PubSub {
-  static readonly subscriptions: PubSubSubscriptionConfig[] = [];
-
-  static publish(config: PubSubPublishConfig) {
-    const url =
-      `http://localhost:${daprPort}/v1.0/publish/${config.pubSubName}/${config.topic}` +
-      (config.metadata
-        ? ("?" + new URLSearchParams(config.metadata as Metadata).toString())
-        : "");
-    return fetch(
-      url,
-      { method: "POST", body: JSON.stringify(config.data) },
-    );
-  }
+  static readonly subscriptions: PubSubSubscription[] = [];
 
   static subscribe(
-    config: PubSubSubscriptionConfig,
+    subscriptions: PubSubSubscription,
   ): MethodDecorator {
     return (
       target: Object,
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      config.route ??= config.topic; // TODO: slugify
+      subscriptions.route ??= subscriptions.topic; // TODO: slugify
       Http.router.add(
         {
           method: "POST",
-          path: `/${config.route}`,
+          path: `/${subscriptions.route}`,
           action: {
             handler: async ({ request }: { request: Request }) => {
               descriptor.value(await request.json());
@@ -68,24 +49,54 @@ export class PubSub {
           },
         },
       );
-      PubSub.subscriptions.push(config);
+      PubSub.subscriptions.push(subscriptions);
     };
+  }
+
+  static async publish(
+    { pubSubName, topic, data, metadata }: {
+      pubSubName: string;
+      topic: string;
+      data: any;
+      metadata?: Metadata;
+    },
+  ) {
+    const url =
+      `http://localhost:${daprPort}/v1.0/publish/${pubSubName}/${topic}` +
+      (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
+    const res = await fetch(
+      url,
+      { method: "POST", body: JSON.stringify(data) },
+    );
+    if (res.status === 204) return;
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during PubSub.publish(): pubSubName="${pubSubName}", topic="${topic}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
   }
 }
 
-interface BindingInvocationConfig {
-  name: string;
-  data?: any;
-  metadata?: Metadata;
-  operation?: string;
-}
-
 export class Bindings {
-  static invoke(config: BindingInvocationConfig) {
-    const url = `http://localhost:${daprPort}/v1.0/bindings/${config.name}`;
+  static invoke({ name, data, metadata, operation }: {
+    name: string;
+    data?: any;
+    metadata?: Metadata;
+    operation?: string;
+  }) {
+    const url = `http://localhost:${daprPort}/v1.0/bindings/${name}`;
     return fetch(
       url,
-      { method: "POST", body: JSON.stringify({ ...config }) },
+      {
+        method: "POST",
+        body: JSON.stringify({
+          data,
+          ...metadata && { metadata },
+          ...operation && { operation },
+        }),
+      },
     );
   }
 
@@ -135,39 +146,38 @@ export class Secrets {
     const url = `http://localhost:${daprPort}/v1.0/secrets/${store}/${key}` +
       (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
     const res = await fetch(url);
-    let ret = undefined;
     if (res.status === 200) {
       const secret = await res.json();
-      ret = secret[key];
+      return secret[key];
+    } else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Secrets.get(): store="${store}", key="${key}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
     }
-    return ret;
   }
 
-  static async getAll({ store }: {
+  static async getBulk({ store }: {
     store: string;
   }) {
     const url = `http://localhost:${daprPort}/v1.0/secrets/${store}/bulk`;
     const res = await fetch(url);
-    const ret: Record<string, string> = {};
     if (res.status === 200) {
+      const ret: Record<string, string> = {};
       const secrets = await res.json();
       for (const key in secrets) {
         ret[key] = secrets[key][key];
       }
+      return ret;
+    } else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Secrets.getBulk(): store="${store}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
     }
-    return ret;
   }
-}
-
-interface StateObject {
-  key: string;
-  value: any;
-  etag?: ETag;
-  metadata?: Metadata;
-  options?: {
-    "concurrency": Concurrency;
-    "consistency": Consistency;
-  };
 }
 
 const prepMetadata = (
@@ -181,12 +191,23 @@ const prepMetadata = (
   return ret;
 };
 
+interface StateObject {
+  key: string;
+  value: any;
+  etag?: ETag;
+  metadata?: Metadata;
+  options?: {
+    "concurrency": Concurrency;
+    "consistency": Consistency;
+  };
+}
+
 export class State {
-  static set(
+  static async set(
     { storename, data }: { storename: string; data: StateObject[] },
   ) {
     const url = `http://localhost:${daprPort}/v1.0/state/${storename}`;
-    return fetch(
+    const res = await fetch(
       url,
       {
         method: "POST",
@@ -196,9 +217,17 @@ export class State {
         },
       },
     );
+    if (res.status === 204) return;
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during State.set(): storename="${storename}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
   }
 
-  static get({ storename, key, consistency, metadata }: {
+  static async get({ storename, key, consistency, metadata }: {
     storename: string;
     key: string;
     consistency?: Consistency;
@@ -214,10 +243,21 @@ export class State {
             } as Metadata,
           ).toString())
         : "");
-    return fetch(url);
+    const res = await fetch(url);
+    if (res.status === 200) return res.json();
+    else {
+      const { status, statusText } = res;
+      if (status === 204) return;
+      else {
+        throw Error(
+          `Error during State.get(): storename="${storename}", key="${key}", code=${status}, text="${statusText}"`,
+          { cause: { status, statusText } },
+        );
+      }
+    }
   }
 
-  static getAll({ storename, data, metadata }: {
+  static async getBulk({ storename, data, metadata }: {
     storename: string;
     data: any;
     metadata?: Metadata;
@@ -226,7 +266,7 @@ export class State {
       (metadata
         ? ("?" + new URLSearchParams(prepMetadata(metadata)).toString())
         : "");
-    return fetch(
+    const res = await fetch(
       url,
       {
         method: "POST",
@@ -236,6 +276,14 @@ export class State {
         },
       },
     );
+    if (res.status === 200) return res.json();
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during State.getBulk(): storename="${storename}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
   }
 }
 
