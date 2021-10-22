@@ -21,19 +21,14 @@ interface PubSubSubscriptionConfig {
   pubSubName: string;
   topic: string;
   route?: string;
-  metadata?: {
-    rawPayload: "true" | "false";
-  };
+  metadata?: Metadata;
 }
 
 export interface PubSubPublishConfig {
   pubSubName: string;
   topic: string;
   data: any;
-  metadata?: {
-    ttlInSeconds?: number;
-    rawPayload?: "true" | "false";
-  };
+  metadata?: Metadata;
 }
 
 export class PubSub {
@@ -129,17 +124,12 @@ export class Bindings {
   }
 }
 
-interface SecretsGetMetadata extends Metadata {
-  // deno-lint-ignore camelcase
-  version_id: string;
-}
-
 export class Secrets {
   static async get(
     { store, key, metadata }: {
       store: string;
       key: string;
-      metadata?: SecretsGetMetadata;
+      metadata?: Metadata;
     },
   ) {
     const url = `http://localhost:${daprPort}/v1.0/secrets/${store}/${key}` +

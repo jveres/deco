@@ -25,7 +25,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll({
 });
 const PUBSUBNAME = "pubsub";
 
-class ___ {
+class _ {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);

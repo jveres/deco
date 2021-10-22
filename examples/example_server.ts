@@ -7,7 +7,7 @@ import {
 } from "../decorators/httpserver.decorator.ts";
 
 @Http.Server({ schema: "api.yaml" })
-class ___ {
+class _ {
 
   @Http.Get("/api")
   res() {
