@@ -287,10 +287,109 @@ export class State {
   }
 }
 
+export class Actor {
+  static async invoke({ actorType, actorId, method, data }: {
+    actorType: string;
+    actorId: string;
+    method: string;
+    data?: any;
+  }) {
+    const url =
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/method/${method}`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status === 200) return res.json();
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", method="${method}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static readonly State = {
+    async get(
+      { actorType, actorId, key }: {
+        actorType: string;
+        actorId: string;
+        key: string;
+      },
+    ) {
+      const url =
+        `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/state/${key}`;
+      const res = await fetch(url);
+      if (res.status === 200) return res.json();
+      else {
+        if (res.status === 204) return undefined;
+        const { status, statusText } = res;
+        throw Error(
+          `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", key="${key}", code=${status}, text="${statusText}"`,
+          { cause: { status, statusText } },
+        );
+      }
+    },
+
+    async set(
+      { actorType, actorId, data }: {
+        actorType: string;
+        actorId: string;
+        data: any;
+      },
+    ) {
+      const url =
+        `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/state`;
+      const res = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "content-type": "application/json" },
+      });
+      if (res.status === 200) return res.json();
+      else {
+        const { status, statusText } = res;
+        throw Error(
+          `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", code=${status}, text="${statusText}"`,
+          { cause: { status, statusText } },
+        );
+      }
+    },
+  };
+
+  static readonly registeredActorTypes = new Map<string, Function>();
+
+  static register({ actorType }: { actorType: string }): MethodDecorator {
+    return (
+      _target: Object,
+      _propertyKey: string | Symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      Actor.registeredActorTypes.set(actorType, descriptor.value);
+    };
+  }
+}
+
 export class Dapr {
-  static start({ appPort }: { appPort?: number } = {}) {
+  static start(
+    {
+      appPort,
+      actorIdleTimeout,
+      actorScanInterval,
+      drainOngoingCallTimeout,
+      drainRebalancedActors,
+    }: {
+      appPort?: number;
+      actorIdleTimeout?: string;
+      actorScanInterval?: string;
+      drainOngoingCallTimeout?: string;
+      drainRebalancedActors?: boolean;
+    } = {},
+  ) {
     appPort ??= DEFAULT_DAPR_APP_PORT;
-    if (PubSub.subscriptions.length > 0) { // TODO: move out to a function
+    // Configure PubSub subscriptions
+    if (PubSub.subscriptions.length > 0) {
       Http.router.add({
         method: "GET",
         path: "/dapr/subscribe",
@@ -302,6 +401,101 @@ export class Dapr {
             };
           },
         },
+      });
+    }
+    // Configure actors
+    if (Actor.registeredActorTypes.size > 0) {
+      const entities = Array.from(Actor.registeredActorTypes.keys());
+      const config = {
+        entities,
+        ...actorIdleTimeout && { actorIdleTimeout },
+        ...actorScanInterval && { actorScanInterval },
+        ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
+        ...drainRebalancedActors && { drainRebalancedActors },
+      };
+      Http.router.add({
+        method: "GET",
+        path: "/dapr/config",
+        action: {
+          handler: () => {
+            return {
+              body: JSON.stringify(config),
+              init: { headers: { "content-type": "application/json" } },
+            };
+          },
+        },
+      });
+      // Register actor user services
+      entities.map((actorType: string) => {
+        // Deactivate actor user service
+        Http.router.add({
+          method: "DELETE",
+          path: `/actors/${actorType}/:actorId`,
+          action: {
+            handler: ({ actorId }: { actorId: string }) => {
+              console.log(
+                `Deactivate actor user service called with actorType=${actorType}, actorId=${actorId}`,
+              );
+            },
+          },
+        });
+        // Invoke actor user service
+        Http.router.add({
+          method: "PUT",
+          path: `/actors/${actorType}/:actorId/method/:methodName`,
+          action: {
+            handler: (
+              { actorId, methodName }: { actorId: string; methodName: string },
+            ) => {
+              console.log(
+                `Invoke actor user service called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
+              );
+            },
+          },
+        });
+        // Invoke reminder user service
+        Http.router.add({
+          method: "PUT",
+          path: `/actors/${actorType}/:actorId/method/remind/:reminderName`,
+          action: {
+            handler: (
+              { actorId, reminderName }: {
+                actorId: string;
+                reminderName: string;
+              },
+            ) => {
+              console.log(
+                `Invoke reminder actor user service called with actorType=${actorType}, actorId=${actorId}, reminderName=${reminderName}`,
+              );
+            },
+          },
+        });
+        // Invoke timer user service
+        Http.router.add({
+          method: "PUT",
+          path: `/actors/${actorType}/:actorId/method/timer/:timerName`,
+          action: {
+            handler: (
+              { actorId, timerName }: { actorId: string; timerName: string },
+            ) => {
+              console.log(
+                `Invoke timer actor user service called with actorType=${actorType}, actorId=${actorId}, timerName=${timerName}`,
+              );
+            },
+          },
+        });
+        // Health check
+        Http.router.add({
+          method: "GET",
+          path: "/healthz",
+          action: {
+            handler: () => {
+              console.log(
+                `Health check actor user service called`,
+              );
+            },
+          },
+        });
       });
     }
     Http.serve({ port: appPort });

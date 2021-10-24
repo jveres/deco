@@ -7,10 +7,6 @@
 import { HttpFunction, HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
-/*export interface Newable<T> {
-  new (...args: any[]): T;
-}*/
-
 export class Http {
   static readonly TARGET_KEY = "__target__";
   static readonly ROUTES_KEY = "__routes__";
@@ -143,7 +139,7 @@ export class Http {
           const { body = "", init } = await action.handler.apply(
             action.target,
             [{ ...params, url, request: http.request }],
-          );
+          ) || {};
           http.respondWith(new Response(body, init));
         }
       })();

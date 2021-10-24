@@ -6,11 +6,11 @@
 
 import _Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
 
-export type HttpMethod = "GET" | "POST" | "OPTIONS";
+export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: string; init?: ResponseInit };
 export type HttpFunction = (
   params?: any,
-) => HttpResponse | Promise<HttpResponse>;
+) => HttpResponse | Promise<HttpResponse> | void;
 export type HttpAction = { handler: HttpFunction; target?: Object };
 
 export const HTTP_RESPONSE_200: HttpResponse = {

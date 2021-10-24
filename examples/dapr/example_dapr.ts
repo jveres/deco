@@ -14,6 +14,7 @@
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic C --data '{"raw": "raw message for topic C"}'
 
 import {
+  Actor,
   Bindings,
   Dapr,
   PubSub,
@@ -26,7 +27,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 });
 const PUBSUBNAME = "pubsub";
 
-class _ {
+class _DaprApp {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -58,11 +59,16 @@ class _ {
 
   @Bindings.listenTo({ name: "tweets" })
   tweets({ text }: { text: Record<string, unknown> }) {
-    PubSub.publish({
+    /*PubSub.publish({
       data: { text },
       pubSubName: PUBSUBNAME,
       topic: "A",
-    });
+    });*/
+  }
+
+  @Actor.register({ actorType: "testActor" })
+  actor() {
+    console.log("testActor called");
   }
 }
 

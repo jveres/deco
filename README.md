@@ -8,7 +8,7 @@
 
 ## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
 ```typescript
-const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getAll({
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
   store: "example-secrets-store",
 });
 const PUBSUBNAME = "pubsub";
