@@ -25,6 +25,29 @@ export class Service {
   }): MethodDecorator {
     return Http.Route({ method: verb, path: `/${name}` });
   }
+
+  static async invoke(
+    { appId, method, data }: { appId: string; method: string; data?: any },
+  ) {
+    const url =
+      `http://localhost:${daprPort}/v1.0/invoke/${appId}/method/${method}`;
+    const res = await fetch(
+      url,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "content-type": "application/json" },
+      },
+    );
+    if (res.status === 200) return await res.json();
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Service.invoke(): appId="${appId}", method="${method}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
 }
 
 interface PubSubSubscription {
@@ -74,7 +97,11 @@ export class PubSub {
       (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
     const res = await fetch(
       url,
-      { method: "POST", body: JSON.stringify(data) },
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "content-type": "application/json" },
+      },
     );
     if (res.status === 204) return;
     else {
@@ -104,6 +131,7 @@ export class Bindings {
           ...metadata && { metadata },
           ...operation && { operation },
         }),
+        headers: { "content-type": "application/json" },
       },
     );
   }
@@ -216,9 +244,7 @@ export class State {
       {
         method: "POST",
         body: JSON.stringify(data),
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
       },
     );
     if (res.status === 204) return;
@@ -275,9 +301,7 @@ export class State {
       {
         method: "POST",
         body: JSON.stringify(data),
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
       },
     );
     if (res.status === 200) return res.json();
@@ -405,7 +429,6 @@ export class Dapr {
 
   static start({ appPort }: { appPort?: number } = {}) {
     appPort ??= DEFAULT_DAPR_APP_PORT;
-
     // Configure PubSub subscriptions
     if (PubSub.subscriptions.length > 0) {
       Http.router.add({
@@ -421,7 +444,6 @@ export class Dapr {
         },
       });
     }
-
     // Configure actors
     if (Actor.registeredActorTypes.length > 0) {
       const config = {
