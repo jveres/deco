@@ -16,26 +16,30 @@ export class Http {
 
   static readonly router = new Router();
 
-  static addRouteToObject(
-    { method, path, handler }: {
-      method: HttpMethod;
-      path: string;
-      handler: HttpFunction;
-    },
-    object: Object,
-  ) {
+  static getRoutesForObject(object: object) {
     if (!Reflect.has(object, Http.ROUTES_KEY)) {
       Reflect.defineProperty(object, Http.ROUTES_KEY, {
         value: [],
       });
     }
-    const routes = Reflect.get(object, Http.ROUTES_KEY) as any[];
+    return Reflect.get(object, Http.ROUTES_KEY);
+  }
+
+  static addRouteToObject(
+    { method, path, handler, object }: {
+      method: HttpMethod;
+      path: string;
+      handler: HttpFunction;
+      object: object;
+    },
+  ) {
+    const routes = Http.getRoutesForObject(object) as object[];
     routes.push({ method, path, handler });
   }
 
   static Server({ schema }: { schema?: string } = {}): ClassDecorator {
     return (target: Function): void => {
-      const routes: any[] = Reflect.get(target.prototype, Http.ROUTES_KEY);
+      const routes = Http.getRoutesForObject(target.prototype);
       (async () => {
         if (schema) {
           const api = await loadOpenApiSpecification(schema);
@@ -68,8 +72,8 @@ export class Http {
                       init,
                     };
                   },
+                  object: target.prototype,
                 },
-                target.prototype,
               );
             }
           }
@@ -84,7 +88,7 @@ export class Http {
             method: route["method"],
             path: route["path"],
             action: { handler: route["handler"], target: value },
-          }, true);
+          });
         });
       });
     };
@@ -99,8 +103,7 @@ export class Http {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       Http.addRouteToObject(
-        { method, path, handler: descriptor.value },
-        target,
+        { method, path, handler: descriptor.value, object: target },
       );
     };
   }

@@ -54,8 +54,8 @@ export class PubSub {
             descriptor.value(await request.json());
             return HTTP_RESPONSE_200;
           },
+          object: target,
         },
-        target,
       );
       PubSub.subscriptions.push(subscriptions);
     };
@@ -121,8 +121,8 @@ export class Bindings {
           method: "OPTIONS",
           path: `/${name}`,
           handler: () => HTTP_RESPONSE_200,
+          object: target,
         },
-        target,
       );
       Http.addRouteToObject(
         {
@@ -132,8 +132,8 @@ export class Bindings {
             descriptor.value(await request.json());
             return HTTP_RESPONSE_200;
           },
+          object: target,
         },
-        target,
       );
     };
   }

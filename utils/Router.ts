@@ -24,11 +24,12 @@ export const HTTP_RESPONSE_405: HttpResponse = {
 export class Router {
   #router = new _Router();
 
-  add({ method, path, action }: {
+  add({ method, path, action, upsert = true }: {
     method: HttpMethod;
     path: string;
     action: HttpAction;
-  }, upsert = true) {
+    upsert?: boolean;
+  }) {
     const store = this.#router.register(path);
     upsert ? store[method] = action : store[method] ??= action;
   }

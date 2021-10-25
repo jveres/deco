@@ -2,18 +2,13 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import {
-  Http
-} from "../decorators/httpserver.decorator.ts";
+import { Http } from "../decorators/httpserver.decorator.ts";
 
 @Http.Server({ schema: "api.yaml" })
+class _API {}
+
+@Http.Server()
 class _ {
-
-  @Http.Get("/api")
-  res() {
-    return {}
-  }
-
   @Http.Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
