@@ -2,21 +2,16 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import {
-  Get,
-  HttpServer,
-  serve,
-} from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.112.0/testing/asserts.ts";
+import { Http } from "../../decorators/httpserver.decorator.ts";
+import { assertEquals } from "https://deno.land/std@0.113.0/testing/asserts.ts";
 
 const MESSAGE = "Hello from Deco!";
 
-@HttpServer()
-class HttpController {
-  
+@Http.Server()
+class _ {
   #message = MESSAGE;
-  
-  @Get("/")
+
+  @Http.Get("/")
   get() {
     return { body: this.#message };
   }
@@ -28,7 +23,7 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     const port = 8090;
-    serve({ port, controllers: [HttpController] });
+    Http.serve({ port });
     const resp = await fetch(`http://localhost:${port}`);
     const text = await resp.text();
     assertEquals(text, MESSAGE);

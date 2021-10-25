@@ -69,8 +69,8 @@ class _ {
   }
 
   @Service.expose({name: "test"})
-  test() {
-    console.log("test service called");
+  test(data: unknown) {
+    console.log("test service called with data=", data);
   }
 
   @Actor.register({ actorType: "testActor" })

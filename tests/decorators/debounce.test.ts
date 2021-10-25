@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { Debounce } from "../../decorators/debounce.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.112.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.113.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
 class SomeClass {
