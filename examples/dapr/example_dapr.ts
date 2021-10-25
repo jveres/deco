@@ -19,6 +19,7 @@ import {
   Dapr,
   PubSub,
   Secrets,
+  Service,
   State,
 } from "../../decorators/dapr.decorator.ts";
 
@@ -27,7 +28,8 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 });
 const PUBSUBNAME = "pubsub";
 
-class _DaprApp {
+@Dapr.App()
+class _ {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -59,11 +61,16 @@ class _DaprApp {
 
   @Bindings.listenTo({ name: "tweets" })
   tweets({ text }: { text: Record<string, unknown> }) {
-    /*PubSub.publish({
+    PubSub.publish({
       data: { text },
       pubSubName: PUBSUBNAME,
       topic: "A",
-    });*/
+    });
+  }
+
+  @Service.expose({name: "test"})
+  test() {
+    console.log("test service called");
   }
 
   @Actor.register({ actorType: "testActor" })

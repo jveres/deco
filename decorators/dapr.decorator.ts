@@ -6,6 +6,7 @@
 
 import { Http } from "./httpserver.decorator.ts";
 import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
+import { HttpMethod } from "../utils/Router.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
 export const DEFAULT_DAPR_HTTP_PORT = 3500;
@@ -16,6 +17,15 @@ export type Consistency = "eventual" | "strong";
 export type Concurrency = "first-write" | "last-write";
 export type Metadata = Record<string, string>;
 export type ETag = string;
+
+export class Service {
+  static expose({ name, verb = "POST" }: {
+    name: string;
+    verb?: HttpMethod;
+  }): MethodDecorator {
+    return Http.Route({ method: verb, path: `/${name}` });
+  }
+}
 
 interface PubSubSubscription {
   pubSubName: string;
@@ -36,18 +46,16 @@ export class PubSub {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       subscriptions.route ??= subscriptions.topic; // TODO: slugify
-      Http.router.add(
+      Http.addRouteToObject(
         {
           method: "POST",
           path: `/${subscriptions.route}`,
-          action: {
-            handler: async ({ request }: { request: Request }) => {
-              descriptor.value(await request.json());
-              return HTTP_RESPONSE_200;
-            },
-            target: target.constructor,
+          handler: async ({ request }: { request: Request }) => {
+            descriptor.value(await request.json());
+            return HTTP_RESPONSE_200;
           },
         },
+        target,
       );
       PubSub.subscriptions.push(subscriptions);
     };
@@ -108,28 +116,24 @@ export class Bindings {
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      Http.router.add(
+      Http.addRouteToObject(
         {
           method: "OPTIONS",
           path: `/${name}`,
-          action: {
-            handler: () => HTTP_RESPONSE_200,
-            target: target.constructor,
-          },
+          handler: () => HTTP_RESPONSE_200,
         },
+        target,
       );
-      Http.router.add(
+      Http.addRouteToObject(
         {
           method: "POST",
           path: `/${name}`,
-          action: {
-            handler: async ({ request }: { request: Request }) => {
-              descriptor.value(await request.json());
-              return HTTP_RESPONSE_200;
-            },
-            target: target.constructor,
+          handler: async ({ request }: { request: Request }) => {
+            descriptor.value(await request.json());
+            return HTTP_RESPONSE_200;
           },
         },
+        target,
       );
     };
   }
@@ -358,36 +362,50 @@ export class Actor {
     },
   };
 
-  static readonly registeredActorTypes = new Map<string, Function>();
+  static readonly registeredActorTypes: string[] = [];
 
   static register({ actorType }: { actorType: string }): MethodDecorator {
     return (
       _target: Object,
       _propertyKey: string | Symbol,
-      descriptor: TypedPropertyDescriptor<any>,
+      _descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      Actor.registeredActorTypes.set(actorType, descriptor.value);
+      Actor.registeredActorTypes.push(actorType);
     };
   }
 }
 
 export class Dapr {
-  static start(
+  static readonly actorSettings = {};
+
+  static App(
     {
-      appPort,
       actorIdleTimeout,
       actorScanInterval,
       drainOngoingCallTimeout,
       drainRebalancedActors,
     }: {
-      appPort?: number;
       actorIdleTimeout?: string;
       actorScanInterval?: string;
       drainOngoingCallTimeout?: string;
       drainRebalancedActors?: boolean;
     } = {},
-  ) {
+  ): ClassDecorator {
+    return (target: Function): void => {
+      Object.assign(
+        Dapr.actorSettings,
+        actorIdleTimeout && { actorIdleTimeout },
+        actorScanInterval && { actorScanInterval },
+        drainOngoingCallTimeout && { drainOngoingCallTimeout },
+        drainRebalancedActors && { drainRebalancedActors },
+      );
+      Http.Server()(target);
+    };
+  }
+
+  static start({ appPort }: { appPort?: number } = {}) {
     appPort ??= DEFAULT_DAPR_APP_PORT;
+
     // Configure PubSub subscriptions
     if (PubSub.subscriptions.length > 0) {
       Http.router.add({
@@ -403,15 +421,12 @@ export class Dapr {
         },
       });
     }
+
     // Configure actors
-    if (Actor.registeredActorTypes.size > 0) {
-      const entities = Array.from(Actor.registeredActorTypes.keys());
+    if (Actor.registeredActorTypes.length > 0) {
       const config = {
-        entities,
-        ...actorIdleTimeout && { actorIdleTimeout },
-        ...actorScanInterval && { actorScanInterval },
-        ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
-        ...drainRebalancedActors && { drainRebalancedActors },
+        entities: Actor.registeredActorTypes,
+        ...Dapr.actorSettings,
       };
       Http.router.add({
         method: "GET",
@@ -426,7 +441,7 @@ export class Dapr {
         },
       });
       // Register actor user services
-      entities.map((actorType: string) => {
+      /*entities.map((actorType: string) => {
         // Deactivate actor user service
         Http.router.add({
           method: "DELETE",
@@ -484,18 +499,14 @@ export class Dapr {
             },
           },
         });
-        // Health check
-        Http.router.add({
-          method: "GET",
-          path: "/healthz",
-          action: {
-            handler: () => {
-              console.log(
-                `Health check actor user service called`,
-              );
-            },
-          },
-        });
+      }); */
+      // Health check
+      Http.router.add({
+        method: "GET",
+        path: "/healthz",
+        action: {
+          handler: () => HTTP_RESPONSE_200,
+        },
       });
     }
     Http.serve({ port: appPort });
