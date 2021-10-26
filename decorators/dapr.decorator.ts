@@ -69,6 +69,7 @@ export class PubSub {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       subscriptions.route ??= subscriptions.topic; // TODO: slugify
+      PubSub.subscriptions.push(subscriptions);
       Http.addRouteToObject(
         {
           method: "POST",
@@ -80,7 +81,6 @@ export class PubSub {
           object: target,
         },
       );
-      PubSub.subscriptions.push(subscriptions);
     };
   }
 
@@ -386,48 +386,60 @@ export class Actor {
     },
   };
 
-  static readonly registeredActorTypes: string[] = [];
+  //static readonly registeredActorTypes: string[] = [];
+  static readonly registeredActorTypes = new Map<string, BroadcastChannel>();
 
   static register({ actorType }: { actorType: string }): MethodDecorator {
     return (
-      _target: Object,
+      target: Object,
       _propertyKey: string | Symbol,
       _descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      Actor.registeredActorTypes.push(actorType);
+      // Create broadcast channel for actorType
+      const channel = new BroadcastChannel(actorType);
+      // Register actorType and actor services
+      Actor.registeredActorTypes.set(
+        actorType,
+        channel,
+      );
+      // Deactivate actor user service
+      Http.addRouteToObject(
+        {
+          method: "DELETE",
+          path: `/actors/${actorType}/:actorId`,
+          handler: ({ actorId }: { actorId: string }) => {
+            console.log(
+              `Deactivate actor user service called with actorType=${actorType}, actorId=${actorId}`,
+            );
+            channel.postMessage({ event: "deactivate", actorType, actorId });
+          },
+          object: target,
+        },
+      );
     };
   }
 }
 
 export class Dapr {
-  static readonly actorSettings = {};
+  static App(): ClassDecorator {
+    return Http.Server();
+  }
 
-  static App(
+  static start(
     {
+      appPort,
       actorIdleTimeout,
       actorScanInterval,
       drainOngoingCallTimeout,
       drainRebalancedActors,
     }: {
+      appPort?: number;
       actorIdleTimeout?: string;
       actorScanInterval?: string;
       drainOngoingCallTimeout?: string;
       drainRebalancedActors?: boolean;
     } = {},
-  ): ClassDecorator {
-    return (target: Function): void => {
-      Object.assign(
-        Dapr.actorSettings,
-        actorIdleTimeout && { actorIdleTimeout },
-        actorScanInterval && { actorScanInterval },
-        drainOngoingCallTimeout && { drainOngoingCallTimeout },
-        drainRebalancedActors && { drainRebalancedActors },
-      );
-      Http.Server()(target);
-    };
-  }
-
-  static start({ appPort }: { appPort?: number } = {}) {
+  ) {
     appPort ??= DEFAULT_DAPR_APP_PORT;
     // Configure PubSub subscriptions
     if (PubSub.subscriptions.length > 0) {
@@ -445,10 +457,13 @@ export class Dapr {
       });
     }
     // Configure actors
-    if (Actor.registeredActorTypes.length > 0) {
+    if (Actor.registeredActorTypes.size > 0) {
       const config = {
-        entities: Actor.registeredActorTypes,
-        ...Dapr.actorSettings,
+        entities: Array.from(Actor.registeredActorTypes.keys()),
+        ...actorIdleTimeout && { actorIdleTimeout },
+        ...actorScanInterval && { actorScanInterval },
+        ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
+        ...drainRebalancedActors && { drainRebalancedActors },
       };
       Http.router.add({
         method: "GET",

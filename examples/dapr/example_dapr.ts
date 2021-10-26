@@ -68,14 +68,17 @@ class _ {
     });
   }
 
-  @Service.expose({name: "test"})
+  @Service.expose({ name: "test" })
   async test({ request }: { request: Request }) {
     console.log("test service called with data = " + await request.text());
     return {
-      body: "test reply"
-    }
+      body: "test reply",
+    };
   }
+}
 
+@Dapr.App()
+class __ {
   @Actor.register({ actorType: "testActor" })
   actor() {
     console.log("testActor called");
@@ -113,4 +116,4 @@ console.log(
 );
 
 console.log("Dapr app started...");
-Dapr.start({ appPort: 3000 });
+Dapr.start({ appPort: 3000, actorIdleTimeout: "5s" });
