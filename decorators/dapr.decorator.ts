@@ -386,32 +386,67 @@ export class Actor {
     },
   };
 
-  //static readonly registeredActorTypes: string[] = [];
-  static readonly registeredActorTypes = new Map<string, BroadcastChannel>();
+  static readonly registeredActorTypes: string[] = [];
 
   static register({ actorType }: { actorType: string }): MethodDecorator {
     return (
       target: Object,
       _propertyKey: string | Symbol,
-      _descriptor: TypedPropertyDescriptor<any>,
+      descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      // Create broadcast channel for actorType
-      const channel = new BroadcastChannel(actorType);
       // Register actorType and actor services
-      Actor.registeredActorTypes.set(
-        actorType,
-        channel,
+      Actor.registeredActorTypes.push(actorType);
+      // Invoke actor
+      Http.addRouteToObject(
+        {
+          method: "PUT",
+          path: `/actors/${actorType}/:actorId/method/:methodName`,
+          handler: async function (
+            { actorId, methodName }: { actorId: string; methodName: string },
+          ) {
+            console.log(
+              `Invoke actor called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
+            );
+            try {
+              const res = await descriptor.value.apply(this, [{
+                event: "invoke",
+                actorType,
+                actorId,
+                methodName,
+              }]);
+              return { body: res };
+            } catch (err) {
+              console.error(
+                `Invoke actor failed with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}\n${err}`,
+              );
+              return { init: { status: 500 } };
+            }
+          },
+          object: target,
+        },
       );
       // Deactivate actor user service
       Http.addRouteToObject(
         {
           method: "DELETE",
           path: `/actors/${actorType}/:actorId`,
-          handler: ({ actorId }: { actorId: string }) => {
+          handler: async function ({ actorId }: { actorId: string }) {
             console.log(
-              `Deactivate actor user service called with actorType=${actorType}, actorId=${actorId}`,
+              `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
             );
-            channel.postMessage({ event: "deactivate", actorType, actorId });
+            try {
+              const res = await descriptor.value.apply(this, [{
+                event: "deactivate",
+                actorType,
+                actorId,
+              }]);
+              return { body: res };
+            } catch (err) {
+              console.error(
+                `Deactivate actor failed with actorType=${actorType}, actorId=${actorId}\n${err}`,
+              );
+              return { init: { status: 500 } };
+            }
           },
           object: target,
         },
@@ -457,9 +492,9 @@ export class Dapr {
       });
     }
     // Configure actors
-    if (Actor.registeredActorTypes.size > 0) {
+    if (Actor.registeredActorTypes.length > 0) {
       const config = {
-        entities: Array.from(Actor.registeredActorTypes.keys()),
+        entities: Actor.registeredActorTypes,
         ...actorIdleTimeout && { actorIdleTimeout },
         ...actorScanInterval && { actorScanInterval },
         ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
@@ -479,32 +514,6 @@ export class Dapr {
       });
       // Register actor user services
       /*entities.map((actorType: string) => {
-        // Deactivate actor user service
-        Http.router.add({
-          method: "DELETE",
-          path: `/actors/${actorType}/:actorId`,
-          action: {
-            handler: ({ actorId }: { actorId: string }) => {
-              console.log(
-                `Deactivate actor user service called with actorType=${actorType}, actorId=${actorId}`,
-              );
-            },
-          },
-        });
-        // Invoke actor user service
-        Http.router.add({
-          method: "PUT",
-          path: `/actors/${actorType}/:actorId/method/:methodName`,
-          action: {
-            handler: (
-              { actorId, methodName }: { actorId: string; methodName: string },
-            ) => {
-              console.log(
-                `Invoke actor user service called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
-              );
-            },
-          },
-        });
         // Invoke reminder user service
         Http.router.add({
           method: "PUT",

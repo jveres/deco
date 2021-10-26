@@ -45,7 +45,9 @@ class _ {
         (function time() {
           setTimeout(() => {
             if (!cancelled) {
-              const body = `event: timer\ndata: ${new Date().toISOString()}\n\n\n`;
+              const body = `event: timer\ndata: ${
+                new Date().toISOString()
+              }\n\n\n`;
               controller.enqueue(body);
               time();
             }

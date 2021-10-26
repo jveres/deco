@@ -22,6 +22,7 @@ import {
   Service,
   State,
 } from "../../decorators/dapr.decorator.ts";
+import { sleep } from "../../utils/utils.ts";
 
 const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
   store: "example-secrets-store",
@@ -29,7 +30,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
-class _ {
+class _App {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -68,20 +69,30 @@ class _ {
     });
   }
 
-  @Service.expose({ name: "test" })
+  private counter = 0;
+
+  @Service.expose({ name: "test", verb: "GET" })
   async test({ request }: { request: Request }) {
-    console.log("test service called with data = " + await request.text());
+    console.log(
+      `test service called, counter: ${++this.counter}, data = "${await request
+        .text()}"`,
+    );
+    await sleep(4000);
     return {
-      body: "test reply",
+      body: `test reply, counter: ${this.counter}`,
     };
   }
 }
 
 @Dapr.App()
-class __ {
+class _TestActor {
+  counter = 0;
+
   @Actor.register({ actorType: "testActor" })
-  actor() {
-    console.log("testActor called");
+  async actor(event: Record<string, unknown>) {
+    console.log({ ...event, counter: ++this.counter });
+    await sleep(4000);
+    return `counter: ${this.counter}`;
   }
 }
 
