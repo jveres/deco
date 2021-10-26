@@ -69,8 +69,11 @@ class _ {
   }
 
   @Service.expose({name: "test"})
-  test(data: unknown) {
-    console.log("test service called with data=", data);
+  async test({ request }: { request: Request }) {
+    console.log("test service called with data = " + await request.text());
+    return {
+      body: "test reply"
+    }
   }
 
   @Actor.register({ actorType: "testActor" })

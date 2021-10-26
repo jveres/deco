@@ -39,7 +39,7 @@ export class Service {
         headers: { "content-type": "application/json" },
       },
     );
-    if (res.status === 200) return await res.json();
+    if (res.status === 200) return await res.text();
     else {
       const { status, statusText } = res;
       throw Error(
