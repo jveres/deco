@@ -33,6 +33,35 @@ class _ {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
     };
   }
+
+  @Http.Get("/sse")
+  stream() {
+    let cancelled = true;
+    const stream = new ReadableStream({
+      start: (controller) => {
+        cancelled = false;
+        console.log("Stream started");
+        controller.enqueue(": Welcome to the /sse endpoint!\n\n");
+        (function time() {
+          setTimeout(() => {
+            if (!cancelled) {
+              const body = `event: timer\ndata: ${new Date().toISOString()}\n\n\n`;
+              controller.enqueue(body);
+              time();
+            }
+          }, 1000);
+        })();
+      },
+      cancel() {
+        cancelled = true;
+        console.log("Stream cancelled");
+      },
+    });
+    return {
+      body: stream.pipeThrough(new TextEncoderStream()),
+      init: { headers: { "content-type": "text/event-stream" } },
+    };
+  }
 }
 
 console.log("Server started...");
