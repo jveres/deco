@@ -15,6 +15,7 @@
 
 import {
   Actor,
+  ActorType,
   Bindings,
   Dapr,
   PubSub,
@@ -30,7 +31,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
-class _App {
+class _ {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -85,14 +86,29 @@ class _App {
 }
 
 @Dapr.App()
-class _TestActor {
+class __ {
   counter = 0;
 
   @Actor.register({ actorType: "testActor" })
-  async actor(event: Record<string, unknown>) {
-    console.log({ ...event, counter: ++this.counter });
-    await sleep(4000);
-    return `counter: ${this.counter}`;
+  actorType(): ActorType {
+    return {
+      activate: ({ actorType, actorId, methodName }) => {
+        console.log(
+          `activate actor, actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter="${++this.counter}"`,
+        );
+      },
+
+      deactivate: ({ actorType, actorId }) => {
+        console.log(
+          `deactivate actor, actorType="${actorType}", actorId="${actorId}", counter="${--this.counter}"`,
+        );
+      },
+
+      $test: ({ actorType, actorId, data }) => {
+        console.log(`test() called with "${data}"`);
+        return `"test()" result for actorType="${actorType}", actorId="${actorId}", counter="${++this.counter}"`;
+      },
+    };
   }
 }
 

@@ -315,7 +315,118 @@ export class State {
   }
 }
 
+export type ActorMethod = (
+  { actorType, actorId, data }: {
+    actorType: string;
+    actorId: string;
+    data?: unknown;
+  },
+) => unknown;
+
+export interface ActorType {
+  activate?: (
+    { actorType, actorId, methodName }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+    },
+  ) => void;
+  deactivate?: (
+    { actorType, actorId }: { actorType: string; actorId: string },
+  ) => void;
+  [methodName: `$${string}`]: ActorMethod;
+}
+
 export class Actor {
+  static readonly registeredActorTypes = new Map<string, ActorType | null>();
+
+  static register({ actorType }: { actorType: string }): MethodDecorator {
+    return (
+      target: Object,
+      _propertyKey: string | Symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      // Register actor instance and actor services
+      Actor.registeredActorTypes.set(actorType, null);
+      // Invoke actor
+      Http.addRouteToObject(
+        {
+          method: "PUT",
+          path: `/actors/${actorType}/:actorId/method/:methodName`,
+          handler: async function (
+            { actorId, methodName, request }: {
+              actorId: string;
+              methodName: string;
+              request: Request;
+            },
+          ) {
+            console.log(
+              `Invoke actor called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
+            );
+            let status = 404;
+            try {
+              let actorInstance = Actor.registeredActorTypes.get(actorType);
+              if (actorInstance === undefined) {
+                throw Error("actorType is not registered");
+              } else if (actorInstance === null) {
+                actorInstance = descriptor.value() as ActorType;
+                if (!actorInstance.hasOwnProperty(`$${methodName}`)) {
+                  throw Error("method doesn't exist on actor");
+                }
+                Actor.registeredActorTypes.set(actorType, actorInstance);
+                actorInstance.activate?.apply(this, [{
+                  actorType,
+                  actorId,
+                  methodName,
+                }]);
+              }
+              status = 500;
+              const res = await actorInstance[`$${methodName}`]?.apply(
+                this,
+                [{ actorId, actorType, data: await request.text() }],
+              );
+              return { body: JSON.stringify(res) };
+            } catch (err) {
+              console.error(
+                `Invoke actor failed with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}\n${err}`,
+              );
+              return { init: { status } };
+            }
+          },
+          object: target,
+        },
+      );
+      // Deactivate actor user service
+      Http.addRouteToObject(
+        {
+          method: "DELETE",
+          path: `/actors/${actorType}/:actorId`,
+          handler: function ({ actorId }: { actorId: string }) {
+            console.log(
+              `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
+            );
+            try {
+              const actorInstance = Actor.registeredActorTypes.get(actorType);
+              if (!actorInstance) {
+                console.warn(
+                  `actorInstance for actorType="${actorType}", actorId="${actorId}" not found`,
+                );
+              }
+              actorInstance?.deactivate?.apply(this, [{ actorType, actorId }]);
+              Actor.registeredActorTypes.set(actorType, null);
+            } catch (err) {
+              console.error(
+                `Deactivate actor failed with actorType=${actorType}, actorId=${actorId}\n${err}`,
+              );
+              return { init: { status: 500 } };
+            }
+          },
+          object: target,
+        },
+      );
+    };
+  }
+
   static async invoke({ actorType, actorId, method, data }: {
     actorType: string;
     actorId: string;
@@ -385,74 +496,6 @@ export class Actor {
       }
     },
   };
-
-  static readonly registeredActorTypes: string[] = [];
-
-  static register({ actorType }: { actorType: string }): MethodDecorator {
-    return (
-      target: Object,
-      _propertyKey: string | Symbol,
-      descriptor: TypedPropertyDescriptor<any>,
-    ): void => {
-      // Register actorType and actor services
-      Actor.registeredActorTypes.push(actorType);
-      // Invoke actor
-      Http.addRouteToObject(
-        {
-          method: "PUT",
-          path: `/actors/${actorType}/:actorId/method/:methodName`,
-          handler: async function (
-            { actorId, methodName }: { actorId: string; methodName: string },
-          ) {
-            console.log(
-              `Invoke actor called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
-            );
-            try {
-              const res = await descriptor.value.apply(this, [{
-                event: "invoke",
-                actorType,
-                actorId,
-                methodName,
-              }]);
-              return { body: res };
-            } catch (err) {
-              console.error(
-                `Invoke actor failed with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}\n${err}`,
-              );
-              return { init: { status: 500 } };
-            }
-          },
-          object: target,
-        },
-      );
-      // Deactivate actor user service
-      Http.addRouteToObject(
-        {
-          method: "DELETE",
-          path: `/actors/${actorType}/:actorId`,
-          handler: async function ({ actorId }: { actorId: string }) {
-            console.log(
-              `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
-            );
-            try {
-              const res = await descriptor.value.apply(this, [{
-                event: "deactivate",
-                actorType,
-                actorId,
-              }]);
-              return { body: res };
-            } catch (err) {
-              console.error(
-                `Deactivate actor failed with actorType=${actorType}, actorId=${actorId}\n${err}`,
-              );
-              return { init: { status: 500 } };
-            }
-          },
-          object: target,
-        },
-      );
-    };
-  }
 }
 
 export class Dapr {
@@ -492,9 +535,9 @@ export class Dapr {
       });
     }
     // Configure actors
-    if (Actor.registeredActorTypes.length > 0) {
+    if (Actor.registeredActorTypes.size > 0) {
       const config = {
-        entities: Actor.registeredActorTypes,
+        entities: Array.from(Actor.registeredActorTypes.keys()),
         ...actorIdleTimeout && { actorIdleTimeout },
         ...actorScanInterval && { actorScanInterval },
         ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
