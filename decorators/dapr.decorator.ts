@@ -524,7 +524,7 @@ export class Dapr {
       });
       // Register actors
       for (const [actorType] of Actor.registeredActors) {
-        // Register actorType for invokation
+        // Register actorType for invocation
         Http.router.add(
           {
             method: "PUT",
