@@ -315,25 +315,18 @@ export class State {
   }
 }
 
-type ActorType = string;
-type ActorId = string;
-type ActorMethodName = string;
-type ActorMethod = Function;
-type ActorInstance = {
-  actorMethod: ActorMethod;
-  actorIds: Set<ActorId>;
-};
-
 export class Actor {
   static readonly registeredActors = new Map<
-    ActorType,
-    Map<ActorMethodName, ActorInstance>
+    string,
+    Set<string>
   >();
 
   static register(
-    { actorType, methodName }: {
-      actorType: ActorType;
-      methodName: ActorMethodName;
+    { actorType, methodName, onActivate, onDeactivate }: {
+      actorType: string;
+      methodName: string;
+      onActivate?: string;
+      onDeactivate?: string;
     },
   ): MethodDecorator {
     return (
@@ -341,13 +334,10 @@ export class Actor {
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      // Register actor instance and actor services
+      // Register actor type with empty tracking list
       Actor.registeredActors.set(
         actorType,
-        new Map([[methodName, {
-          actorMethod: descriptor.value,
-          actorIds: new Set(),
-        }]]),
+        new Set(),
       );
       // Invoke actor
       Http.addRouteToObject(
@@ -366,20 +356,26 @@ export class Actor {
             );
             let status = 404;
             try {
-              const actorInstance = Actor.registeredActors.get(actorType)?.get(
-                methodName,
-              );
-              if (actorInstance === undefined) {
-                throw Error("Actor is not registered");
+              const actorInstances = Actor.registeredActors.get(actorType);
+              if (actorInstances === undefined) {
+                throw Error("Actor type is not registered");
               }
-              if (!actorInstance.actorIds.has(actorId)) { // new actorId activated
-                actorInstance.actorIds.add(actorId);
+              if (!actorInstances.has(actorId)) { // activated actor and add to tracking list
+                actorInstances.add(actorId);
                 console.log(
                   `Actor activated with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
                 );
+                if (onActivate) {
+                  await (target as any)[onActivate]?.apply(this, [{
+                    actorType,
+                    actorId,
+                    methodName,
+                    request,
+                  }]);
+                }
               }
               status = 500;
-              const res = await actorInstance.actorMethod.apply(this, [{
+              const res = await descriptor.value.apply(this, [{
                 actorType,
                 actorId,
                 methodName,
@@ -401,8 +397,8 @@ export class Actor {
         {
           method: "DELETE",
           path: `/actors/${actorType}/:actorId`,
-          handler: function (
-            { actorId }: { actorId: string },
+          handler: async function (
+            { actorId, request }: { actorId: string; request: Request },
           ) {
             console.log(
               `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
@@ -415,11 +411,17 @@ export class Actor {
                 );
               } else {
                 // Delete actor instance from the tracking list
-                for (const [_, actorInstance] of actorInstances) {
-                  if (actorInstance.actorIds.has(actorId)) {
-                    actorInstance.actorIds.delete(actorId);
-                    return;
+                if (actorInstances.has(actorId)) {
+                  if (onDeactivate) {
+                    await (target as any)[onDeactivate]?.apply(this, [{
+                      actorType,
+                      actorId,
+                      methodName,
+                      request,
+                    }]);
                   }
+                  actorInstances.delete(actorId);
+                  return;
                 }
                 console.warn("Warning: actorId was not found during delete");
               }

@@ -88,7 +88,21 @@ class _ {
 class __ {
   counter = 0;
 
-  @Actor.register({ actorType: "testActor", methodName: "testMethod" })
+  OnActivateTestActorMethod({ actorId }: { actorId: string }) {
+    this.counter = 0;
+    console.log(`testActor with actorId="${actorId}" activated, counter reset`);
+  }
+
+  OnDeactivateTestActorMethod({ actorId }: { actorId: string }) {
+    console.log(`testActor with actorId="${actorId}" deactivated`);
+  }
+
+  @Actor.register({
+    actorType: "testActor",
+    methodName: "testMethod",
+    onActivate: "OnActivateTestActorMethod",
+    onDeactivate: "OnDeactivateTestActorMethod",
+  })
   async testActorMethod(
     { actorId, request }: { actorId: string; request: Request },
   ) {
