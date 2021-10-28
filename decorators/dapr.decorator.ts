@@ -315,28 +315,40 @@ export class State {
   }
 }
 
-interface ActorInstance {
-  actor: Function;
-  isActive: boolean;
-}
-
-export declare type ActorEvent = "activate" | "deactivate" | "invoke";
+type ActorType = string;
+type ActorId = string;
+type ActorMethodName = string;
+type ActorMethod = Function;
+type ActorInstance = {
+  actorMethod: ActorMethod;
+  actorIds: Set<ActorId>;
+};
 
 export class Actor {
-  
-  static readonly registeredActorTypes = new Map<string, ActorInstance>();
+  static readonly registeredActors = new Map<
+    ActorType,
+    Map<ActorMethodName, ActorInstance>
+  >();
 
-  static register({ actorType }: { actorType: string }): MethodDecorator {
+  static register(
+    { actorType, methodName }: {
+      actorType: ActorType;
+      methodName: ActorMethodName;
+    },
+  ): MethodDecorator {
     return (
       target: Object,
       _propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor instance and actor services
-      Actor.registeredActorTypes.set(actorType, {
-        actor: descriptor.value,
-        isActive: false,
-      });
+      Actor.registeredActors.set(
+        actorType,
+        new Map([[methodName, {
+          actorMethod: descriptor.value,
+          actorIds: new Set(),
+        }]]),
+      );
       // Invoke actor
       Http.addRouteToObject(
         {
@@ -354,19 +366,25 @@ export class Actor {
             );
             let status = 404;
             try {
-              const actorInstance = Actor.registeredActorTypes.get(actorType);
+              const actorInstance = Actor.registeredActors.get(actorType)?.get(
+                methodName,
+              );
               if (actorInstance === undefined) {
-                throw Error("actorType is not registered");
+                throw Error("Actor is not registered");
+              }
+              if (!actorInstance.actorIds.has(actorId)) { // new actorId activated
+                actorInstance.actorIds.add(actorId);
+                console.log(
+                  `Actor activated with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
+                );
               }
               status = 500;
-              const res = await actorInstance.actor.apply(this, [{
+              const res = await actorInstance.actorMethod.apply(this, [{
                 actorType,
                 actorId,
-                actorEvent: actorInstance.isActive ? "invoke" : "activate",
                 methodName,
                 request,
               }]);
-              actorInstance.isActive = true;
               return { body: JSON.stringify(res) };
             } catch (err) {
               console.error(
@@ -383,26 +401,27 @@ export class Actor {
         {
           method: "DELETE",
           path: `/actors/${actorType}/:actorId`,
-          handler: async function (
-            { actorId, request }: { actorId: string; request: Request },
+          handler: function (
+            { actorId }: { actorId: string },
           ) {
             console.log(
               `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
             );
             try {
-              const actorInstance = Actor.registeredActorTypes.get(actorType);
-              if (!actorInstance) {
+              const actorInstances = Actor.registeredActors.get(actorType);
+              if (actorInstances === undefined) {
                 console.warn(
-                  `actorInstance for actorType="${actorType}", actorId="${actorId}" not found`,
+                  `Instance for actorType="${actorType}", actorId="${actorId}" not found, cannot delete`,
                 );
               } else {
-                await actorInstance.actor.apply(this, [{
-                  actorType,
-                  actorId,
-                  actorEvent: "deactivate",
-                  request,
-                }]);
-                actorInstance.isActive = false;
+                // Delete actor instance from the tracking list
+                for (const [_, actorInstance] of actorInstances) {
+                  if (actorInstance.actorIds.has(actorId)) {
+                    actorInstance.actorIds.delete(actorId);
+                    return;
+                  }
+                }
+                console.warn("Warning: actorId was not found during delete");
               }
             } catch (err) {
               console.error(
@@ -525,9 +544,9 @@ export class Dapr {
       });
     }
     // Configure actors
-    if (Actor.registeredActorTypes.size > 0) {
+    if (Actor.registeredActors.size > 0) {
       const config = {
-        entities: Array.from(Actor.registeredActorTypes.keys()),
+        entities: Array.from(Actor.registeredActors.keys()),
         ...actorIdleTimeout && { actorIdleTimeout },
         ...actorScanInterval && { actorScanInterval },
         ...drainOngoingCallTimeout && { drainOngoingCallTimeout },

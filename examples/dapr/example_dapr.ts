@@ -15,7 +15,6 @@
 
 import {
   Actor,
-  ActorEvent,
   Bindings,
   Dapr,
   PubSub,
@@ -89,46 +88,15 @@ class _ {
 class __ {
   counter = 0;
 
-  @Actor.register({ actorType: "testActor" })
-  async testActor(
-    { actorType, actorId, actorEvent, methodName, request }: {
-      actorType: string;
-      actorId: string;
-      actorEvent: ActorEvent;
-      methodName: string;
-      request: Request;
-    },
+  @Actor.register({ actorType: "testActor", methodName: "testMethod" })
+  async testActorMethod(
+    { actorId, request }: { actorId: string; request: Request },
   ) {
+    const data = await request.text();
     console.log(
-      `actor invoked with data="${await request
-        .text()}", actorType="${actorType}", actorId="${actorId}", actorEvent="${actorEvent}", method="${methodName}"`,
+      `actor invoked with data="${data}", actorType="testActor", actorId="${actorId}", method="testMethod"`,
     );
-    switch (actorEvent) {
-      case "activate":
-      case "invoke":
-        console.log(
-          `actor activated, actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
-        );
-        if (actorEvent === "activate") this.counter = 0;
-        switch (methodName) {
-          case "testMethod":
-            return this.testMethod();
-          default:
-            throw Error("unknown method");
-        }
-      case "deactivate":
-        this.counter = 0;
-        console.log(
-          `actor deactivated, actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
-        );
-        break;
-      default:
-        break;
-    }
-  }
-
-  testMethod() {
-    return `counter="${++this.counter}"`;
+    return `counter: ${++this.counter}`;
   }
 }
 
