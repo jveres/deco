@@ -10,7 +10,7 @@ export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: string; init?: ResponseInit };
 export type HttpFunction = (
   params?: any,
-) => HttpResponse | Promise<HttpResponse> | void;
+) => HttpResponse | Promise<HttpResponse | void> | void;
 export type HttpAction = { handler: HttpFunction; target?: Object };
 
 export const HTTP_RESPONSE_200: HttpResponse = {

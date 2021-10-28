@@ -15,6 +15,7 @@
 
 import {
   Actor,
+  ActorEvent,
   Bindings,
   Dapr,
   PubSub,
@@ -90,16 +91,44 @@ class __ {
 
   @Actor.register({ actorType: "testActor" })
   async testActor(
-    { actorType, actorId, methodName, request }: {
+    { actorType, actorId, actorEvent, methodName, request }: {
       actorType: string;
       actorId: string;
+      actorEvent: ActorEvent;
       methodName: string;
       request: Request;
     },
   ) {
     console.log(
-      `actor inkoved with data="${await request.text()}", actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter="${++this.counter}"`,
+      `actor invoked with data="${await request
+        .text()}", actorType="${actorType}", actorId="${actorId}", actorEvent="${actorEvent}", method="${methodName}"`,
     );
+    switch (actorEvent) {
+      case "activate":
+      case "invoke":
+        console.log(
+          `actor activated, actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
+        );
+        if (actorEvent === "activate") this.counter = 0;
+        switch (methodName) {
+          case "testMethod":
+            return this.testMethod();
+          default:
+            throw Error("unknown method");
+        }
+      case "deactivate":
+        this.counter = 0;
+        console.log(
+          `actor deactivated, actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  testMethod() {
+    return `counter="${++this.counter}"`;
   }
 }
 

@@ -315,8 +315,16 @@ export class State {
   }
 }
 
+interface ActorInstance {
+  actor: Function;
+  isActive: boolean;
+}
+
+export declare type ActorEvent = "activate" | "deactivate" | "invoke";
+
 export class Actor {
-  static readonly registeredActorTypes = new Map<string, Function>();
+  
+  static readonly registeredActorTypes = new Map<string, ActorInstance>();
 
   static register({ actorType }: { actorType: string }): MethodDecorator {
     return (
@@ -325,7 +333,10 @@ export class Actor {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor instance and actor services
-      Actor.registeredActorTypes.set(actorType, descriptor.value);
+      Actor.registeredActorTypes.set(actorType, {
+        actor: descriptor.value,
+        isActive: false,
+      });
       // Invoke actor
       Http.addRouteToObject(
         {
@@ -348,12 +359,14 @@ export class Actor {
                 throw Error("actorType is not registered");
               }
               status = 500;
-              const res = await actorInstance.apply(this, [{
+              const res = await actorInstance.actor.apply(this, [{
                 actorType,
                 actorId,
+                actorEvent: actorInstance.isActive ? "invoke" : "activate",
                 methodName,
-                request
+                request,
               }]);
+              actorInstance.isActive = true;
               return { body: JSON.stringify(res) };
             } catch (err) {
               console.error(
@@ -370,7 +383,9 @@ export class Actor {
         {
           method: "DELETE",
           path: `/actors/${actorType}/:actorId`,
-          handler: function ({ actorId }: { actorId: string }) {
+          handler: async function (
+            { actorId, request }: { actorId: string; request: Request },
+          ) {
             console.log(
               `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
             );
@@ -380,8 +395,15 @@ export class Actor {
                 console.warn(
                   `actorInstance for actorType="${actorType}", actorId="${actorId}" not found`,
                 );
+              } else {
+                await actorInstance.actor.apply(this, [{
+                  actorType,
+                  actorId,
+                  actorEvent: "deactivate",
+                  request,
+                }]);
+                actorInstance.isActive = false;
               }
-              //actorInstance?.deactivate?.apply(this, [{ actorType, actorId }]);
             } catch (err) {
               console.error(
                 `Deactivate actor failed with actorType=${actorType}, actorId=${actorId}\n${err}`,
