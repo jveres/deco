@@ -606,7 +606,7 @@ export class Dapr {
                     // Delete actor instance from the tracking list
                     if (virtualActor.instances.has(actorId)) {
                       const { fn, target } =
-                        virtualActor.eventHandlers.get(ActorEvent.Activate) ||
+                        virtualActor.eventHandlers.get(ActorEvent.Deactivate) ||
                         {};
                       await fn?.apply(
                         target,
