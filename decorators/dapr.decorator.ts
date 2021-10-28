@@ -523,7 +523,6 @@ export class Dapr {
         },
       });
       // Register actors
-      console.log(Actor.registeredActors);
       for (const [actorType] of Actor.registeredActors) {
         // Register actorType for invokation
         Http.router.add(
