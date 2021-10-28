@@ -15,7 +15,6 @@
 
 import {
   Actor,
-  ActorType,
   Bindings,
   Dapr,
   PubSub,
@@ -90,25 +89,17 @@ class __ {
   counter = 0;
 
   @Actor.register({ actorType: "testActor" })
-  actorType(): ActorType {
-    return {
-      activate: ({ actorType, actorId, methodName }) => {
-        console.log(
-          `activate actor, actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter="${++this.counter}"`,
-        );
-      },
-
-      deactivate: ({ actorType, actorId }) => {
-        console.log(
-          `deactivate actor, actorType="${actorType}", actorId="${actorId}", counter="${--this.counter}"`,
-        );
-      },
-
-      $test: ({ actorType, actorId, data }) => {
-        console.log(`test() called with "${data}"`);
-        return `"test()" result for actorType="${actorType}", actorId="${actorId}", counter="${++this.counter}"`;
-      },
-    };
+  async testActor(
+    { actorType, actorId, methodName, request }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+      request: Request;
+    },
+  ) {
+    console.log(
+      `actor inkoved with data="${await request.text()}", actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter="${++this.counter}"`,
+    );
   }
 }
 
