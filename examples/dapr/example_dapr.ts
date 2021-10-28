@@ -100,8 +100,8 @@ class __ {
   @Actor.register({
     actorType: "testActor",
     methodName: "testMethod",
-    onActivate: "activate",
-    onDeactivate: "deactivate",
+    onActivate: Symbol("activate"),
+    onDeactivate: Symbol("deactivate"),
   })
   async invoke(
     { actorId, request }: { actorId: string; request: Request },

@@ -325,8 +325,8 @@ export class Actor {
     { actorType, methodName, onActivate, onDeactivate }: {
       actorType: string;
       methodName: string;
-      onActivate?: string;
-      onDeactivate?: string;
+      onActivate?: symbol;
+      onDeactivate?: symbol;
     },
   ): MethodDecorator {
     return (
@@ -365,8 +365,8 @@ export class Actor {
                 console.log(
                   `Actor activated with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
                 );
-                if (onActivate) {
-                  await (target as any)[onActivate]?.apply(this, [{
+                if (onActivate?.description) {
+                  await (target as any)[onActivate.description]?.apply(this, [{
                     actorType,
                     actorId,
                     methodName,
@@ -412,13 +412,16 @@ export class Actor {
               } else {
                 // Delete actor instance from the tracking list
                 if (actorInstances.has(actorId)) {
-                  if (onDeactivate) {
-                    await (target as any)[onDeactivate]?.apply(this, [{
-                      actorType,
-                      actorId,
-                      methodName,
-                      request,
-                    }]);
+                  if (onDeactivate?.description) {
+                    await (target as any)[onDeactivate.description]?.apply(
+                      this,
+                      [{
+                        actorType,
+                        actorId,
+                        methodName,
+                        request,
+                      }],
+                    );
                   }
                   actorInstances.delete(actorId);
                   return;
