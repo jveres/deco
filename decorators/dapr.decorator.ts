@@ -315,18 +315,65 @@ export class State {
   }
 }
 
-export class Actor {
-  static readonly registeredActors = new Map<
-    string,
-    Set<string>
-  >();
+export enum ActorEvent {
+  Activate = "activate",
+  Deactivate = "deactivate",
+}
 
-  static register(
-    { actorType, methodName, onActivate, onDeactivate }: {
+type ActorType = string;
+type ActorId = string;
+type ActorMethod = string;
+type ActorFn = {
+  target: Object | undefined;
+  fn: Function;
+};
+
+type VirtualActor = {
+  instances: Set<ActorId>;
+  methodNames: Map<ActorMethod, ActorFn>;
+  eventHandlers: Map<ActorEvent, ActorFn>;
+};
+
+const getOrCreateVirtualActor = (actorType: string): VirtualActor => {
+  let virtualActor = Actor.registeredActors.get(actorType);
+  if (!virtualActor) {
+    virtualActor = {
+      instances: new Set(),
+      methodNames: new Map(),
+      eventHandlers: new Map(),
+    };
+    Actor.registeredActors.set(actorType, virtualActor);
+  }
+  return virtualActor;
+};
+
+export class Actor {
+  static readonly registeredActors = new Map<ActorType, VirtualActor>();
+
+  static registerEventHandler(
+    { actorType, event }: {
+      actorType: string;
+      event: ActorEvent;
+    },
+  ): MethodDecorator {
+    return (
+      target: Object,
+      _propertyKey: string | Symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      // Register actor event handlers
+      const registeredActorType = getOrCreateVirtualActor(actorType);
+      registeredActorType.eventHandlers.set(event, {
+        target,
+        fn: descriptor.value,
+      });
+    };
+  }
+
+  static registerMethod(
+    { actorType, methodName }: {
       actorType: string;
       methodName: string;
-      onActivate?: symbol;
-      onDeactivate?: symbol;
     },
   ): MethodDecorator {
     return (
@@ -335,107 +382,12 @@ export class Actor {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor type with empty tracking list
-      Actor.registeredActors.set(
-        actorType,
-        new Set(),
-      );
-      // Invoke actor
-      Http.addRouteToObject(
+      const registeredActorType = getOrCreateVirtualActor(actorType);
+      registeredActorType.methodNames.set(
+        methodName,
         {
-          method: "PUT",
-          path: `/actors/${actorType}/:actorId/method/:methodName`,
-          handler: async function (
-            { actorId, methodName, request }: {
-              actorId: string;
-              methodName: string;
-              request: Request;
-            },
-          ) {
-            console.log(
-              `Invoke actor called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
-            );
-            let status = 404;
-            try {
-              const actorInstances = Actor.registeredActors.get(actorType);
-              if (actorInstances === undefined) {
-                throw Error("Actor type is not registered");
-              }
-              if (!actorInstances.has(actorId)) { // activated actor and add to tracking list
-                actorInstances.add(actorId);
-                console.log(
-                  `Actor activated with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
-                );
-                if (onActivate?.description) {
-                  await (target as any)[onActivate.description]?.apply(this, [{
-                    actorType,
-                    actorId,
-                    methodName,
-                    request,
-                  }]);
-                }
-              }
-              status = 500;
-              const res = await descriptor.value.apply(this, [{
-                actorType,
-                actorId,
-                methodName,
-                request,
-              }]);
-              return { body: JSON.stringify(res) };
-            } catch (err) {
-              console.error(
-                `Invoke actor failed with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}\n${err}`,
-              );
-              return { init: { status } };
-            }
-          },
-          object: target,
-        },
-      );
-      // Deactivate actor user service
-      Http.addRouteToObject(
-        {
-          method: "DELETE",
-          path: `/actors/${actorType}/:actorId`,
-          handler: async function (
-            { actorId, request }: { actorId: string; request: Request },
-          ) {
-            console.log(
-              `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
-            );
-            try {
-              const actorInstances = Actor.registeredActors.get(actorType);
-              if (actorInstances === undefined) {
-                console.warn(
-                  `Instance for actorType="${actorType}", actorId="${actorId}" not found, cannot delete`,
-                );
-              } else {
-                // Delete actor instance from the tracking list
-                if (actorInstances.has(actorId)) {
-                  if (onDeactivate?.description) {
-                    await (target as any)[onDeactivate.description]?.apply(
-                      this,
-                      [{
-                        actorType,
-                        actorId,
-                        methodName,
-                        request,
-                      }],
-                    );
-                  }
-                  actorInstances.delete(actorId);
-                  return;
-                }
-                console.warn("Warning: actorId was not found during delete");
-              }
-            } catch (err) {
-              console.error(
-                `Deactivate actor failed with actorType=${actorType}, actorId=${actorId}\n${err}`,
-              );
-              return { init: { status: 500 } };
-            }
-          },
-          object: target,
+          target,
+          fn: descriptor.value,
         },
       );
     };
@@ -548,7 +500,7 @@ export class Dapr {
         },
       });
     }
-    // Configure actors
+    // Setup actors
     if (Actor.registeredActors.size > 0) {
       const config = {
         entities: Array.from(Actor.registeredActors.keys()),
@@ -557,6 +509,7 @@ export class Dapr {
         ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
         ...drainRebalancedActors && { drainRebalancedActors },
       };
+      // Provide actor config for Dapr
       Http.router.add({
         method: "GET",
         path: "/dapr/config",
@@ -569,40 +522,118 @@ export class Dapr {
           },
         },
       });
-      // Register actor user services
-      /*entities.map((actorType: string) => {
-        // Invoke reminder user service
-        Http.router.add({
-          method: "PUT",
-          path: `/actors/${actorType}/:actorId/method/remind/:reminderName`,
-          action: {
-            handler: (
-              { actorId, reminderName }: {
-                actorId: string;
-                reminderName: string;
+      // Register actors
+      console.log(Actor.registeredActors);
+      for (const [actorType] of Actor.registeredActors) {
+        // Register actorType for invokation
+        Http.router.add(
+          {
+            method: "PUT",
+            path: `/actors/${actorType}/:actorId/method/:methodName`,
+            action: {
+              handler: async function (
+                { actorId, methodName, request }: {
+                  actorId: string;
+                  methodName: string;
+                  request: Request;
+                },
+              ) {
+                console.log(
+                  `Invoke actor called with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
+                );
+                let status = 404;
+                try {
+                  const virtualActor = Actor.registeredActors.get(actorType);
+                  if (!virtualActor) {
+                    throw Error("Actor type is not registered");
+                  }
+                  if (!virtualActor.methodNames.has(methodName)) {
+                    throw Error("Actor method is not registered");
+                  }
+                  if (!virtualActor.instances.has(actorId)) { // activate actor
+                    virtualActor.instances.add(actorId);
+                    console.log(
+                      `Actor activated with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}`,
+                    );
+                    const { fn, target } =
+                      virtualActor.eventHandlers.get(ActorEvent.Activate) || {};
+                    await fn?.apply(target, [{
+                      actorType,
+                      actorId,
+                      methodName,
+                      request,
+                    }]);
+                  }
+                  status = 500;
+                  const { fn, target } =
+                    virtualActor.methodNames.get(methodName) || {};
+                  const res = await fn?.apply(target, [{
+                    actorType,
+                    actorId,
+                    methodName,
+                    request,
+                  }]);
+                  return { body: JSON.stringify(res) };
+                } catch (err) {
+                  console.error(
+                    `Invoke actor failed with actorType=${actorType}, actorId=${actorId}, methodName=${methodName}\n${err}`,
+                  );
+                  return { init: { status } };
+                }
               },
-            ) => {
-              console.log(
-                `Invoke reminder actor user service called with actorType=${actorType}, actorId=${actorId}, reminderName=${reminderName}`,
-              );
             },
           },
-        });
-        // Invoke timer user service
-        Http.router.add({
-          method: "PUT",
-          path: `/actors/${actorType}/:actorId/method/timer/:timerName`,
-          action: {
-            handler: (
-              { actorId, timerName }: { actorId: string; timerName: string },
-            ) => {
-              console.log(
-                `Invoke timer actor user service called with actorType=${actorType}, actorId=${actorId}, timerName=${timerName}`,
-              );
+        );
+        // Register actorType for deactivation
+        Http.router.add(
+          {
+            method: "DELETE",
+            path: `/actors/${actorType}/:actorId`,
+            action: {
+              handler: async function (
+                { actorId, request }: { actorId: string; request: Request },
+              ) {
+                console.log(
+                  `Deactivate actor called with actorType=${actorType}, actorId=${actorId}`,
+                );
+                try {
+                  const virtualActor = Actor.registeredActors.get(actorType);
+                  if (virtualActor === undefined) {
+                    console.warn(
+                      `Instance for actorType="${actorType}", actorId="${actorId}" not found, cannot delete`,
+                    );
+                  } else {
+                    // Delete actor instance from the tracking list
+                    if (virtualActor.instances.has(actorId)) {
+                      const { fn, target } =
+                        virtualActor.eventHandlers.get(ActorEvent.Activate) ||
+                        {};
+                      await fn?.apply(
+                        target,
+                        [{
+                          actorType,
+                          actorId,
+                          request,
+                        }],
+                      );
+                      virtualActor.instances.delete(actorId);
+                      return;
+                    }
+                    console.warn(
+                      "Warning: actorId was not found during delete",
+                    );
+                  }
+                } catch (err) {
+                  console.error(
+                    `Deactivate actor failed with actorType=${actorType}, actorId=${actorId}\n${err}`,
+                  );
+                  return { init: { status: 500 } };
+                }
+              },
             },
           },
-        });
-      }); */
+        );
+      }
       // Health check
       Http.router.add({
         method: "GET",

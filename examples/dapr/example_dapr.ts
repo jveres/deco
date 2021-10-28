@@ -15,6 +15,7 @@
 
 import {
   Actor,
+  ActorEvent,
   Bindings,
   Dapr,
   PubSub,
@@ -88,20 +89,26 @@ class _ {
 class __ {
   counter = 0;
 
+  @Actor.registerEventHandler({
+    actorType: "testActor",
+    event: ActorEvent.Activate
+  })
   activate({ actorId }: { actorId: string }) {
     this.counter = 0;
     console.log(`testActor with actorId="${actorId}" activated, counter reset`);
   }
 
+  @Actor.registerEventHandler({
+    actorType: "testActor",
+    event: ActorEvent.Deactivate
+  })
   deactivate({ actorId }: { actorId: string }) {
     console.log(`testActor with actorId="${actorId}" deactivated`);
   }
 
-  @Actor.register({
+  @Actor.registerMethod({
     actorType: "testActor",
     methodName: "testMethod",
-    onActivate: Symbol("activate"),
-    onDeactivate: Symbol("deactivate"),
   })
   async invoke(
     { actorId, request }: { actorId: string; request: Request },
