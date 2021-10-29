@@ -112,7 +112,7 @@ class __ {
     actorType: "testActor",
     methodName: "testMethod1",
   })
-  async actor1(
+  async testMethod1(
     { actorId, request }: { actorId: string; request: Request },
   ) {
     const data = await request.text();
@@ -126,7 +126,7 @@ class __ {
     actorType: "testActor",
     methodName: "testMethod2",
   })
-  async actor2(
+  async testMethod2(
     { actorType, actorId, methodName, request }: {
       actorType: string;
       actorId: string;
