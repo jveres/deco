@@ -393,14 +393,14 @@ export class Actor {
     };
   }
 
-  static async invoke({ actorType, actorId, method, data }: {
+  static async invoke({ actorType, actorId, methodName, data }: {
     actorType: string;
     actorId: string;
-    method: string;
+    methodName: string;
     data?: any;
   }) {
     const url =
-      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/method/${method}`;
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/method/${methodName}`;
     const res = await fetch(url, {
       method: "POST",
       body: JSON.stringify(data),
@@ -410,7 +410,7 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", method="${method}", code=${status}, text="${statusText}"`,
+        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", method="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }

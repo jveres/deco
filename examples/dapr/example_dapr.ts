@@ -13,7 +13,7 @@
 // Publish message to topic C to see raw message format:
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic C --data '{"raw": "raw message for topic C"}'
 // Send data to the actor
-//    curl -X POST "http://localhost:3500/v1.0/actors/testActor/1/method/testMethod" -d "{test: 'data'}"
+//    curl -X POST "http://localhost:3500/v1.0/actors/testActor/1/method/testMethod1" -d "{test: 'data'}"
 
 import {
   Actor,
@@ -93,7 +93,7 @@ class __ {
 
   @Actor.registerEventHandler({
     actorType: "testActor",
-    event: ActorEvent.Activate
+    event: ActorEvent.Activate,
   })
   activate({ actorId }: { actorId: string }) {
     this.counter = 0;
@@ -102,7 +102,7 @@ class __ {
 
   @Actor.registerEventHandler({
     actorType: "testActor",
-    event: ActorEvent.Deactivate
+    event: ActorEvent.Deactivate,
   })
   deactivate({ actorId }: { actorId: string }) {
     console.log(`testActor with actorId="${actorId}" deactivated`);
@@ -110,15 +110,43 @@ class __ {
 
   @Actor.registerMethod({
     actorType: "testActor",
-    methodName: "testMethod",
+    methodName: "testMethod1",
   })
-  async invoke(
+  async actor1(
     { actorId, request }: { actorId: string; request: Request },
   ) {
     const data = await request.text();
     console.log(
       `actor invoked with data="${data}", actorType="testActor", actorId="${actorId}", method="testMethod"`,
     );
+    return `counter: ${++this.counter}`;
+  }
+
+  @Actor.registerMethod({
+    actorType: "testActor",
+    methodName: "testMethod2",
+  })
+  async actor2(
+    { actorType, actorId, methodName, request }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+      request: Request;
+    },
+  ) {
+    const data = await request.text();
+    console.log(
+      `actor invoked with data="${data}", actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
+    );
+    if (this.counter < 10) {
+      // Invoke self asynchronously, awaiting for the same actor causes infinite-loop (or timeout)
+      Actor.invoke({
+        actorType,
+        actorId,
+        methodName,
+        data: `test data from myself, counter=${this.counter}`,
+      });
+    }
     return `counter: ${++this.counter}`;
   }
 }
