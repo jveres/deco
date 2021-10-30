@@ -33,7 +33,8 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
-class _ {
+// deno-lint-ignore no-unused-vars
+class App {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -88,16 +89,25 @@ class _ {
 }
 
 @Dapr.App()
-class __ {
+// deno-lint-ignore no-unused-vars
+class Actors {
   counter = 0;
 
   @Actor.registerEventHandler({
     actorType: "testActor",
     event: ActorEvent.Activate,
   })
-  activate({ actorId }: { actorId: string }) {
+  activate({ actorType, actorId }: { actorType: string; actorId: string }) {
     this.counter = 0;
     console.log(`testActor with actorId="${actorId}" activated, counter reset`);
+    Actor.createReminder({
+      actorType,
+      actorId,
+      reminderName: "testReminder",
+      dueTime: "10s",
+      period: "",
+      data: { counter: this.counter },
+    });
   }
 
   @Actor.registerEventHandler({
@@ -106,6 +116,19 @@ class __ {
   })
   deactivate({ actorId }: { actorId: string }) {
     console.log(`testActor with actorId="${actorId}" deactivated`);
+  }
+
+  @Actor.registerMethod({
+    actorType: "testActor",
+    methodName: "testReminder",
+  })
+  async testReminder(
+    { actorId, request }: { actorId: string; request: Request },
+  ) {
+    const data = await request.text();
+    console.log(
+      `actor reminder invoked with data="${data}", actorType="testActor", actorId="${actorId}", reminder="testReminder"`,
+    );
   }
 
   @Actor.registerMethod({
@@ -139,7 +162,7 @@ class __ {
       `actor invoked with data="${data}", actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
     );
     if (this.counter < 10) {
-      // Invoke self asynchronously, awaiting for the same actor causes infinite-loop (or timeout)
+      // Invokes itself asynchronously
       Actor.invoke({
         actorType,
         actorId,
