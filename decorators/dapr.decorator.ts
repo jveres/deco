@@ -91,7 +91,7 @@ export class PubSub {
       data: any;
       metadata?: Metadata;
     },
-  ) {
+  ): Promise<Response> {
     const url =
       `http://localhost:${daprPort}/v1.0/publish/${pubSubName}/${topic}` +
       (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
@@ -103,7 +103,7 @@ export class PubSub {
         headers: { "content-type": "application/json" },
       },
     );
-    if (res.status === 204) return;
+    if (res.status === 204) return res;
     else {
       const { status, statusText } = res;
       throw Error(
@@ -237,7 +237,7 @@ interface StateObject {
 export class State {
   static async set(
     { storename, data }: { storename: string; data: StateObject[] },
-  ) {
+  ): Promise<Response> {
     const url = `http://localhost:${daprPort}/v1.0/state/${storename}`;
     const res = await fetch(
       url,
@@ -247,7 +247,7 @@ export class State {
         headers: { "content-type": "application/json" },
       },
     );
-    if (res.status === 204) return;
+    if (res.status === 204) return res;
     else {
       const { status, statusText } = res;
       throw Error(
@@ -262,7 +262,7 @@ export class State {
     key: string;
     consistency?: Consistency;
     metadata?: Metadata;
-  }) {
+  }): Promise<Response> {
     const url = `http://localhost:${daprPort}/v1.0/state/${storename}/${key}` +
       (consistency || metadata
         ? ("?" +
@@ -274,16 +274,13 @@ export class State {
           ).toString())
         : "");
     const res = await fetch(url);
-    if (res.status === 200) return res.json();
+    if ([200, 204].includes(res.status)) return res;
     else {
       const { status, statusText } = res;
-      if (status === 204) return;
-      else {
-        throw Error(
-          `Error during State.get(): storename="${storename}", key="${key}", code=${status}, text="${statusText}"`,
-          { cause: { status, statusText } },
-        );
-      }
+      throw Error(
+        `Error during State.get(): storename="${storename}", key="${key}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
     }
   }
 
@@ -291,7 +288,7 @@ export class State {
     storename: string;
     data: any;
     metadata?: Metadata;
-  }) {
+  }): Promise<Response> {
     const url = `http://localhost:${daprPort}/v1.0/state/${storename}/bulk` +
       (metadata
         ? ("?" + new URLSearchParams(prepMetadata(metadata)).toString())
@@ -304,7 +301,7 @@ export class State {
         headers: { "content-type": "application/json" },
       },
     );
-    if (res.status === 200) return res.json();
+    if (res.status === 200) return res;
     else {
       const { status, statusText } = res;
       throw Error(
@@ -318,8 +315,6 @@ export class State {
 export enum ActorEvent {
   Activate = "activate",
   Deactivate = "deactivate",
-  Reminder = "reminder",
-  Timer = "timer",
 }
 
 type ActorType = string;
@@ -553,7 +548,7 @@ export class Actor {
       const url =
         `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/state/${key}`;
       const res = await fetch(url);
-      if (res.status in [200, 204]) return res;
+      if ([200, 204].includes(res.status)) return res;
       else {
         const { status, statusText } = res;
         throw Error(
@@ -631,14 +626,13 @@ const deactivateVirtualActor = async (
     actorId: ActorId;
     request: Request;
   },
-) => {
+): Promise<VirtualActor | undefined> => {
   const virtualActor = Actor.registeredActors.get(actorType);
   if (virtualActor) {
     // Delete actor instance from the tracking list
     if (virtualActor.instances.has(actorId)) {
       const { method, target } =
-        virtualActor.eventHandlers.get(ActorEvent.Deactivate) ||
-        {};
+        virtualActor.eventHandlers.get(ActorEvent.Deactivate) || {};
       await method?.apply(
         target,
         [{
@@ -648,7 +642,7 @@ const deactivateVirtualActor = async (
         }],
       );
       virtualActor.instances.delete(actorId);
-      return;
+      return virtualActor;
     }
     console.warn(
       `Warning: Actor Id not found during deactivation, actorType="${actorType}", actorId="${actorId}"`,

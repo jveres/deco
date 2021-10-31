@@ -182,24 +182,24 @@ await State.set({
 console.log(
   `key1=${
     JSON.stringify(
-      await State.get({ storename: "example-state-store", key: "key1" }),
+      await (await State.get({ storename: "example-state-store", key: "key1" })).text(),
     )
   }`,
 );
 console.log(
   `missing=${
     JSON.stringify(
-      await State.get({ storename: "example-state-store", key: "missing" }),
+      await (await State.get({ storename: "example-state-store", key: "missing" })).text(),
     )
   }`,
 );
 console.log(
   `bulk=${
     JSON.stringify(
-      await State.getBulk({
+      await (await State.getBulk({
         storename: "example-state-store",
         data: { keys: ["key1", "missing", "key3"] },
-      }),
+      })).text(),
     )
   }`,
 );
