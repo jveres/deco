@@ -33,8 +33,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
-// deno-lint-ignore no-unused-vars
-class App {
+class _App {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -89,25 +88,26 @@ class App {
 }
 
 @Dapr.App()
-// deno-lint-ignore no-unused-vars
-class Actors {
+class _Actor {
   counter = 0;
 
   @Actor.registerEventHandler({
     actorType: "testActor",
     event: ActorEvent.Activate,
   })
-  activate({ actorType, actorId }: { actorType: string; actorId: string }) {
+  async activate({ actorType, actorId }: { actorType: string; actorId: string }) {
     this.counter = 0;
-    console.log(`testActor with actorId="${actorId}" activated, counter reset`);
-    Actor.createReminder({
+    console.log(`testActor with actorId="${actorId}" activated, counter reset\nCreating reminder...`);
+    const reminderName = "testReminder";
+    await Actor.createReminder({
       actorType,
       actorId,
-      reminderName: "testReminder",
+      reminderName,
       dueTime: "10s",
       period: "",
       data: { counter: this.counter },
     });
+    console.log("getReminder() =>", await (await Actor.getReminder({actorType, actorId, reminderName})).text());
   }
 
   @Actor.registerEventHandler({

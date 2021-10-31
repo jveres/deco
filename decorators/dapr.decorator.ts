@@ -318,23 +318,26 @@ export class State {
 export enum ActorEvent {
   Activate = "activate",
   Deactivate = "deactivate",
+  Reminder = "reminder",
+  Timer = "timer",
 }
 
 type ActorType = string;
 type ActorId = string;
-type ActorMethod = string;
-type ActorFn = {
+type ActorMethodName = string;
+
+type ActorMethod = {
   target: Object | undefined;
-  fn: Function;
+  method: Function;
 };
 
 type VirtualActor = {
   instances: Set<ActorId>;
-  methodNames: Map<ActorMethod, ActorFn>;
-  eventHandlers: Map<ActorEvent, ActorFn>;
+  methodNames: Map<ActorMethodName, ActorMethod>;
+  eventHandlers: Map<ActorEvent, ActorMethod>;
 };
 
-const getOrCreateVirtualActor = (actorType: string): VirtualActor => {
+const getOrCreateVirtualActor = (actorType: ActorType): VirtualActor => {
   let virtualActor = Actor.registeredActors.get(actorType);
   if (!virtualActor) {
     virtualActor = {
@@ -352,7 +355,7 @@ export class Actor {
 
   static registerEventHandler(
     { actorType, event }: {
-      actorType: string;
+      actorType: ActorType;
       event: ActorEvent;
     },
   ): MethodDecorator {
@@ -365,15 +368,15 @@ export class Actor {
       const registeredActorType = getOrCreateVirtualActor(actorType);
       registeredActorType.eventHandlers.set(event, {
         target,
-        fn: descriptor.value,
+        method: descriptor.value,
       });
     };
   }
 
   static registerMethod(
     { actorType, methodName }: {
-      actorType: string;
-      methodName: string;
+      actorType: ActorType;
+      methodName: ActorMethodName;
     },
   ): MethodDecorator {
     return (
@@ -387,18 +390,18 @@ export class Actor {
         methodName,
         {
           target,
-          fn: descriptor.value,
+          method: descriptor.value,
         },
       );
     };
   }
 
   static async invoke({ actorType, actorId, methodName, data }: {
-    actorType: string;
-    actorId: string;
-    methodName: string;
+    actorType: ActorType;
+    actorId: ActorId;
+    methodName: ActorMethodName;
     data?: any;
-  }) {
+  }): Promise<Response> {
     const url =
       `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/method/${methodName}`;
     const res = await fetch(url, {
@@ -406,11 +409,11 @@ export class Actor {
       body: JSON.stringify(data),
       headers: { "content-type": "application/json" },
     });
-    if (res.status === 200) return res.text();
+    if (res.status === 200) return res;
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", method="${methodName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -418,14 +421,14 @@ export class Actor {
 
   static async createReminder(
     { actorType, actorId, reminderName, dueTime, period, data }: {
-      actorType: string;
-      actorId: string;
-      reminderName: string;
+      actorType: ActorType;
+      actorId: ActorId;
+      reminderName: ActorMethodName;
       dueTime: string;
       period: string;
       data?: any;
     },
-  ) {
+  ): Promise<Response> {
     const url =
       `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
     const res = await fetch(url, {
@@ -433,11 +436,11 @@ export class Actor {
       body: JSON.stringify({ dueTime, period, ...data && { data } }),
       headers: { "content-type": "application/json" },
     });
-    if (res.status === 204) return res.text();
+    if (res.status === 204) return res;
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.createReminder(): actorType="${actorType}", actorId="${actorId}", reminder="${reminderName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.createReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -445,22 +448,22 @@ export class Actor {
 
   static async getReminder(
     { actorType, actorId, reminderName }: {
-      actorType: string;
-      actorId: string;
-      reminderName: string;
+      actorType: ActorType;
+      actorId: ActorId;
+      reminderName: ActorMethodName;
     },
-  ) {
+  ): Promise<Response> {
     const url =
       `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
     const res = await fetch(url, {
       method: "GET",
       headers: { "content-type": "application/json" },
     });
-    if (res.status === 200) return res.text();
+    if (res.status === 200) return res;
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminder="${reminderName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -468,22 +471,72 @@ export class Actor {
 
   static async deleteReminder(
     { actorType, actorId, reminderName }: {
-      actorType: string;
-      actorId: string;
-      reminderName: string;
+      actorType: ActorType;
+      actorId: ActorId;
+      reminderName: ActorMethodName;
     },
-  ) {
+  ): Promise<Response> {
     const url =
       `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
     const res = await fetch(url, {
       method: "DELETE",
       headers: { "content-type": "application/json" },
     });
-    if (res.status === 200) return res.text();
+    if (res.status === 204) return res;
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminder="${reminderName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async createTimer(
+    { actorType, actorId, timerName, dueTime, period, data }: {
+      actorType: ActorType;
+      actorId: ActorId;
+      timerName: ActorMethodName;
+      dueTime: string;
+      period: string;
+      data?: any;
+    },
+  ): Promise<Response> {
+    const url =
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/timers/${timerName}`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({ dueTime, period, ...data && { data } }),
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status === 204) return res;
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.createTimer(): actorType="${actorType}", actorId="${actorId}", timerName="${timerName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async deleteTimer(
+    { actorType, actorId, timerName }: {
+      actorType: ActorType;
+      actorId: ActorId;
+      timerName: ActorMethodName;
+    },
+  ): Promise<Response> {
+    const url =
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/timers/${timerName}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status === 204) return res;
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.deleteTimer(): actorType="${actorType}", actorId="${actorId}", timerName="${timerName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -492,17 +545,16 @@ export class Actor {
   static readonly State = {
     async get(
       { actorType, actorId, key }: {
-        actorType: string;
-        actorId: string;
+        actorType: ActorType;
+        actorId: ActorId;
         key: string;
       },
-    ) {
+    ): Promise<Response> {
       const url =
         `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/state/${key}`;
       const res = await fetch(url);
-      if (res.status === 200) return res.json();
+      if (res.status in [200, 204]) return res;
       else {
-        if (res.status === 204) return undefined;
         const { status, statusText } = res;
         throw Error(
           `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", key="${key}", code=${status}, text="${statusText}"`,
@@ -513,11 +565,11 @@ export class Actor {
 
     async set(
       { actorType, actorId, data }: {
-        actorType: string;
-        actorId: string;
+        actorType: ActorType;
+        actorId: ActorId;
         data: any;
       },
-    ) {
+    ): Promise<Response> {
       const url =
         `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/state`;
       const res = await fetch(url, {
@@ -525,7 +577,7 @@ export class Actor {
         body: JSON.stringify(data),
         headers: { "content-type": "application/json" },
       });
-      if (res.status === 200) return res.json();
+      if (res.status === 200) return res;
       else {
         const { status, statusText } = res;
         throw Error(
@@ -539,9 +591,9 @@ export class Actor {
 
 const activateVirtualActor = async (
   { actorType, actorId, methodName, request }: {
-    actorType: string;
-    actorId: string;
-    methodName: string;
+    actorType: ActorType;
+    actorId: ActorId;
+    methodName: ActorMethodName;
     request: Request;
   },
 ): Promise<VirtualActor> => {
@@ -561,9 +613,9 @@ const activateVirtualActor = async (
     console.log(
       `Actor activated, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
     );
-    const { fn, target } =
+    const { method, target } =
       virtualActor.eventHandlers.get(ActorEvent.Activate) || {};
-    await fn?.apply(target, [{
+    await method?.apply(target, [{
       actorType,
       actorId,
       methodName,
@@ -575,8 +627,8 @@ const activateVirtualActor = async (
 
 const deactivateVirtualActor = async (
   { actorType, actorId, request }: {
-    actorType: string;
-    actorId: string;
+    actorType: ActorType;
+    actorId: ActorId;
     request: Request;
   },
 ) => {
@@ -584,10 +636,10 @@ const deactivateVirtualActor = async (
   if (virtualActor) {
     // Delete actor instance from the tracking list
     if (virtualActor.instances.has(actorId)) {
-      const { fn, target } =
+      const { method, target } =
         virtualActor.eventHandlers.get(ActorEvent.Deactivate) ||
         {};
-      await fn?.apply(
+      await method?.apply(
         target,
         [{
           actorType,
@@ -670,9 +722,9 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, methodName, request }: {
-                actorType: string;
-                actorId: string;
-                methodName: string;
+                actorType: ActorType;
+                actorId: ActorId;
+                methodName: ActorMethodName;
                 request: Request;
               },
             ) {
@@ -688,11 +740,11 @@ export class Dapr {
                   request,
                 });
                 status = 500; // request failed
-                const { fn, target } = virtualActor.methodNames.get(
+                const { method, target } = virtualActor.methodNames.get(
                   methodName,
                 ) || {};
                 // invoke actor method
-                const res = await fn?.apply(target, [{
+                const res = await method?.apply(target, [{
                   actorType,
                   actorId,
                   methodName,
@@ -717,8 +769,8 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, request }: {
-                actorType: string;
-                actorId: string;
+                actorType: ActorType;
+                actorId: ActorId;
                 request: Request;
               },
             ) {
@@ -758,9 +810,9 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, reminderName, request }: {
-                actorType: string;
-                actorId: string;
-                reminderName: string;
+                actorType: ActorType;
+                actorId: ActorId;
+                reminderName: ActorMethodName;
                 request: Request;
               },
             ) {
@@ -776,11 +828,11 @@ export class Dapr {
                   request,
                 });
                 status = 500; // request failed
-                const { fn, target } = virtualActor.methodNames.get(
+                const { method, target } = virtualActor.methodNames.get(
                   reminderName,
                 ) || {};
                 // invoke actor method
-                const res = await fn?.apply(target, [{
+                const res = await method?.apply(target, [{
                   actorType,
                   actorId,
                   methodName: reminderName,
@@ -790,6 +842,53 @@ export class Dapr {
               } catch (err) {
                 console.error(
                   `Invoke reminder failed, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"\n${err}`,
+                );
+                return { init: { status } }; // actor not found or request failed
+              }
+            },
+          },
+        },
+      );
+      // Register timer invocation
+      Http.router.add(
+        {
+          method: "PUT",
+          path: `/actors/:actorType/:actorId/method/timer/:timerName`,
+          action: {
+            handler: async function (
+              { actorType, actorId, timerName, request }: {
+                actorType: ActorType;
+                actorId: ActorId;
+                timerName: ActorMethodName;
+                request: Request;
+              },
+            ) {
+              console.log(
+                `Actor timer called, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}"`,
+              );
+              let status = 404; // actor not found
+              try {
+                const virtualActor = await activateVirtualActor({
+                  actorType,
+                  actorId,
+                  methodName: timerName,
+                  request,
+                });
+                status = 500; // request failed
+                const { method, target } = virtualActor.methodNames.get(
+                  timerName,
+                ) || {};
+                // invoke actor method
+                const res = await method?.apply(target, [{
+                  actorType,
+                  actorId,
+                  methodName: timerName,
+                  request,
+                }]);
+                return { body: JSON.stringify(res) }; // status: 200
+              } catch (err) {
+                console.error(
+                  `Invoke timer failed, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}"\n${err}`,
                 );
                 return { init: { status } }; // actor not found or request failed
               }
