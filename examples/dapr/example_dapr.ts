@@ -33,7 +33,7 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
-class _App {
+class _ExampleApp {
   @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
@@ -88,7 +88,7 @@ class _App {
 }
 
 @Dapr.App()
-class _Actor {
+class _ExampleActor {
   counter = 0;
 
   @Actor.registerEventHandler({

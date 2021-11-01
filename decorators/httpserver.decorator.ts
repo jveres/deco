@@ -143,6 +143,7 @@ export class Http {
             action.target,
             [{ ...params, url, request: http.request }],
           ) || {};
+
           http.respondWith(new Response(body, init)).catch(() => {});
         }
       })();

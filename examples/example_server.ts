@@ -8,7 +8,7 @@ import { Http } from "../decorators/httpserver.decorator.ts";
 class _API {}
 
 @Http.Server()
-class _ {
+class _ExampleServer {
   @Http.Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {

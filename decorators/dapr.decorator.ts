@@ -28,7 +28,7 @@ export class Service {
 
   static async invoke(
     { appId, method, data }: { appId: string; method: string; data?: any },
-  ) {
+  ): Promise<Response> {
     const url =
       `http://localhost:${daprPort}/v1.0/invoke/${appId}/method/${method}`;
     const res = await fetch(
@@ -39,7 +39,7 @@ export class Service {
         headers: { "content-type": "application/json" },
       },
     );
-    if (res.status === 200) return await res.text();
+    if (res.status === 200) return res;
     else {
       const { status, statusText } = res;
       throw Error(
