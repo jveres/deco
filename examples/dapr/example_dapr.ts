@@ -95,19 +95,27 @@ class _Actor {
     actorType: "testActor",
     event: ActorEvent.Activate,
   })
-  async activate({ actorType, actorId }: { actorType: string; actorId: string }) {
+  async activate(
+    { actorType, actorId }: { actorType: string; actorId: string },
+  ) {
     this.counter = 0;
-    console.log(`testActor with actorId="${actorId}" activated, counter reset\nCreating reminder...`);
-    const reminderName = "testReminder";
+    console.log(
+      `testActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
+    );
     await Actor.createReminder({
       actorType,
       actorId,
-      reminderName,
+      reminderName: "testReminder",
       dueTime: "10s",
-      period: "",
-      data: { counter: this.counter },
+      period: "20s",
     });
-    console.log("getReminder() =>", await (await Actor.getReminder({actorType, actorId, reminderName})).text());
+    await Actor.createTimer({
+      actorType,
+      actorId,
+      timerName: "testTimer",
+      dueTime: "5s",
+      period: "0s",
+    });
   }
 
   @Actor.registerEventHandler({
@@ -122,12 +130,31 @@ class _Actor {
     actorType: "testActor",
     methodName: "testReminder",
   })
-  async testReminder(
-    { actorId, request }: { actorId: string; request: Request },
+  testReminder(
+    { actorType, actorId, methodName }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+    },
   ) {
-    const data = await request.text();
     console.log(
-      `actor reminder invoked with data="${data}", actorType="testActor", actorId="${actorId}", reminder="testReminder"`,
+      `⏱ Actor reminder invoked, actorType="${actorType}", actorId="${actorId}", reminder="${methodName}"`,
+    );
+  }
+
+  @Actor.registerMethod({
+    actorType: "testActor",
+    methodName: "testTimer",
+  })
+  testTimer(
+    { actorType, actorId, methodName }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+    },
+  ) {
+    console.log(
+      `⏰ Actor timer invoked, actorType="${actorType}", actorId="${actorId}", reminder="${methodName}"`,
     );
   }
 
@@ -182,14 +209,18 @@ await State.set({
 console.log(
   `key1=${
     JSON.stringify(
-      await (await State.get({ storename: "example-state-store", key: "key1" })).text(),
+      await (await State.get({ storename: "example-state-store", key: "key1" }))
+        .text(),
     )
   }`,
 );
 console.log(
   `missing=${
     JSON.stringify(
-      await (await State.get({ storename: "example-state-store", key: "missing" })).text(),
+      await (await State.get({
+        storename: "example-state-store",
+        key: "missing",
+      })).text(),
     )
   }`,
 );
