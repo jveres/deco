@@ -3,8 +3,8 @@
 # Deco (**deh** · kow) is a lightweight helper library for [Deno](https://deno.land) developers (still work in progress)
 
 - Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Memoize)
-- REST API helpers (@Http.xxx) with OpenAPI support
-- Dapr helpers (@Dapr.xxx) for resilient cloud native Deno microservices/actors
+- REST @Http API helpers with OpenAPI support
+- @Dapr helpers (Service, PubSub, Bindings, State, Secrets, Actor) for resilient cloud native Deno microservices/actors
 
 ## Server [example](examples/example_server.ts)
 ```typescript
