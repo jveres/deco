@@ -13,8 +13,8 @@ export const DEFAULT_DAPR_HTTP_PORT = 3500;
 export const daprPort = Deno.env.get("DAPR_HTTP_PORT") ??
   DEFAULT_DAPR_HTTP_PORT;
 
-export type Consistency = "eventual" | "strong";
-export type Concurrency = "first-write" | "last-write";
+export type StateConsistency = "eventual" | "strong";
+export type StateConcurrency = "first-write" | "last-write";
 export type Metadata = Record<string, string>;
 export type ETag = string;
 
@@ -229,8 +229,8 @@ interface StateObject {
   etag?: ETag;
   metadata?: Metadata;
   options?: {
-    "concurrency": Concurrency;
-    "consistency": Consistency;
+    "concurrency": StateConcurrency;
+    "consistency": StateConsistency;
   };
 }
 
@@ -260,7 +260,7 @@ export class State {
   static async get({ storename, key, consistency, metadata }: {
     storename: string;
     key: string;
-    consistency?: Consistency;
+    consistency?: StateConsistency;
     metadata?: Metadata;
   }): Promise<Response> {
     const url = `http://localhost:${daprPort}/v1.0/state/${storename}/${key}` +
@@ -317,22 +317,18 @@ export enum ActorEvent {
   Deactivate = "deactivate",
 }
 
-type ActorType = string;
-type ActorId = string;
-type ActorMethodName = string;
-
 type ActorMethod = {
-  target: Object | undefined;
+  target: object | undefined;
   method: Function;
 };
 
 type VirtualActor = {
-  instances: Set<ActorId>;
-  methodNames: Map<ActorMethodName, ActorMethod>;
+  instances: Set<string /* ActorId */>;
+  methodNames: Map<string, /* ActorMethodName */ ActorMethod>;
   eventHandlers: Map<ActorEvent, ActorMethod>;
 };
 
-const getOrCreateVirtualActor = (actorType: ActorType): VirtualActor => {
+const getOrCreateVirtualActor = (actorType: string): VirtualActor => {
   let virtualActor = Actor.registeredActors.get(actorType);
   if (!virtualActor) {
     virtualActor = {
@@ -346,11 +342,14 @@ const getOrCreateVirtualActor = (actorType: ActorType): VirtualActor => {
 };
 
 export class Actor {
-  static readonly registeredActors = new Map<ActorType, VirtualActor>();
+  static readonly registeredActors = new Map<
+    string, /* ActorType */
+    VirtualActor
+  >();
 
   static registerEventHandler(
     { actorType, event }: {
-      actorType: ActorType;
+      actorType: string;
       event: ActorEvent;
     },
   ): MethodDecorator {
@@ -370,8 +369,8 @@ export class Actor {
 
   static registerMethod(
     { actorType, methodName }: {
-      actorType: ActorType;
-      methodName: ActorMethodName;
+      actorType: string;
+      methodName: string;
     },
   ): MethodDecorator {
     return (
@@ -392,9 +391,9 @@ export class Actor {
   }
 
   static async invoke({ actorType, actorId, methodName, data }: {
-    actorType: ActorType;
-    actorId: ActorId;
-    methodName: ActorMethodName;
+    actorType: string;
+    actorId: string;
+    methodName: string;
     data?: any;
   }): Promise<Response> {
     const url =
@@ -416,9 +415,9 @@ export class Actor {
 
   static async createReminder(
     { actorType, actorId, reminderName, dueTime, period, data }: {
-      actorType: ActorType;
-      actorId: ActorId;
-      reminderName: ActorMethodName;
+      actorType: string;
+      actorId: string;
+      reminderName: string;
       dueTime: string;
       period: string;
       data?: any;
@@ -443,9 +442,9 @@ export class Actor {
 
   static async getReminder(
     { actorType, actorId, reminderName }: {
-      actorType: ActorType;
-      actorId: ActorId;
-      reminderName: ActorMethodName;
+      actorType: string;
+      actorId: string;
+      reminderName: string;
     },
   ): Promise<Response> {
     const url =
@@ -466,9 +465,9 @@ export class Actor {
 
   static async deleteReminder(
     { actorType, actorId, reminderName }: {
-      actorType: ActorType;
-      actorId: ActorId;
-      reminderName: ActorMethodName;
+      actorType: string;
+      actorId: string;
+      reminderName: string;
     },
   ): Promise<Response> {
     const url =
@@ -489,9 +488,9 @@ export class Actor {
 
   static async createTimer(
     { actorType, actorId, timerName, dueTime, period, data }: {
-      actorType: ActorType;
-      actorId: ActorId;
-      timerName: ActorMethodName;
+      actorType: string;
+      actorId: string;
+      timerName: string;
       dueTime: string;
       period: string;
       data?: any;
@@ -516,9 +515,9 @@ export class Actor {
 
   static async deleteTimer(
     { actorType, actorId, timerName }: {
-      actorType: ActorType;
-      actorId: ActorId;
-      timerName: ActorMethodName;
+      actorType: string;
+      actorId: string;
+      timerName: string;
     },
   ): Promise<Response> {
     const url =
@@ -540,8 +539,8 @@ export class Actor {
   static readonly State = {
     async get(
       { actorType, actorId, key }: {
-        actorType: ActorType;
-        actorId: ActorId;
+        actorType: string;
+        actorId: string;
         key: string;
       },
     ): Promise<Response> {
@@ -560,8 +559,8 @@ export class Actor {
 
     async set(
       { actorType, actorId, data }: {
-        actorType: ActorType;
-        actorId: ActorId;
+        actorType: string;
+        actorId: string;
         data: any;
       },
     ): Promise<Response> {
@@ -586,9 +585,9 @@ export class Actor {
 
 const activateVirtualActor = async (
   { actorType, actorId, methodName, request }: {
-    actorType: ActorType;
-    actorId: ActorId;
-    methodName: ActorMethodName;
+    actorType: string;
+    actorId: string;
+    methodName: string;
     request: Request;
   },
 ): Promise<VirtualActor> => {
@@ -622,8 +621,8 @@ const activateVirtualActor = async (
 
 const deactivateVirtualActor = async (
   { actorType, actorId, request }: {
-    actorType: ActorType;
-    actorId: ActorId;
+    actorType: string;
+    actorId: string;
     request: Request;
   },
 ): Promise<VirtualActor | undefined> => {
@@ -716,9 +715,9 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, methodName, request }: {
-                actorType: ActorType;
-                actorId: ActorId;
-                methodName: ActorMethodName;
+                actorType: string;
+                actorId: string;
+                methodName: string;
                 request: Request;
               },
             ) {
@@ -763,8 +762,8 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, request }: {
-                actorType: ActorType;
-                actorId: ActorId;
+                actorType: string;
+                actorId: string;
                 request: Request;
               },
             ) {
@@ -804,9 +803,9 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, reminderName, request }: {
-                actorType: ActorType;
-                actorId: ActorId;
-                reminderName: ActorMethodName;
+                actorType: string;
+                actorId: string;
+                reminderName: string;
                 request: Request;
               },
             ) {
@@ -851,9 +850,9 @@ export class Dapr {
           action: {
             handler: async function (
               { actorType, actorId, timerName, request }: {
-                actorType: ActorType;
-                actorId: ActorId;
-                timerName: ActorMethodName;
+                actorType: string;
+                actorId: string;
+                timerName: string;
                 request: Request;
               },
             ) {

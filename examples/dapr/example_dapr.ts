@@ -106,8 +106,8 @@ class _Actor {
       actorType,
       actorId,
       reminderName: "testReminder",
-      dueTime: "10s",
-      period: "20s",
+      dueTime: "20s",
+      period: "0",
     });
     await Actor.createTimer({
       actorType,
