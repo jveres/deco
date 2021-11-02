@@ -323,8 +323,8 @@ type ActorMethod = {
 };
 
 type VirtualActor = {
-  instances: Set<string /* ActorId */>;
-  methodNames: Map<string, /* ActorMethodName */ ActorMethod>;
+  instances: Set</* ActorId */ string>;
+  methodNames: Map</* ActorMethodName */ string, ActorMethod>;
   eventHandlers: Map<ActorEvent, ActorMethod>;
 };
 
@@ -347,18 +347,23 @@ export class Actor {
     VirtualActor
   >();
 
-  static registerEventHandler(
+  static eventHandler(
     { actorType, event }: {
-      actorType: string;
-      event: ActorEvent;
-    },
+      actorType?: string;
+      event?: ActorEvent;
+    } = {},
   ): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | Symbol,
+      propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor event handlers
+      actorType ??= target.constructor.name;
+      event ??=
+        (typeof propertyKey === "string"
+          ? propertyKey
+          : (propertyKey.description || propertyKey.toString())) as ActorEvent;
       const registeredActorType = getOrCreateVirtualActor(actorType);
       registeredActorType.eventHandlers.set(event, {
         target,
@@ -380,7 +385,9 @@ export class Actor {
     ): void => {
       // Register actor type with empty tracking list
       actorType ??= target.constructor.name;
-      methodName ??= (typeof propertyKey === "string" ? propertyKey : (propertyKey.description || propertyKey.toString()));
+      methodName ??= typeof propertyKey === "string"
+        ? propertyKey
+        : (propertyKey.description || propertyKey.toString());
       const registeredActorType = getOrCreateVirtualActor(actorType);
       registeredActorType.methodNames.set(
         methodName,
@@ -609,8 +616,11 @@ const activateVirtualActor = async (
     console.log(
       `Actor activated, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
     );
-    const { method, target } =
+    let { method, target } =
       virtualActor.eventHandlers.get(ActorEvent.Activate) || {};
+    if (target && Reflect.get(target, Http.TARGET_KEY)) {
+      target = Reflect.get(target, Http.TARGET_KEY);
+    }
     await method?.apply(target, [{
       actorType,
       actorId,
@@ -632,8 +642,11 @@ const deactivateVirtualActor = async (
   if (virtualActor) {
     // Delete actor instance from the tracking list
     if (virtualActor.instances.has(actorId)) {
-      const { method, target } =
+      let { method, target } =
         virtualActor.eventHandlers.get(ActorEvent.Deactivate) || {};
+      if (target && Reflect.get(target, Http.TARGET_KEY)) {
+        target = Reflect.get(target, Http.TARGET_KEY);
+      }
       await method?.apply(
         target,
         [{
@@ -653,7 +666,7 @@ const deactivateVirtualActor = async (
 
 export class Dapr {
   static App(): ClassDecorator {
-    return Http.Server();
+    return Http.Server({ instantiate: true });
   }
 
   static start(
@@ -735,9 +748,12 @@ export class Dapr {
                   request,
                 });
                 status = 500; // request failed
-                const { method, target } = virtualActor.methodNames.get(
+                let { method, target } = virtualActor.methodNames.get(
                   methodName,
                 ) || {};
+                if (target && Reflect.get(target, Http.TARGET_KEY)) {
+                  target = Reflect.get(target, Http.TARGET_KEY);
+                }
                 // invoke actor method
                 const res = await method?.apply(target, [{
                   actorType,
@@ -823,9 +839,12 @@ export class Dapr {
                   request,
                 });
                 status = 500; // request failed
-                const { method, target } = virtualActor.methodNames.get(
+                let { method, target } = virtualActor.methodNames.get(
                   reminderName,
                 ) || {};
+                if (target && Reflect.get(target, Http.TARGET_KEY)) {
+                  target = Reflect.get(target, Http.TARGET_KEY);
+                }
                 // invoke actor method
                 const res = await method?.apply(target, [{
                   actorType,
@@ -870,9 +889,12 @@ export class Dapr {
                   request,
                 });
                 status = 500; // request failed
-                const { method, target } = virtualActor.methodNames.get(
+                let { method, target } = virtualActor.methodNames.get(
                   timerName,
                 ) || {};
+                if (target && Reflect.get(target, Http.TARGET_KEY)) {
+                  target = Reflect.get(target, Http.TARGET_KEY);
+                }
                 // invoke actor method
                 const res = await method?.apply(target, [{
                   actorType,

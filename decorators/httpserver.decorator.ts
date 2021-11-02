@@ -8,8 +8,8 @@ import { HttpFunction, HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
 
 export class Http {
-  static readonly TARGET_KEY = "__http_target__";
-  static readonly ROUTES_KEY = "__http_routes__";
+  static readonly TARGET_KEY = "__target__";
+  static readonly ROUTES_KEY = "__routes__";
 
   static readonly DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
   static readonly DEFAULT_SERVER_PORT = 8080;

@@ -17,7 +17,6 @@
 
 import {
   Actor,
-  ActorEvent,
   Bindings,
   Dapr,
   PubSub,
@@ -88,20 +87,18 @@ class _ExampleApp {
 }
 
 @Dapr.App()
+// deno-lint-ignore no-unused-vars
 class TestActor {
   counter = 0;
 
-  @Actor.registerEventHandler({
-    actorType: "TestActor",
-    event: ActorEvent.Activate,
-  })
+  @Actor.eventHandler()
   async activate(
     { actorType, actorId }: { actorType: string; actorId: string },
   ) {
-    this.counter = 0;
     console.log(
-      `TestActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
+      `TestActor with actorId="${actorId}" activated, counter reset (was "${this.counter}")\nCreating reminder and timer...`,
     );
+    this.counter = 0;
     await Actor.createReminder({
       actorType,
       actorId,
@@ -118,10 +115,7 @@ class TestActor {
     });
   }
 
-  @Actor.registerEventHandler({
-    actorType: "TestActor",
-    event: ActorEvent.Deactivate,
-  })
+  @Actor.eventHandler()
   deactivate({ actorId }: { actorId: string }) {
     console.log(`TestActor with actorId="${actorId}" deactivated`);
   }
