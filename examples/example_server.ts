@@ -38,7 +38,7 @@ class _ExampleServer {
   stream() {
     let cancelled = true;
     const stream = new ReadableStream({
-      start: (controller) => {
+      start(controller) {
         cancelled = false;
         console.log("Stream started");
         controller.enqueue(": Welcome to the /sse endpoint!\n\n");

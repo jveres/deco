@@ -16,8 +16,8 @@ export class Http {
 
   static readonly router = new Router();
 
-  static getRoutesForObject(object: object) {
-    if (!Reflect.has(object, Http.ROUTES_KEY)) {
+  static getRoutesForObject(object: object, defineIfMissing = true): object[] | undefined {
+    if (!Reflect.has(object, Http.ROUTES_KEY) && defineIfMissing === true) {
       Reflect.defineProperty(object, Http.ROUTES_KEY, {
         value: [],
       });
@@ -33,8 +33,7 @@ export class Http {
       object: object;
     },
   ) {
-    const routes = Http.getRoutesForObject(object) as object[];
-    routes.push({ method, path, handler });
+    Http.getRoutesForObject(object)?.push({ method, path, handler });
   }
 
   static Server({ schema }: { schema?: string } = {}): ClassDecorator {
@@ -57,7 +56,7 @@ export class Http {
             const headers = { "content-type": mime };
             const init: ResponseInit = { status, headers };
             if (
-              routes.findIndex((route: any) =>
+              routes?.findIndex((route: any) =>
                 route["method"] === method && route["path"] === path
               ) === -1
             ) {
@@ -83,7 +82,7 @@ export class Http {
         Reflect.defineProperty(target.prototype, Http.TARGET_KEY, {
           value,
         });
-        routes.forEach((route: any) => {
+        routes?.forEach((route: any) => {
           Http.router.add({
             method: route["method"],
             path: route["path"],

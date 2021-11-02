@@ -126,10 +126,7 @@ class _ExampleActor {
     console.log(`testActor with actorId="${actorId}" deactivated`);
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testReminder",
-  })
+  @Actor.registerMethod({ actorType: "testActor" })
   testReminder(
     { actorType, actorId, methodName }: {
       actorType: string;
@@ -142,10 +139,7 @@ class _ExampleActor {
     );
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testTimer",
-  })
+  @Actor.registerMethod({ actorType: "testActor" })
   testTimer(
     { actorType, actorId, methodName }: {
       actorType: string;
@@ -158,10 +152,7 @@ class _ExampleActor {
     );
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testMethod1",
-  })
+  @Actor.registerMethod({ actorType: "testActor" })
   async testMethod1(
     { actorId, request }: { actorId: string; request: Request },
   ) {
@@ -172,10 +163,7 @@ class _ExampleActor {
     return `counter: ${++this.counter}`;
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testMethod2",
-  })
+  @Actor.registerMethod({ actorType: "testActor" })
   async testMethod2(
     { actorType, actorId, methodName, request }: {
       actorType: string;

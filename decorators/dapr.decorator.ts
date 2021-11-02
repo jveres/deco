@@ -370,15 +370,16 @@ export class Actor {
   static registerMethod(
     { actorType, methodName }: {
       actorType: string;
-      methodName: string;
+      methodName?: string;
     },
   ): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | Symbol,
+      propertyKey: string | Symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor type with empty tracking list
+      methodName ??= (typeof propertyKey === "string" ? propertyKey : (propertyKey.description || propertyKey.toString()));
       const registeredActorType = getOrCreateVirtualActor(actorType);
       registeredActorType.methodNames.set(
         methodName,
