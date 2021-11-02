@@ -88,11 +88,11 @@ class _ExampleApp {
 }
 
 @Dapr.App()
-class _ExampleActor {
+class TestActor {
   counter = 0;
 
   @Actor.registerEventHandler({
-    actorType: "testActor",
+    actorType: "TestActor",
     event: ActorEvent.Activate,
   })
   async activate(
@@ -100,7 +100,7 @@ class _ExampleActor {
   ) {
     this.counter = 0;
     console.log(
-      `testActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
+      `TestActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
     );
     await Actor.createReminder({
       actorType,
@@ -119,14 +119,14 @@ class _ExampleActor {
   }
 
   @Actor.registerEventHandler({
-    actorType: "testActor",
+    actorType: "TestActor",
     event: ActorEvent.Deactivate,
   })
   deactivate({ actorId }: { actorId: string }) {
-    console.log(`testActor with actorId="${actorId}" deactivated`);
+    console.log(`TestActor with actorId="${actorId}" deactivated`);
   }
 
-  @Actor.registerMethod({ actorType: "testActor" })
+  @Actor.method()
   testReminder(
     { actorType, actorId, methodName }: {
       actorType: string;
@@ -139,7 +139,7 @@ class _ExampleActor {
     );
   }
 
-  @Actor.registerMethod({ actorType: "testActor" })
+  @Actor.method()
   testTimer(
     { actorType, actorId, methodName }: {
       actorType: string;
@@ -152,18 +152,23 @@ class _ExampleActor {
     );
   }
 
-  @Actor.registerMethod({ actorType: "testActor" })
+  @Actor.method()
   async testMethod1(
-    { actorId, request }: { actorId: string; request: Request },
+    { actorType, actorId, methodName, request }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+      request: Request;
+    },
   ) {
     const data = await request.text();
     console.log(
-      `actor invoked with data="${data}", actorType="testActor", actorId="${actorId}", method="testMethod"`,
+      `actor invoked with data="${data}", actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter=${this.counter}`,
     );
     return `counter: ${++this.counter}`;
   }
 
-  @Actor.registerMethod({ actorType: "testActor" })
+  @Actor.method()
   async testMethod2(
     { actorType, actorId, methodName, request }: {
       actorType: string;

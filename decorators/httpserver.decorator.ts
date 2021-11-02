@@ -16,7 +16,10 @@ export class Http {
 
   static readonly router = new Router();
 
-  static getRoutesForObject(object: object, defineIfMissing = true): object[] | undefined {
+  static getRoutesForObject(
+    object: object,
+    defineIfMissing = true,
+  ): object[] | undefined {
     if (!Reflect.has(object, Http.ROUTES_KEY) && defineIfMissing === true) {
       Reflect.defineProperty(object, Http.ROUTES_KEY, {
         value: [],
@@ -36,58 +39,53 @@ export class Http {
     Http.getRoutesForObject(object)?.push({ method, path, handler });
   }
 
-  static Server({ schema }: { schema?: string } = {}): ClassDecorator {
+  static Server(
+    { schema, instantiate = true }: { schema?: string; instantiate?: boolean } = {},
+  ): ClassDecorator {
     return (target: Function): void => {
       const routes = Http.getRoutesForObject(target.prototype);
-      (async () => {
-        if (schema) {
-          const api = await loadOpenApiSpecification(schema);
-          for (const endpoint of api) {
-            const examples: string[] = [];
-            endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
-              example: any,
-            ) => examples.push(example["value"]));
-            const method: HttpMethod = (endpoint.method as string)
-              .toUpperCase() as HttpMethod;
-            const path: string = endpoint.path;
-            const status = parseInt(endpoint.responses?.[0]?.code) || 200;
-            const mime = endpoint.responses?.[0]?.contents?.[0].mediaType ||
-              "text/plain";
-            const headers = { "content-type": mime };
-            const init: ResponseInit = { status, headers };
-            if (
-              routes?.findIndex((route: any) =>
-                route["method"] === method && route["path"] === path
-              ) === -1
-            ) {
-              Http.addRouteToObject(
-                {
-                  method,
-                  path,
-                  handler: () => {
-                    return {
-                      body:
-                        examples[Math.floor(Math.random() * examples.length)],
-                      init,
-                    };
-                  },
-                  object: target.prototype,
-                },
-              );
-            }
+      if (schema) {
+        const api = loadOpenApiSpecification(schema);
+        for (const endpoint of api) {
+          const examples: string[] = [];
+          endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
+            example: any,
+          ) => examples.push(example["value"]));
+          const method: HttpMethod = (endpoint.method as string)
+            .toUpperCase() as HttpMethod;
+          const path: string = endpoint.path;
+          const status = parseInt(endpoint.responses?.[0]?.code) || 200;
+          const mime = endpoint.responses?.[0]?.contents?.[0].mediaType ||
+            "text/plain";
+          const headers = { "content-type": mime };
+          const init: ResponseInit = { status, headers };
+          if (
+            routes?.findIndex((route: any) =>
+              route["method"] === method && route["path"] === path
+            ) === -1
+          ) {
+            routes.push({
+              method,
+              path,
+              handler: () => {
+                return {
+                  body: examples[Math.floor(Math.random() * examples.length)],
+                  init,
+                };
+              },
+            });
           }
         }
-      })().then(() => {
-        const value = Reflect.construct(target, []);
-        Reflect.defineProperty(target.prototype, Http.TARGET_KEY, {
-          value,
-        });
-        routes?.forEach((route: any) => {
-          Http.router.add({
-            method: route["method"],
-            path: route["path"],
-            action: { handler: route["handler"], target: value },
-          });
+      }
+      const targetValue = instantiate === true ? Reflect.construct(target, []) : target;
+      Reflect.defineProperty(target.prototype, Http.TARGET_KEY, {
+        value: targetValue,
+      });
+      routes?.forEach((route: any) => {
+        Http.router.add({
+          method: route["method"],
+          path: route["path"],
+          action: { handler: route["handler"], target: targetValue },
         });
       });
     };

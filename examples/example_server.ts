@@ -4,11 +4,13 @@
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 
-@Http.Server({ schema: "api.yaml" })
-class _API {}
+@Http.Server({ schema: "api.yaml", instantiate: false })
+class _ExampleOpenAPI {}
 
 @Http.Server()
-class _ExampleServer {
+class _ExampleCustomAPI {
+  counter = 0;
+
   @Http.Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
@@ -23,7 +25,7 @@ class _ExampleServer {
     return {
       body: `[POST /api/:id] 😎 (got data: "${await request.text()}", query: "${
         decodeURIComponent(url.searchParams.toString())
-      }")`,
+      }", counter="${++this.counter}")`,
     };
   }
 
@@ -33,10 +35,17 @@ class _ExampleServer {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
     };
   }
+}
 
-  @Http.Get("/sse")
+@Http.Server()
+class _ExampleStream {
+  counter = 0;
+
+  @Http.Get("/stream")
   stream() {
     let cancelled = true;
+    // deno-lint-ignore no-this-alias
+    const self = this;
     const stream = new ReadableStream({
       start(controller) {
         cancelled = false;
@@ -45,9 +54,9 @@ class _ExampleServer {
         (function time() {
           setTimeout(() => {
             if (!cancelled) {
-              const body = `event: timer\ndata: ${
+              const body = `event: timer, counter\ndata: ${
                 new Date().toISOString()
-              }\n\n\n`;
+              }, ${++self.counter}\n\n\n`;
               controller.enqueue(body);
               time();
             }

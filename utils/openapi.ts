@@ -12,10 +12,12 @@ import {
   transformOas3Operations,
 } from "https://jspm.dev/@stoplight/http-spec/oas3/operation";
 
-export const loadOpenApiSpecification = async (
+export const loadOpenApiSpecification = (
   filename: string,
-): Promise<any> => {
-  const text = await Deno.readTextFile(filename);
-  const api =  path.extname(filename) === ".yaml" ? yamlParse(text) : JSON.parse(text);
+): any => {
+  const text = Deno.readTextFileSync(filename);
+  const api = path.extname(filename) === ".yaml"
+    ? yamlParse(text)
+    : JSON.parse(text);
   return transformOas3Operations(api, transformOas3Operation);
 };
