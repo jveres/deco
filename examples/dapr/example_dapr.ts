@@ -13,7 +13,7 @@
 // Publish message to topic C to see raw message format:
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic C --data '{"raw": "raw message for topic C"}'
 // Send data to the actor
-//    curl -X POST "http://localhost:3500/v1.0/actors/testActor/1/method/testMethod1" -d "{test: 'data'}"
+//    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
 
 import {
   Actor,
