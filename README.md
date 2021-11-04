@@ -112,12 +112,12 @@ const PUBSUBNAME = "pubsub";
 @Dapr.App()
 class _ExampleApp {
   @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "A" })
-  topicA({ data }: { data: unknown }) {
+  A({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
   @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "B" })
-  topicB({ data }: { data: Record<string, unknown> }) {
+  B({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
       const { text } = data;
@@ -136,7 +136,7 @@ class _ExampleApp {
     topicName: "C",
     metadata: { rawPayload: "true" },
   })
-  topicC(raw: Record<string, unknown>) {
+  C(raw: Record<string, unknown>) {
     console.log("topicC =>", raw);
   }
 
@@ -144,9 +144,9 @@ class _ExampleApp {
   tweets({ text }: { text: Record<string, unknown> }) {
     console.log(`incoming tweet => "${text}", publishing into topic A`);
     PubSub.publish({
-      data: { text },
       pubSubName: PUBSUBNAME,
-      topic: "A",
+      topicName: "A",
+      data: { text },
     });
   }
 
@@ -174,21 +174,23 @@ class TestActor {
   async activate(
     { actorType, actorId }: { actorType: string; actorId: string },
   ) {
+    console.log(this);
     console.log(
-      `TestActor with actorId="${actorId}" activated, counter reset (was "${this.counter}")\nCreating reminder and timer...`,
+      `TestActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
     );
     this.counter = 0;
     await Actor.createReminder({
       actorType,
       actorId,
-      reminderName: "testReminder",
+      methodName: "testReminder",
       dueTime: "20s",
       period: "0",
     });
+    console.log("getReminder =>", await (await Actor.getReminder({actorType, actorId, methodName: "testReminder"})).text());
     await Actor.createTimer({
       actorType,
       actorId,
-      timerName: "testTimer",
+      methodName: "testTimer",
       dueTime: "5s",
       period: "0s",
     });
