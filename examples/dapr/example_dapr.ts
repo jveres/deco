@@ -35,12 +35,12 @@ const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
 class _ExampleApp {
-  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
-  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "B" })
   topicB({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
@@ -48,16 +48,16 @@ class _ExampleApp {
       const path =
         `/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHATID}&text=${text}`;
       Bindings.invoke({
-        name: "telegram",
-        operation: "get",
+        bindingName: "telegram",
+        operation: "GET",
         metadata: { path },
       });
     }
   }
 
-  @PubSub.subscribe({
+  @PubSub.subscribeTo({
     pubSubName: PUBSUBNAME,
-    topic: "C",
+    topicName: "C",
     metadata: { rawPayload: "true" },
   })
   topicC(raw: Record<string, unknown>) {

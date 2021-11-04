@@ -67,7 +67,7 @@ export class Service {
 
 interface PubSubSubscription {
   pubSubName: string;
-  topic: string;
+  topicName: string;
   route?: string;
   metadata?: Metadata;
 }
@@ -75,7 +75,7 @@ interface PubSubSubscription {
 export class PubSub {
   static readonly subscriptions: PubSubSubscription[] = [];
 
-  static subscribe(
+  static subscribeTo(
     subscriptions: PubSubSubscription,
   ): MethodDecorator {
     return (
@@ -83,7 +83,7 @@ export class PubSub {
       _propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      subscriptions.route ??= subscriptions.topic; // TODO: slugify
+      subscriptions.route ??= subscriptions.topicName; // TODO: slugify
       PubSub.subscriptions.push(subscriptions);
       Http.addRouteToObject(
         {
@@ -130,13 +130,13 @@ export class PubSub {
 }
 
 export class Bindings {
-  static invoke({ name, data, metadata, operation }: {
-    name: string;
+  static invoke({ bindingName, data, metadata, operation }: {
+    bindingName: string;
     data?: any;
     metadata?: Metadata;
     operation?: string;
   }) {
-    const url = `http://localhost:${daprPort}/v1.0/bindings/${name}`;
+    const url = `http://localhost:${daprPort}/v1.0/bindings/${bindingName}`;
     return fetch(
       url,
       {
