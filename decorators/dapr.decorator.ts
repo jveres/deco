@@ -76,22 +76,31 @@ export class PubSub {
   static readonly subscriptions: PubSubSubscription[] = [];
 
   static subscribeTo(
-    subscription: PubSubSubscription,
+    { pubSubName, topicName, route, metadata }: {
+      pubSubName: string;
+      topicName: string;
+      route?: string;
+      metadata?: Metadata;
+    },
   ): MethodDecorator {
     return (
       target: Object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      subscription.route ??= typeof propertyKey === "string"
+      route ??= typeof propertyKey === "string"
         ? propertyKey
         : (propertyKey.description || propertyKey.toString());
-      console.log(subscription);
-      PubSub.subscriptions.push(subscription);
+      PubSub.subscriptions.push({
+        pubSubName,
+        topic: topicName,
+        route,
+        metadata,
+      });
       Http.addRouteToObject(
         {
           method: "POST",
-          path: `/${subscription.route}`,
+          path: `/${route}`,
           handler: async ({ request }: { request: Request }) => {
             descriptor.value(await request.json());
             return HTTP_RESPONSE_200;
@@ -445,17 +454,17 @@ export class Actor {
   }
 
   static async createReminder(
-    { actorType, actorId, reminderName, dueTime, period, data }: {
+    { actorType, actorId, methodName, dueTime, period, data }: {
       actorType: string;
       actorId: string;
-      reminderName: string;
+      methodName: string;
       dueTime: string;
       period: string;
       data?: any;
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${methodName}`;
     const res = await fetch(url, {
       method: "POST",
       body: JSON.stringify({ dueTime, period, ...data && { data } }),
@@ -465,21 +474,21 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.createReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.createReminder(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
   }
 
   static async getReminder(
-    { actorType, actorId, reminderName }: {
+    { actorType, actorId, methodName }: {
       actorType: string;
       actorId: string;
-      reminderName: string;
+      methodName: string;
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${methodName}`;
     const res = await fetch(url, {
       method: "GET",
       headers: { "content-type": "application/json" },
@@ -488,21 +497,21 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.getReminder(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
   }
 
   static async deleteReminder(
-    { actorType, actorId, reminderName }: {
+    { actorType, actorId, methodName }: {
       actorType: string;
       actorId: string;
-      reminderName: string;
+      methodName: string;
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/reminders/${methodName}`;
     const res = await fetch(url, {
       method: "DELETE",
       headers: { "content-type": "application/json" },
@@ -511,24 +520,24 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
   }
 
   static async createTimer(
-    { actorType, actorId, timerName, dueTime, period, data }: {
+    { actorType, actorId, methodName, dueTime, period, data }: {
       actorType: string;
       actorId: string;
-      timerName: string;
+      methodName: string;
       dueTime: string;
       period: string;
       data?: any;
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/timers/${timerName}`;
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/timers/${methodName}`;
     const res = await fetch(url, {
       method: "POST",
       body: JSON.stringify({ dueTime, period, ...data && { data } }),
@@ -538,21 +547,21 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.createTimer(): actorType="${actorType}", actorId="${actorId}", timerName="${timerName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.createTimer(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
   }
 
   static async deleteTimer(
-    { actorType, actorId, timerName }: {
+    { actorType, actorId, methodName }: {
       actorType: string;
       actorId: string;
-      timerName: string;
+      methodName: string;
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/timers/${timerName}`;
+      `http://localhost:${daprPort}/v1.0/actors/${actorType}/${actorId}/timers/${methodName}`;
     const res = await fetch(url, {
       method: "DELETE",
       headers: { "content-type": "application/json" },
@@ -561,7 +570,7 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.deleteTimer(): actorType="${actorType}", actorId="${actorId}", timerName="${timerName}", code=${status}, text="${statusText}"`,
+        `Error during Actor.deleteTimer(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -709,7 +718,16 @@ export class Dapr {
         action: {
           handler: () => {
             return {
-              body: JSON.stringify(PubSub.subscriptions),
+              body: JSON.stringify(
+                PubSub.subscriptions.map((subscription) =>
+                  Object.assign({}, {
+                    pubsubname: subscription.pubSubName,
+                    topic: subscription.topic,
+                    route: subscription.route,
+                    metadata: subscription.metadata,
+                  })
+                ),
+              ),
               init: { headers: { "content-type": "application/*+json" } },
             };
           },
@@ -727,14 +745,16 @@ export class Dapr {
       };
       // Setup proper target ref for Actor methods
       for (const [_, virtualActor] of Actor.registeredActors) {
-        for (let { target } of virtualActor.eventHandlers.values()) {
+        for (const [_, method] of virtualActor.eventHandlers) {
+          const { target } = method;
           if (target && Reflect.get(target, Http.TARGET_KEY)) {
-            target = Reflect.get(target, Http.TARGET_KEY);
+            method.target = Reflect.get(target, Http.TARGET_KEY);
           }
         }
-        for (let { target } of virtualActor.methodNames.values()) {
+        for (const [_, method] of virtualActor.methodNames) {
+          const { target } = method;
           if (target && Reflect.get(target, Http.TARGET_KEY)) {
-            target = Reflect.get(target, Http.TARGET_KEY);
+            method.target = Reflect.get(target, Http.TARGET_KEY);
           }
         }
       }

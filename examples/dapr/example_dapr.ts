@@ -35,12 +35,12 @@ const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
 class _ExampleApp {
-  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topic: "A" })
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "A" })
   A({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
-  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topic: "B" })
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "B" })
   B({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
@@ -57,7 +57,7 @@ class _ExampleApp {
 
   @PubSub.subscribeTo({
     pubSubName: PUBSUBNAME,
-    topic: "C",
+    topicName: "C",
     metadata: { rawPayload: "true" },
   })
   C(raw: Record<string, unknown>) {
@@ -68,9 +68,9 @@ class _ExampleApp {
   tweets({ text }: { text: Record<string, unknown> }) {
     console.log(`incoming tweet => "${text}", publishing into topic A`);
     PubSub.publish({
-      data: { text },
       pubSubName: PUBSUBNAME,
       topicName: "A",
+      data: { text },
     });
   }
 
@@ -98,21 +98,23 @@ class TestActor {
   async activate(
     { actorType, actorId }: { actorType: string; actorId: string },
   ) {
+    console.log(this);
     console.log(
-      `TestActor with actorId="${actorId}" activated, counter reset (was "${this.counter}")\nCreating reminder and timer...`,
+      `TestActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
     );
     this.counter = 0;
     await Actor.createReminder({
       actorType,
       actorId,
-      reminderName: "testReminder",
+      methodName: "testReminder",
       dueTime: "20s",
       period: "0",
     });
+    console.log("getReminder =>", await (await Actor.getReminder({actorType, actorId, methodName: "testReminder"})).text());
     await Actor.createTimer({
       actorType,
       actorId,
-      timerName: "testTimer",
+      methodName: "testTimer",
       dueTime: "5s",
       period: "0s",
     });
