@@ -11,10 +11,10 @@
 import { Http } from "../decorators/httpserver.decorator.ts";
 
 @Http.Server({ schema: "api.yaml" })
-class OpenAPIServer {}
+class _OpenAPIServer {}
 
 @Http.Server()
-class ExampleServer {
+class _ExampleServer {
   @Http.Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
@@ -88,12 +88,13 @@ Http.serve();
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic B --data '{"text": "Hello from Deco.Dapr!"}'
 // Publish message to topic C to see raw message format:
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic C --data '{"raw": "raw message for topic C"}'
+// Invoke "test" service
+//    dapr invoke --app-id deco-app --verb GET --method test
 // Send data to the actor
-//    curl -X POST "http://localhost:3500/v1.0/actors/testActor/1/method/testMethod1" -d "{test: 'data'}"
+//    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
 
 import {
   Actor,
-  ActorEvent,
   Bindings,
   Dapr,
   PubSub,
@@ -109,13 +110,13 @@ const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
 const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
-class ExampleApp {
-  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "A" })
+class _ExampleApp {
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "A" })
   topicA({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
-  @PubSub.subscribe({ pubSubName: PUBSUBNAME, topic: "B" })
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "B" })
   topicB({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
@@ -123,24 +124,25 @@ class ExampleApp {
       const path =
         `/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHATID}&text=${text}`;
       Bindings.invoke({
-        name: "telegram",
-        operation: "get",
+        bindingName: "telegram",
+        operation: "GET",
         metadata: { path },
       });
     }
   }
 
-  @PubSub.subscribe({
+  @PubSub.subscribeTo({
     pubSubName: PUBSUBNAME,
-    topic: "C",
+    topicName: "C",
     metadata: { rawPayload: "true" },
   })
   topicC(raw: Record<string, unknown>) {
     console.log("topicC =>", raw);
   }
 
-  @Bindings.listenTo({ name: "tweets" })
+  @Bindings.listenTo()
   tweets({ text }: { text: Record<string, unknown> }) {
+    console.log(`incoming tweet => "${text}", publishing into topic A`);
     PubSub.publish({
       data: { text },
       pubSubName: PUBSUBNAME,
@@ -150,13 +152,13 @@ class ExampleApp {
 
   private counter = 0;
 
-  @Service.expose({ name: "test", verb: "GET" })
+  @Service.expose()
   async test({ request }: { request: Request }) {
     console.log(
       `test service called, counter: ${++this.counter}, data = "${await request
         .text()}"`,
     );
-    await sleep(4000);
+    await sleep(1000);
     return {
       body: `test reply, counter: ${this.counter}`,
     };
@@ -164,20 +166,18 @@ class ExampleApp {
 }
 
 @Dapr.App()
-class ExampleActor {
+// deno-lint-ignore no-unused-vars
+class TestActor {
   counter = 0;
 
-  @Actor.registerEventHandler({
-    actorType: "testActor",
-    event: ActorEvent.Activate,
-  })
+  @Actor.eventHandler()
   async activate(
     { actorType, actorId }: { actorType: string; actorId: string },
   ) {
-    this.counter = 0;
     console.log(
-      `testActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
+      `TestActor with actorId="${actorId}" activated, counter reset (was "${this.counter}")\nCreating reminder and timer...`,
     );
+    this.counter = 0;
     await Actor.createReminder({
       actorType,
       actorId,
@@ -194,18 +194,12 @@ class ExampleActor {
     });
   }
 
-  @Actor.registerEventHandler({
-    actorType: "testActor",
-    event: ActorEvent.Deactivate,
-  })
+  @Actor.eventHandler()
   deactivate({ actorId }: { actorId: string }) {
-    console.log(`testActor with actorId="${actorId}" deactivated`);
+    console.log(`TestActor with actorId="${actorId}" deactivated`);
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testReminder",
-  })
+  @Actor.method()
   testReminder(
     { actorType, actorId, methodName }: {
       actorType: string;
@@ -218,10 +212,7 @@ class ExampleActor {
     );
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testTimer",
-  })
+  @Actor.method()
   testTimer(
     { actorType, actorId, methodName }: {
       actorType: string;
@@ -234,24 +225,23 @@ class ExampleActor {
     );
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testMethod1",
-  })
+  @Actor.method()
   async testMethod1(
-    { actorId, request }: { actorId: string; request: Request },
+    { actorType, actorId, methodName, request }: {
+      actorType: string;
+      actorId: string;
+      methodName: string;
+      request: Request;
+    },
   ) {
     const data = await request.text();
     console.log(
-      `actor invoked with data="${data}", actorType="testActor", actorId="${actorId}", method="testMethod"`,
+      `actor invoked with data="${data}", actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter=${this.counter}`,
     );
     return `counter: ${++this.counter}`;
   }
 
-  @Actor.registerMethod({
-    actorType: "testActor",
-    methodName: "testMethod2",
-  })
+  @Actor.method()
   async testMethod2(
     { actorType, actorId, methodName, request }: {
       actorType: string;
