@@ -67,7 +67,7 @@ export class Service {
 
 interface PubSubSubscription {
   pubSubName: string;
-  topicName: string;
+  topic: string;
   route?: string;
   metadata?: Metadata;
 }
@@ -76,19 +76,22 @@ export class PubSub {
   static readonly subscriptions: PubSubSubscription[] = [];
 
   static subscribeTo(
-    subscriptions: PubSubSubscription,
+    subscription: PubSubSubscription,
   ): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | symbol,
+      propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      subscriptions.route ??= subscriptions.topicName; // TODO: slugify
-      PubSub.subscriptions.push(subscriptions);
+      subscription.route ??= typeof propertyKey === "string"
+        ? propertyKey
+        : (propertyKey.description || propertyKey.toString());
+      console.log(subscription);
+      PubSub.subscriptions.push(subscription);
       Http.addRouteToObject(
         {
           method: "POST",
-          path: `/${subscriptions.route}`,
+          path: `/${subscription.route}`,
           handler: async ({ request }: { request: Request }) => {
             descriptor.value(await request.json());
             return HTTP_RESPONSE_200;
@@ -100,15 +103,15 @@ export class PubSub {
   }
 
   static async publish(
-    { pubSubName, topic, data, metadata }: {
+    { pubSubName, topicName, data, metadata }: {
       pubSubName: string;
-      topic: string;
+      topicName: string;
       data: any;
       metadata?: Metadata;
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/publish/${pubSubName}/${topic}` +
+      `http://localhost:${daprPort}/v1.0/publish/${pubSubName}/${topicName}` +
       (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
     const res = await fetch(
       url,
@@ -122,7 +125,7 @@ export class PubSub {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during PubSub.publish(): pubSubName="${pubSubName}", topic="${topic}", code=${status}, text="${statusText}"`,
+        `Error during PubSub.publish(): pubSubName="${pubSubName}", topic="${topicName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -137,6 +140,7 @@ export class Bindings {
     operation?: string;
   }) {
     const url = `http://localhost:${daprPort}/v1.0/bindings/${bindingName}`;
+    if (operation) operation = operation.toLowerCase();
     return fetch(
       url,
       {

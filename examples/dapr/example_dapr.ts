@@ -35,13 +35,13 @@ const PUBSUBNAME = "pubsub";
 
 @Dapr.App()
 class _ExampleApp {
-  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "A" })
-  topicA({ data }: { data: unknown }) {
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topic: "A" })
+  A({ data }: { data: unknown }) {
     console.log("topicA =>", data);
   }
 
-  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "B" })
-  topicB({ data }: { data: Record<string, unknown> }) {
+  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topic: "B" })
+  B({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
       const { text } = data;
@@ -57,10 +57,10 @@ class _ExampleApp {
 
   @PubSub.subscribeTo({
     pubSubName: PUBSUBNAME,
-    topicName: "C",
+    topic: "C",
     metadata: { rawPayload: "true" },
   })
-  topicC(raw: Record<string, unknown>) {
+  C(raw: Record<string, unknown>) {
     console.log("topicC =>", raw);
   }
 
@@ -70,7 +70,7 @@ class _ExampleApp {
     PubSub.publish({
       data: { text },
       pubSubName: PUBSUBNAME,
-      topic: "A",
+      topicName: "A",
     });
   }
 
