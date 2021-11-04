@@ -19,7 +19,7 @@ const DEFAULT_RATE_INTERVAL_MS = 1000;
 export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
   (
     _target: Object,
-    _propertyKey: string | Symbol,
+    _propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalFn = descriptor.value;

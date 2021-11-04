@@ -96,7 +96,7 @@ export class Http {
   ): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | Symbol,
+      _propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       Http.addRouteToObject(

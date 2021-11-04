@@ -16,7 +16,7 @@ interface TryOptions {
 export const Try = (options?: TryOptions): MethodDecorator =>
   (
     _target: Object,
-    _propertyKey: string | Symbol,
+    _propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalFn = descriptor.value;

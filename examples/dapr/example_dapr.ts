@@ -12,6 +12,8 @@
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic B --data '{"text": "Hello from Deco.Dapr!"}'
 // Publish message to topic C to see raw message format:
 //    dapr publish --publish-app-id sidecar --pubsub pubsub --topic C --data '{"raw": "raw message for topic C"}'
+// Invoke "test" service
+//    dapr invoke --app-id deco-app --verb GET --method test
 // Send data to the actor
 //    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
 
@@ -62,8 +64,9 @@ class _ExampleApp {
     console.log("topicC =>", raw);
   }
 
-  @Bindings.listenTo({ name: "tweets" })
+  @Bindings.listenTo()
   tweets({ text }: { text: Record<string, unknown> }) {
+    console.log(`incoming tweet => "${text}", publishing into topic A`);
     PubSub.publish({
       data: { text },
       pubSubName: PUBSUBNAME,
@@ -73,13 +76,13 @@ class _ExampleApp {
 
   private counter = 0;
 
-  @Service.expose({ name: "test", verb: "GET" })
+  @Service.expose()
   async test({ request }: { request: Request }) {
     console.log(
       `test service called, counter: ${++this.counter}, data = "${await request
         .text()}"`,
     );
-    await sleep(4000);
+    await sleep(1000);
     return {
       body: `test reply, counter: ${this.counter}`,
     };

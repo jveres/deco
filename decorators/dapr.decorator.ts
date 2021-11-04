@@ -19,11 +19,26 @@ export type Metadata = Record<string, string>;
 export type ETag = string;
 
 export class Service {
-  static expose({ name, verb = "POST" }: {
-    name: string;
-    verb?: HttpMethod;
-  }): MethodDecorator {
-    return Http.Route({ method: verb, path: `/${name}` });
+  static expose({ serviceName, method = "GET" }: {
+    serviceName?: string;
+    method?: HttpMethod;
+  } = {}): MethodDecorator {
+    {
+      return (
+        target: Object,
+        propertyKey: string | symbol,
+        descriptor: TypedPropertyDescriptor<any>,
+      ): void => {
+        serviceName ??= typeof propertyKey === "string"
+          ? propertyKey
+          : (propertyKey.description || propertyKey.toString());
+        Http.Route({ method, path: `/${serviceName}` })(
+          target,
+          propertyKey,
+          descriptor,
+        );
+      };
+    }
   }
 
   static async invoke(
@@ -65,7 +80,7 @@ export class PubSub {
   ): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | Symbol,
+      _propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       subscriptions.route ??= subscriptions.topic; // TODO: slugify
@@ -136,18 +151,21 @@ export class Bindings {
     );
   }
 
-  static listenTo({ name }: {
-    name: string;
-  }): MethodDecorator {
+  static listenTo({ bindingName }: {
+    bindingName?: string;
+  } = {}): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | Symbol,
+      propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
+      bindingName ??= typeof propertyKey === "string"
+        ? propertyKey
+        : (propertyKey.description || propertyKey.toString());
       Http.addRouteToObject(
         {
           method: "OPTIONS",
-          path: `/${name}`,
+          path: `/${bindingName}`,
           handler: () => HTTP_RESPONSE_200,
           object: target,
         },
@@ -155,7 +173,7 @@ export class Bindings {
       Http.addRouteToObject(
         {
           method: "POST",
-          path: `/${name}`,
+          path: `/${bindingName}`,
           handler: async ({ request }: { request: Request }) => {
             descriptor.value(await request.json());
             return HTTP_RESPONSE_200;
@@ -355,7 +373,7 @@ export class Actor {
   ): MethodDecorator {
     return (
       target: Object,
-      propertyKey: string | Symbol,
+      propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor event handlers
@@ -380,7 +398,7 @@ export class Actor {
   ): MethodDecorator {
     return (
       target: Object,
-      propertyKey: string | Symbol,
+      propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       // Register actor type with empty tracking list

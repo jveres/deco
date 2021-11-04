@@ -35,7 +35,7 @@ export const Retry = (
 ): MethodDecorator =>
   (
     _target: Object,
-    propertyKey: string | Symbol,
+    propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalFn = descriptor.value;
