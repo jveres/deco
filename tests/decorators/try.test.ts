@@ -7,8 +7,8 @@ import {
   assert,
   assertEquals,
   assertThrowsAsync,
-} from "https://deno.land/std@0.113.0/testing/asserts.ts";
-import { setColorEnabled } from "https://deno.land/std@0.113.0/fmt/colors.ts";
+} from "https://deno.land/std@0.114.0/testing/asserts.ts";
+import { setColorEnabled } from "https://deno.land/std@0.114.0/fmt/colors.ts";
 
 class SomeClass {
   @Try()

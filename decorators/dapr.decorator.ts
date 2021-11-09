@@ -7,6 +7,7 @@
 import { Http } from "./httpserver.decorator.ts";
 import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
 import { HttpMethod } from "../utils/Router.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
 export const DEFAULT_DAPR_HTTP_PORT = 3500;
@@ -29,9 +30,7 @@ export class Service {
         propertyKey: string | symbol,
         descriptor: TypedPropertyDescriptor<any>,
       ): void => {
-        serviceName ??= typeof propertyKey === "string"
-          ? propertyKey
-          : (propertyKey.description || propertyKey.toString());
+        serviceName ??= stringFromPropertyKey(propertyKey);
         Http.Route({ method, path: `/${serviceName}` })(
           target,
           propertyKey,
@@ -88,9 +87,7 @@ export class PubSub {
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      route ??= typeof propertyKey === "string"
-        ? propertyKey
-        : (propertyKey.description || propertyKey.toString());
+      route ??= stringFromPropertyKey(propertyKey);
       PubSub.subscriptions.push({
         pubSubName,
         topic: topicName,
@@ -172,9 +169,7 @@ export class Bindings {
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      bindingName ??= typeof propertyKey === "string"
-        ? propertyKey
-        : (propertyKey.description || propertyKey.toString());
+      bindingName ??= stringFromPropertyKey(propertyKey);
       Http.addRouteToObject(
         {
           method: "OPTIONS",
@@ -391,10 +386,7 @@ export class Actor {
     ): void => {
       // Register actor event handlers
       actorType ??= target.constructor.name;
-      event ??=
-        (typeof propertyKey === "string"
-          ? propertyKey
-          : (propertyKey.description || propertyKey.toString())) as ActorEvent;
+      event ??= stringFromPropertyKey(propertyKey) as ActorEvent;
       const registeredActorType = getOrCreateVirtualActor(actorType);
       registeredActorType.eventHandlers.set(event, {
         target,
@@ -416,9 +408,7 @@ export class Actor {
     ): void => {
       // Register actor type with empty tracking list
       actorType ??= target.constructor.name;
-      methodName ??= typeof propertyKey === "string"
-        ? propertyKey
-        : (propertyKey.description || propertyKey.toString());
+      methodName ??= stringFromPropertyKey(propertyKey);
       const registeredActorType = getOrCreateVirtualActor(actorType);
       registeredActorType.methodNames.set(
         methodName,

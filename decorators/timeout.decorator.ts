@@ -4,7 +4,8 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import * as Colors from "https://deno.land/std@0.113.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.114.0/fmt/colors.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
 export const DEFAULT_TIMEOUT_MS = 10000;
 
@@ -56,7 +57,7 @@ export const Timeout = (
             Colors.bold("Timeout (" + String(timeout) + "ms")
           }) exceeded for ${
             Colors.brightMagenta(
-              propertyKey +
+              stringFromPropertyKey(propertyKey) +
                 "(…)",
             )
           }`;

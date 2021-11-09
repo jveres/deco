@@ -15,6 +15,9 @@ export const debounce = _debounce as any;
 export const sleep = (wait: number) =>
   new Promise((resolve) => setTimeout(resolve, wait));
 
+export const stringFromPropertyKey = (s: PropertyKey) =>
+  typeof s === "symbol" ? (s.description || s.toString()) : String(s);
+
 export const DEFAULT_MAX_LRUCACHE_ENTRIES = 500;
 
 export class LruCache<T> {

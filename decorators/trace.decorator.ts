@@ -4,7 +4,8 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import * as Colors from "https://deno.land/std@0.113.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.114.0/fmt/colors.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
 interface TraceOptions {
   stack?: boolean;
@@ -29,7 +30,7 @@ export const Trace = (
         : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
       const p1 = performance.now();
       console.log(
-        `${Colors.brightMagenta(propertyKey + "(…)")} ${
+        `${Colors.brightMagenta(stringFromPropertyKey(propertyKey) + "(…)")} ${
           Colors.bold("called")
         } ${options.stack ? "" : "from"} ${
           Colors.brightCyan(from ?? lastFrom ?? "unknown")
@@ -44,7 +45,7 @@ export const Trace = (
         : result = originalFn.apply(this, args);
       console.log(`${
         Colors.brightMagenta(
-          propertyKey +
+          stringFromPropertyKey(propertyKey) +
             "(…)",
         )
       } ${Colors.green("ended")} in ${
