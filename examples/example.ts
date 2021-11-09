@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { RateLimitError } from "../decorators/ratelimit.decorator.ts";
+import { RateLimited } from "../decorators/ratelimit.decorator.ts";
 import {
   BackOffPolicy,
   Concurrency,
@@ -191,7 +191,7 @@ await example.tryCatchTest(false);
 for (let i = 0; i < 10; i++) {
   example.ratelimitTestMethod()
     .catch((e: unknown) => {
-      if (e instanceof RateLimitError) console.log("rate limited");
+      if (e instanceof RateLimited) console.log("rate limited");
     });
   await sleep(1);
 }

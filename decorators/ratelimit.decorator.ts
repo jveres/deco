@@ -6,7 +6,7 @@
 
 import { Denque } from "../utils/utils.ts";
 
-export class RateLimitError extends Error {}
+export class RateLimited extends Error {}
 
 export interface RateLimitOptions {
   interval?: number;
@@ -38,7 +38,7 @@ export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
 
     descriptor.value = async function (...args: any[]) {
       if (getCurrentRate() >= (options?.rate ?? DEFAULT_RATE_LIMIT)) {
-        throw new RateLimitError("Rate limit exceeded");
+        throw new RateLimited("Rate limit exceeded");
       }
       queue.push(Date.now());
       return await originalFn.apply(

@@ -1,4 +1,4 @@
-[![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco@0.6.2/mod.ts)
+[![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco/mod.ts)
 
 # Deco (**deh** · kow) is a lightweight helper library for [Deno](https://deno.land) developers (still work in progress)
 
