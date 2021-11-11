@@ -28,9 +28,7 @@ export class Service {
         propertyKey: string | symbol,
         descriptor: TypedPropertyDescriptor<any>,
       ): void => {
-        serviceName ??= typeof propertyKey === "string"
-          ? propertyKey
-          : (propertyKey.description || propertyKey.toString());
+        serviceName ??= stringFromPropertyKey(propertyKey);
         Http.Route({ method, path: `/${serviceName}` })(
           target,
           propertyKey,
@@ -143,7 +141,8 @@ export class Bindings {
     metadata?: Metadata;
     operation?: string;
   }) {
-    const url = `http://localhost:${DAPR_HTTP_PORT}/v1.0/bindings/${bindingName}`;
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/bindings/${bindingName}`;
     if (operation) operation = operation.toLowerCase();
     return fetch(
       url,
@@ -167,9 +166,7 @@ export class Bindings {
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      bindingName ??= typeof propertyKey === "string"
-        ? propertyKey
-        : (propertyKey.description || propertyKey.toString());
+      bindingName ??= stringFromPropertyKey(propertyKey);
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method: "OPTIONS",
         path: `/${bindingName}`,
