@@ -1,1 +1,1 @@
-export const DECO_VERSION = "0.6.6";
+export const DECO_VERSION = "0.7.0";

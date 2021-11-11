@@ -4,8 +4,9 @@
 
 // deno-lint-ignore-file ban-types no-explicit-any
 
-import { HttpFunction, HttpMethod, Router } from "../utils/Router.ts";
+import { HttpMethod, Router } from "../utils/Router.ts";
 import { loadOpenApiSpecification } from "../utils/openapi.ts";
+import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
 
 export class Http {
   static readonly TARGET_KEY = "__target__";
@@ -16,35 +17,11 @@ export class Http {
 
   static readonly router = new Router();
 
-  static getRoutesForObject(
-    object: object,
-    defineIfMissing = true,
-  ): object[] | undefined {
-    if (!Reflect.has(object, Http.ROUTES_KEY) && defineIfMissing === true) {
-      Reflect.defineProperty(object, Http.ROUTES_KEY, {
-        value: [],
-      });
-    }
-    return Reflect.get(object, Http.ROUTES_KEY);
-  }
-
-  static addRouteToObject(
-    { method, path, handler, object }: {
-      method: HttpMethod;
-      path: string;
-      handler: HttpFunction;
-      object: object;
-    },
-  ) {
-    Http.getRoutesForObject(object)?.push({ method, path, handler });
-  }
-
-  static Server(
-    { schema, instantiate = true }: { schema?: string; instantiate?: boolean } = {},
+  static ServerController(
+    { schema }: { schema?: string } = {},
   ): ClassDecorator {
     return (target: Function): void => {
-      const routes = Http.getRoutesForObject(target.prototype);
-      if (schema) {
+      if (schema !== undefined) {
         const api = loadOpenApiSpecification(schema);
         for (const endpoint of api) {
           const examples: string[] = [];
@@ -59,8 +36,13 @@ export class Http {
             "text/plain";
           const headers = { "content-type": mime };
           const init: ResponseInit = { status, headers };
+          const routes = getMetadata<object[]>(
+            target.prototype,
+            Http.ROUTES_KEY,
+            [],
+          );
           if (
-            routes?.findIndex((route: any) =>
+            routes.findIndex((route: any) =>
               route["method"] === method && route["path"] === path
             ) === -1
           ) {
@@ -77,17 +59,6 @@ export class Http {
           }
         }
       }
-      const targetValue = instantiate === true ? Reflect.construct(target, []) : target;
-      Reflect.defineProperty(target.prototype, Http.TARGET_KEY, {
-        value: targetValue,
-      });
-      routes?.forEach((route: any) => {
-        Http.router.add({
-          method: route["method"],
-          path: route["path"],
-          action: { handler: route["handler"], target: targetValue },
-        });
-      });
     };
   }
 
@@ -99,9 +70,11 @@ export class Http {
       _propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
-      Http.addRouteToObject(
-        { method, path, handler: descriptor.value, object: target },
-      );
+      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
+        method,
+        path,
+        handler: descriptor.value,
+      });
     };
   }
 
@@ -118,11 +91,32 @@ export class Http {
   }
 
   static async serve(
-    { hostname, port }: {
+    { hostname, port, controllers }: {
       hostname?: string;
       port?: number;
-    } = {},
+      controllers: Function[];
+    },
   ) {
+    // Initialize controllers and routes
+    for (const controller of controllers) {
+      const target = Reflect.construct(controller, []);
+      if (!hasMetadata(target, Http.TARGET_KEY)) {
+        setMetadata(target, Http.TARGET_KEY, target);
+      }
+      const routes = getMetadata<object[]>(
+        target,
+        Http.ROUTES_KEY,
+        [],
+      );
+      routes.forEach((route: any) => {
+        Http.router.add({
+          method: route["method"],
+          path: route["path"],
+          action: { handler: route["handler"], target },
+        });
+      });
+    }
+    // Start listener
     for await (
       const conn of Deno.listen({
         port: port ?? Http.DEFAULT_SERVER_PORT,
@@ -140,7 +134,6 @@ export class Http {
             action.target,
             [{ ...params, url, request: http.request }],
           ) || {};
-
           http.respondWith(new Response(body, init)).catch(() => {});
         }
       })();

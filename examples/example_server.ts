@@ -4,11 +4,11 @@
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 
-@Http.Server({ schema: "api.yaml", instantiate: false })
-class _ExampleOpenAPI {}
+@Http.ServerController({ schema: "api.yaml" })
+class ExampleOpenAPI {}
 
-@Http.Server()
-class _ExampleCustomAPI {
+@Http.ServerController()
+class ExampleCustomAPI {
   counter = 0;
 
   @Http.Get("/api/:id")
@@ -37,8 +37,8 @@ class _ExampleCustomAPI {
   }
 }
 
-@Http.Server()
-class _ExampleStream {
+@Http.ServerController()
+class ExampleStream {
   counter = 0;
 
   @Http.Get("/stream")
@@ -76,4 +76,4 @@ class _ExampleStream {
 }
 
 console.log("Server started...");
-Http.serve();
+Http.serve({ controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream] });
