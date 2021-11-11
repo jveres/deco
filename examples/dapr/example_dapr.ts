@@ -21,8 +21,14 @@ import {
   Bindings,
   Dapr,
   PubSub,
+  Secrets,
   Service,
+  State,
 } from "../../decorators/dapr.decorator.ts";
+
+const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
+  store: "example-secrets-store",
+});
 
 const pubSubName = "pubsub";
 
@@ -37,6 +43,16 @@ class PubSubExample1 {
   @PubSub.subscribeTo()
   B({ data }: { data: Record<string, unknown> }) {
     console.log("topicB =>", data, this);
+    if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
+      const { text } = data;
+      const path =
+        `/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHATID}&text=${text}`;
+      Bindings.invoke({
+        bindingName: "telegram",
+        operation: "GET",
+        metadata: { path },
+      });
+    }
   }
 }
 
@@ -70,10 +86,8 @@ class ServiceExample1 {
 
   @Service.expose()
   async test({ request }: { request: Request }) {
-    console.log(
-      // deno-fmt-ignore
-      `test service called, counter: ${++this.counter}, data = "${await request.text()}"`,
-    );
+    // deno-fmt-ignore
+    console.log(`test service called, counter: ${++this.counter}, data = "${await request.text()}"`);
     return {
       body: `test reply, counter: ${this.counter}`,
     };
@@ -85,6 +99,22 @@ class ServiceExample1 {
   }
 }
 
+@Dapr.AppController()
+class ActorExample {
+}
+
+// Setting and getting state
+await State.set({
+  storename: "example-state-store",
+  data: [{ key: "key1", value: "value1" }, { key: "key3", value: "value3" }],
+});
+// deno-fmt-ignore
+console.log("key1=", await State.get({ storename: "example-state-store", key: "key1" }));
+// deno-fmt-ignore
+console.log("missing=", await State.get({storename: "example-state-store", key: "missing" }));
+// deno-fmt-ignore
+console.log("bulk=", await State.getBulk({storename: "example-state-store", data: { keys: ["key1", "missing", "key3"] }}));
+
 console.log("Dapr app started...");
 Dapr.start({
   appPort: 3000,
@@ -93,5 +123,6 @@ Dapr.start({
     PubSubExample2,
     PubSubExample3,
     ServiceExample1,
+    ActorExample,
   ],
 });
