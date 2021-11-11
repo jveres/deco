@@ -24,7 +24,7 @@ export class Service {
   } = {}): MethodDecorator {
     {
       return (
-        target: Object,
+        target: object,
         propertyKey: string | symbol,
         descriptor: TypedPropertyDescriptor<any>,
       ): void => {
@@ -75,7 +75,7 @@ export class PubSub {
     } = {},
   ): MethodDecorator {
     return (
-      target: Object,
+      target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
@@ -162,7 +162,7 @@ export class Bindings {
     bindingName?: string;
   } = {}): MethodDecorator {
     return (
-      target: Object,
+      target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
@@ -337,6 +337,103 @@ export class State {
   }
 }
 
+export enum ActorEvent {
+  Activate = "activate",
+  Deactivate = "deactivate",
+}
+
+type VirtualActor = {
+  instances: Set</* ActorId */ string>;
+  events: Map<ActorEvent, Function>;
+};
+
+const getOrCreateVirtualActor = (
+  object: object,
+  actorType: string,
+): VirtualActor => {
+  const actors = getMetadata(
+    object,
+    Actor.ACTORS_KEY,
+    new Map<string, VirtualActor>(),
+  );
+  let virtualActor = actors.get(actorType);
+  if (!virtualActor) {
+    virtualActor = {
+      instances: new Set<string>(),
+      events: new Map<ActorEvent, Function>(),
+    };
+    actors.set(actorType, virtualActor);
+  }
+  return virtualActor;
+};
+
+export class Actor {
+  static readonly ACTORS_KEY = "__actors__";
+
+  static event(
+    { actorType, event }: {
+      actorType?: string;
+      event?: ActorEvent;
+    } = {},
+  ): MethodDecorator {
+    return (
+      target: object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      actorType ??= target.constructor.name;
+      event ??= stringFromPropertyKey(propertyKey) as ActorEvent;
+      getOrCreateVirtualActor(target, actorType).events.set(
+        event,
+        descriptor.value,
+      );
+    };
+  }
+
+  static method(
+    { actorType, methodName }: {
+      actorType?: string;
+      methodName?: string;
+    } = {},
+  ): MethodDecorator {
+    return (
+      target: object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      actorType ??= target.constructor.name;
+      methodName ??= stringFromPropertyKey(propertyKey);
+      // Register for invocation
+      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
+        method: "PUT",
+        path: `/actors/${actorType}/:actorId/method/${methodName}`,
+        handler: async function ({ actorId, request }: {
+          actorId: string;
+          request: Request;
+        }) {
+          console.log(
+            `Invoke actor service code called, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
+          );
+          try {
+            const res = await descriptor.value.apply(this, [{
+              actorType,
+              actorId,
+              methodName,
+              request,
+            }]);
+            return { body: JSON.stringify(res) };
+          } catch (err) {
+            console.error(
+              `Invoke actor failed, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"\n${err}`,
+            );
+            return { init: { status: 500 } };
+          }
+        },
+      });
+    };
+  }
+}
+
 export class Dapr {
   static AppController(
     { pubSubName }: { pubSubName?: string } = {},
@@ -347,13 +444,31 @@ export class Dapr {
   }
 
   static start(
-    { appPort = DEFAULT_DAPR_APP_PORT, controllers }: {
+    {
+      appPort = DEFAULT_DAPR_APP_PORT,
+      controllers,
+      actorIdleTimeout,
+      actorScanInterval,
+      drainOngoingCallTimeout,
+      drainRebalancedActors,
+    }: {
       appPort?: number;
       controllers: Function[];
+      actorIdleTimeout?: string;
+      actorScanInterval?: string;
+      drainOngoingCallTimeout?: string;
+      drainRebalancedActors?: boolean;
     },
   ) {
     // Initialize controllers
     const subscribe: object[] = [];
+    const actorConfig = {
+      entities: new Array<string>(),
+      ...actorIdleTimeout && { actorIdleTimeout },
+      ...actorScanInterval && { actorScanInterval },
+      ...drainOngoingCallTimeout && { drainOngoingCallTimeout },
+      ...drainRebalancedActors && { drainRebalancedActors },
+    };
     for (const controller of controllers) {
       const subscriptions = getMetadata<Record<string, any>[]>(
         controller.prototype,
@@ -375,8 +490,15 @@ export class Dapr {
           }));
         });
       }
+      const actors = <Map<string, VirtualActor>> getMetadata(
+        controller.prototype,
+        Actor.ACTORS_KEY,
+      );
+      actors?.forEach((_, actorType: string) =>
+        actorConfig.entities.push(actorType)
+      );
     }
-    // Register PubSub subscriptions
+    // Register subscriptions
     if (subscribe.length > 0) {
       Http.router.add({
         method: "GET",
@@ -388,6 +510,30 @@ export class Dapr {
               init: { headers: { "content-type": "application/*+json" } },
             };
           },
+        },
+      });
+    }
+    // Register actors
+    if (actorConfig.entities.length > 0) {
+      // Actor config
+      Http.router.add({
+        method: "GET",
+        path: "/dapr/config",
+        action: {
+          handler: () => {
+            return {
+              body: JSON.stringify(actorConfig),
+              init: { headers: { "content-type": "application/json" } },
+            };
+          },
+        },
+      });
+      // Health check
+      Http.router.add({
+        method: "GET",
+        path: "/healthz",
+        action: {
+          handler: () => HTTP_RESPONSE_200,
         },
       });
     }

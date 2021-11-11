@@ -18,6 +18,7 @@
 //    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
 
 import {
+  Actor,
   Bindings,
   Dapr,
   PubSub,
@@ -100,7 +101,43 @@ class ServiceExample1 {
 }
 
 @Dapr.AppController()
-class ActorExample {
+class TestActor1 {
+  private counter = 0;
+
+  @Actor.event()
+  activate(data: unknown) {
+    console.log("TestActor activated =>", data);
+  }
+
+  @Actor.event()
+  deactivate(data: unknown) {
+    console.log("TestActor deactivated =>", data);
+  }
+
+  @Actor.method()
+  testMethod1() {
+    console.log("TestActor/test() method called, counter=", this.counter++);
+  }
+}
+
+@Dapr.AppController()
+class TestActor2 {
+  private readonly tag = "TestActor2";
+
+  @Actor.event()
+  activate(data: unknown) {
+    console.log("TestActor1 activated =>", data);
+  }
+
+  @Actor.event()
+  deactivate(data: unknown) {
+    console.log("TestActor1 deactivated =>", data);
+  }
+
+  @Actor.method()
+  testMethod1(data: unknown) {
+    console.log("TestActor1/test() method called =>", data, this);
+  }
 }
 
 // Setting and getting state
@@ -123,6 +160,7 @@ Dapr.start({
     PubSubExample2,
     PubSubExample3,
     ServiceExample1,
-    ActorExample,
+    TestActor1,
+    TestActor2,
   ],
 });
