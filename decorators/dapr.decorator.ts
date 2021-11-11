@@ -8,13 +8,61 @@ import { Http } from "./httpserver.decorator.ts";
 import { stringFromPropertyKey } from "../utils/utils.ts";
 import { HTTP_RESPONSE_200 } from "../utils/Router.ts";
 import { getMetadata, setMetadata } from "./metadata.decorator.ts";
+import { HttpMethod } from "../utils/Router.ts";
 
 export const DEFAULT_DAPR_APP_PORT = 3000;
 export const DEFAULT_DAPR_HTTP_PORT = 3500;
-export const daprPort = Deno.env.get("DAPR_HTTP_PORT") ??
+export const DAPR_HTTP_PORT = Deno.env.get("DAPR_HTTP_PORT") ??
   DEFAULT_DAPR_HTTP_PORT;
 
 type Metadata = Record<string, string>;
+
+export class Service {
+  static expose({ serviceName, method = "GET" }: {
+    serviceName?: string;
+    method?: HttpMethod;
+  } = {}): MethodDecorator {
+    {
+      return (
+        target: Object,
+        propertyKey: string | symbol,
+        descriptor: TypedPropertyDescriptor<any>,
+      ): void => {
+        serviceName ??= typeof propertyKey === "string"
+          ? propertyKey
+          : (propertyKey.description || propertyKey.toString());
+        Http.Route({ method, path: `/${serviceName}` })(
+          target,
+          propertyKey,
+          descriptor,
+        );
+      };
+    }
+  }
+
+  static async invoke(
+    { appId, method, data }: { appId: string; method: string; data?: any },
+  ): Promise<Response> {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/invoke/${appId}/method/${method}`;
+    const res = await fetch(
+      url,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "content-type": "application/json" },
+      },
+    );
+    if (res.status === 200) return res;
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Service.invoke(): appId="${appId}", method="${method}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+}
 
 export class PubSub {
   static readonly PUBSUBNAME_KEY = "__pubsubname__";
@@ -50,7 +98,7 @@ export class PubSub {
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method: "POST",
         path: `/${route}`,
-        handler: async function({ request }: { request: Request }) {
+        handler: async function ({ request }: { request: Request }) {
           await descriptor.value.apply(this, [await request.json()]);
           return HTTP_RESPONSE_200;
         },
@@ -67,7 +115,7 @@ export class PubSub {
     },
   ): Promise<Response> {
     const url =
-      `http://localhost:${daprPort}/v1.0/publish/${pubSubName}/${topicName}` +
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/publish/${pubSubName}/${topicName}` +
       (metadata ? ("?" + new URLSearchParams(metadata).toString()) : "");
     const res = await fetch(
       url,
@@ -85,6 +133,57 @@ export class PubSub {
         { cause: { status, statusText } },
       );
     }
+  }
+}
+
+export class Bindings {
+  static invoke({ bindingName, data, metadata, operation }: {
+    bindingName: string;
+    data?: any;
+    metadata?: Metadata;
+    operation?: string;
+  }) {
+    const url = `http://localhost:${DAPR_HTTP_PORT}/v1.0/bindings/${bindingName}`;
+    if (operation) operation = operation.toLowerCase();
+    return fetch(
+      url,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          data,
+          ...metadata && { metadata },
+          ...operation && { operation },
+        }),
+        headers: { "content-type": "application/json" },
+      },
+    );
+  }
+
+  static listenTo({ bindingName }: {
+    bindingName?: string;
+  } = {}): MethodDecorator {
+    return (
+      target: Object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      bindingName ??= typeof propertyKey === "string"
+        ? propertyKey
+        : (propertyKey.description || propertyKey.toString());
+      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
+        method: "OPTIONS",
+        path: `/${bindingName}`,
+        handler: () => HTTP_RESPONSE_200,
+      });
+      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
+        method: "POST",
+        path: `/${bindingName}`,
+        handler: async function ({ request }: { request: Request }) {
+          await descriptor.value.apply(this, [await request.json()]);
+          return HTTP_RESPONSE_200;
+        },
+      });
+    };
   }
 }
 

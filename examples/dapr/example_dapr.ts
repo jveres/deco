@@ -17,11 +17,18 @@
 // Send data to the actor
 //    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
 
-import { Dapr, PubSub } from "../../decorators/dapr.decorator.ts";
+import {
+  Bindings,
+  Dapr,
+  PubSub,
+  Service,
+} from "../../decorators/dapr.decorator.ts";
 
-@Dapr.AppController({ pubSubName: "pubsub" })
-class ExampleApp1 {
-  private s = "exampleapp1";
+const pubSubName = "pubsub";
+
+@Dapr.AppController({ pubSubName })
+class PubSubExample1 {
+  private s = "private1";
   @PubSub.subscribeTo()
   A({ data }: { data: unknown }) {
     console.log("topicA =>", data, this);
@@ -33,14 +40,58 @@ class ExampleApp1 {
   }
 }
 
-@Dapr.AppController({ pubSubName: "pubsub" })
-class ExampleApp2 {
-  private s = "exampleapp2";
+@Dapr.AppController({ pubSubName })
+class PubSubExample2 {
+  private s = "private2";
   @PubSub.subscribeTo({ metadata: { rawPayload: "true" } })
   C(raw: Record<string, unknown>) {
     console.log("topicC =>", raw, this);
   }
 }
 
+@Dapr.AppController()
+class PubSubExample3 {
+  private s = "private3";
+  @PubSub.subscribeTo({ pubSubName })
+  D({ data }: { data: unknown }) {
+    console.log("topicD =>", data, this);
+    console.log("publishing to topic A");
+    PubSub.publish({
+      pubSubName,
+      topicName: "A",
+      data,
+    });
+  }
+}
+
+@Dapr.AppController()
+class ServiceExample1 {
+  private counter = 0;
+
+  @Service.expose()
+  async test({ request }: { request: Request }) {
+    console.log(
+      // deno-fmt-ignore
+      `test service called, counter: ${++this.counter}, data = "${await request.text()}"`,
+    );
+    return {
+      body: `test reply, counter: ${this.counter}`,
+    };
+  }
+
+  @Bindings.listenTo()
+  tweets({ text }: { text: Record<string, unknown> }) {
+    console.log(`Tweet => "${text}"`);
+  }
+}
+
 console.log("Dapr app started...");
-Dapr.start({ appPort: 3000, controllers: [ExampleApp1, ExampleApp2] });
+Dapr.start({
+  appPort: 3000,
+  controllers: [
+    PubSubExample1,
+    PubSubExample2,
+    PubSubExample3,
+    ServiceExample1,
+  ],
+});
