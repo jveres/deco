@@ -107,12 +107,12 @@ class TestActor1 {
   @Actor.event()
   activate() {
     console.log("TestActor1 activated", this);
+    this.counter = 0;
   }
 
   @Actor.event()
   deactivate() {
     console.log("TestActor1 deactivated", this);
-    this.counter = 0;
   }
 
   @Actor.method()

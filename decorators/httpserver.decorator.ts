@@ -99,12 +99,12 @@ export class Http {
   ) {
     // Initialize controllers and routes
     for (const controller of controllers) {
-      const target = Reflect.construct(controller, []);
       if (!hasMetadata(controller.prototype, Http.TARGET_KEY)) {
-        setMetadata(controller.prototype, Http.TARGET_KEY, target);
+        setMetadata(controller.prototype, Http.TARGET_KEY, Reflect.construct(controller, []));
       }
+      const target = getMetadata<object>(controller.prototype, Http.TARGET_KEY);
       const routes = getMetadata<object[]>(
-        target,
+        controller.prototype,
         Http.ROUTES_KEY,
         [],
       );
