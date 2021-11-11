@@ -415,6 +415,20 @@ export class Actor {
             `Invoke actor service code called, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
           );
           try {
+            const virtualActor = getOrCreateVirtualActor(target, actorType!);
+            if (!virtualActor.instances.has(actorId)) {
+              // Activate actor instance
+              console.log(
+                `Activate actor, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
+              );
+              virtualActor.instances.add(actorId);
+              await virtualActor.events.get(ActorEvent.Activate)?.apply(this, [{
+                actorType,
+                actorId,
+                methodName,
+                request,
+              }]);
+            }
             const res = await descriptor.value.apply(this, [{
               actorType,
               actorId,
@@ -513,7 +527,7 @@ export class Dapr {
         },
       });
     }
-    // Register actors
+    // Register common actor services
     if (actorConfig.entities.length > 0) {
       // Actor config
       Http.router.add({
@@ -525,6 +539,46 @@ export class Dapr {
               body: JSON.stringify(actorConfig),
               init: { headers: { "content-type": "application/json" } },
             };
+          },
+        },
+      });
+      // Actor deactivation
+      Http.router.add({
+        method: "DELETE",
+        path: `/actors/:actorType/:actorId`,
+        action: {
+          handler: function (
+            { actorType, actorId, request }: {
+              actorType: string;
+              actorId: string;
+              request: Request;
+            },
+          ) {
+            console.log(
+              `Deactivate actor service code called, actorType="${actorType}", actorId="${actorId}"`,
+            );
+            for (const controller of controllers) {
+              const actors = <Map<string, VirtualActor>> getMetadata(
+                controller.prototype,
+                Actor.ACTORS_KEY,
+              );
+              const virtualActor = actors?.get(actorType);
+              if (
+                virtualActor?.instances.has(actorId) &&
+                virtualActor.events.has(ActorEvent.Deactivate)
+              ) {
+                virtualActor.instances.delete(actorId);
+                virtualActor.events.get(ActorEvent.Deactivate)?.apply(
+                  getMetadata(controller.prototype, Http.TARGET_KEY),
+                  [{
+                    actorType,
+                    actorId,
+                    request,
+                  }],
+                );
+                break;
+              }
+            }
           },
         },
       });

@@ -96,7 +96,7 @@ class ServiceExample1 {
 
   @Bindings.listenTo()
   tweets({ text }: { text: Record<string, unknown> }) {
-    console.log(`Tweet => "${text}"`);
+    console.log(`🐦  => "${text}"`);
   }
 }
 
@@ -105,18 +105,19 @@ class TestActor1 {
   private counter = 0;
 
   @Actor.event()
-  activate(data: unknown) {
-    console.log("TestActor activated =>", data);
+  activate() {
+    console.log("TestActor1 activated", this);
   }
 
   @Actor.event()
-  deactivate(data: unknown) {
-    console.log("TestActor deactivated =>", data);
+  deactivate() {
+    console.log("TestActor1 deactivated", this);
+    this.counter = 0;
   }
 
   @Actor.method()
   testMethod1() {
-    console.log("TestActor/test() method called, counter=", this.counter++);
+    console.log("TestActor1/testMethod1() called, counter=", this.counter++);
   }
 }
 
@@ -124,19 +125,9 @@ class TestActor1 {
 class TestActor2 {
   private readonly tag = "TestActor2";
 
-  @Actor.event()
-  activate(data: unknown) {
-    console.log("TestActor1 activated =>", data);
-  }
-
-  @Actor.event()
-  deactivate(data: unknown) {
-    console.log("TestActor1 deactivated =>", data);
-  }
-
   @Actor.method()
-  testMethod1(data: unknown) {
-    console.log("TestActor1/test() method called =>", data, this);
+  testMethod1() {
+    console.log("TestActor2/testMethod1() called,", this);
   }
 }
 
@@ -155,6 +146,7 @@ console.log("bulk=", await State.getBulk({storename: "example-state-store", data
 console.log("Dapr app started...");
 Dapr.start({
   appPort: 3000,
+  actorIdleTimeout: "5s",
   controllers: [
     PubSubExample1,
     PubSubExample2,
