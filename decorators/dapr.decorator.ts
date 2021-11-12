@@ -55,7 +55,7 @@ export class Service {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Service.invoke(): appId="${appId}", method="${method}", code=${status}, text="${statusText}"`,
+        `Service.invoke() error, appId="${appId}", method="${method}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -127,7 +127,7 @@ export class PubSub {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during PubSub.publish(): pubSubName="${pubSubName}", topic="${topicName}", code=${status}, text="${statusText}"`,
+        `PubSub.publish() error, pubSubName="${pubSubName}", topic="${topicName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -202,7 +202,7 @@ export class Secrets {
     } else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Secrets.get(): store="${store}", key="${key}", code=${status}, text="${statusText}"`,
+        `Secrets.get() error, store="${store}", key="${key}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -223,7 +223,7 @@ export class Secrets {
     } else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Secrets.getBulk(): store="${store}", code=${status}, text="${statusText}"`,
+        `Secrets.getBulk() error, store="${store}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -269,11 +269,11 @@ export class State {
         headers: { "content-type": "application/json" },
       },
     );
-    if (res.status === 204) return res;
+    if (res.status === 204) return;
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during State.set(): storename="${storename}", code=${status}, text="${statusText}"`,
+        `State.set() error, storename="${storename}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -298,11 +298,11 @@ export class State {
         : "");
     const res = await fetch(url);
     if (res.status === 200) return await res.text();
-    else if (res.status === 204) return undefined;
+    else if (res.status === 204) return;
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during State.get(): storename="${storename}", key="${key}", code=${status}, text="${statusText}"`,
+        `State.get() error, storename="${storename}", key="${key}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -330,7 +330,7 @@ export class State {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during State.getBulk(): storename="${storename}", code=${status}, text="${statusText}"`,
+        `State.getBulk() error, storename="${storename}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -550,6 +550,53 @@ export class Actor {
       );
     }
   }
+
+  static readonly State = {
+    async get(
+      { actorType, actorId, key }: {
+        actorType: string;
+        actorId: string;
+        key: string;
+      },
+    ) {
+      const url =
+        `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/state/${key}`;
+      const res = await fetch(url);
+      if (res.status === 200) return await res.json();
+      else if(res.status === 204) return;
+      else {
+        const { status, statusText } = res;
+        throw Error(
+          `Actor.invoke() error, actorType="${actorType}", actorId="${actorId}", key="${key}", code=${status}, text="${statusText}"`,
+          { cause: { status, statusText } },
+        );
+      }
+    },
+
+    async set(
+      { actorType, actorId, data }: {
+        actorType: string;
+        actorId: string;
+        data: any;
+      },
+    ) {
+      const url =
+        `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/state`;
+      const res = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "content-type": "application/json" },
+      });
+      if (res.status === 200) return;
+      else {
+        const { status, statusText } = res;
+        throw Error(
+          `Actor.invoke() error, actorType="${actorType}", actorId="${actorId}", code=${status}, text="${statusText}"`,
+          { cause: { status, statusText } },
+        );
+      }
+    },
+  };
 }
 
 const findActor = (

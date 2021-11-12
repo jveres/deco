@@ -172,7 +172,7 @@ console.log("bulk=", await State.getBulk({storename: "example-state-store", data
 console.log("Dapr app started...");
 Dapr.start({
   appPort: 3000,
-  actorIdleTimeout: "1s",
+  actorIdleTimeout: "5s",
   controllers: [
     PubSubExample1,
     PubSubExample2,
