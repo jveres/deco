@@ -10,11 +10,13 @@
 ```typescript
 import { Http } from "../decorators/httpserver.decorator.ts";
 
-@Http.Server({ schema: "api.yaml" })
-class _OpenAPIServer {}
+@Http.ServerController({ schema: "api.yaml" })
+class ExampleOpenAPI {}
 
-@Http.Server()
-class _ExampleServer {
+@Http.ServerController()
+class ExampleCustomAPI {
+  counter = 0;
+
   @Http.Get("/api/:id")
   get({ id, url }: { id: string; url: URL }) {
     return {
@@ -29,7 +31,7 @@ class _ExampleServer {
     return {
       body: `[POST /api/:id] 😎 (got data: "${await request.text()}", query: "${
         decodeURIComponent(url.searchParams.toString())
-      }")`,
+      }", counter="${++this.counter}")`,
     };
   }
 
@@ -39,21 +41,28 @@ class _ExampleServer {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
     };
   }
+}
 
-  @Http.Get("/sse")
+@Http.ServerController()
+class ExampleStream {
+  counter = 0;
+
+  @Http.Get("/stream")
   stream() {
     let cancelled = true;
+    // deno-lint-ignore no-this-alias
+    const self = this;
     const stream = new ReadableStream({
-      start: (controller) => {
+      start(controller) {
         cancelled = false;
         console.log("Stream started");
         controller.enqueue(": Welcome to the /sse endpoint!\n\n");
         (function time() {
           setTimeout(() => {
             if (!cancelled) {
-              const body = `event: timer\ndata: ${
+              const body = `event: timer, counter\ndata: ${
                 new Date().toISOString()
-              }\n\n\n`;
+              }, ${++self.counter}\n\n\n`;
               controller.enqueue(body);
               time();
             }
@@ -73,7 +82,7 @@ class _ExampleServer {
 }
 
 console.log("Server started...");
-Http.serve();
+Http.serve({ controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream] });
 ```
 
 ## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
@@ -91,7 +100,7 @@ Http.serve();
 // Invoke "test" service
 //    dapr invoke --app-id deco-app --verb GET --method test
 // Send data to the actor
-//    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
+//    curl -X POST "http://localhost:3500/v1.0/actors/TestActor1/1/method/testMethod1" -d "{test: 'data'}"
 
 import {
   Actor,
@@ -102,23 +111,24 @@ import {
   Service,
   State,
 } from "../../decorators/dapr.decorator.ts";
-import { sleep } from "../../utils/utils.ts";
 
 const { TELEGRAM_CHATID, TELEGRAM_TOKEN } = await Secrets.getBulk({
   store: "example-secrets-store",
 });
-const PUBSUBNAME = "pubsub";
 
-@Dapr.App()
-class _ExampleApp {
-  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "A" })
+const pubSubName = "pubsub";
+
+@Dapr.AppController({ pubSubName })
+class PubSubExample1 {
+  private s = "private1";
+  @PubSub.subscribeTo()
   A({ data }: { data: unknown }) {
-    console.log("topicA =>", data);
+    console.log("topicA =>", data, this);
   }
 
-  @PubSub.subscribeTo({ pubSubName: PUBSUBNAME, topicName: "B" })
+  @PubSub.subscribeTo()
   B({ data }: { data: Record<string, unknown> }) {
-    console.log("topicB =>", data);
+    console.log("topicB =>", data, this);
     if (data.text && TELEGRAM_CHATID && TELEGRAM_TOKEN) {
       const { text } = data;
       const path =
@@ -130,142 +140,105 @@ class _ExampleApp {
       });
     }
   }
+}
 
-  @PubSub.subscribeTo({
-    pubSubName: PUBSUBNAME,
-    topicName: "C",
-    metadata: { rawPayload: "true" },
-  })
+@Dapr.AppController({ pubSubName })
+class PubSubExample2 {
+  private s = "private2";
+  @PubSub.subscribeTo({ metadata: { rawPayload: "true" } })
   C(raw: Record<string, unknown>) {
-    console.log("topicC =>", raw);
+    console.log("topicC =>", raw, this);
   }
+}
 
-  @Bindings.listenTo()
-  tweets({ text }: { text: Record<string, unknown> }) {
-    console.log(`incoming tweet => "${text}", publishing into topic A`);
+@Dapr.AppController()
+class PubSubExample3 {
+  private s = "private3";
+  @PubSub.subscribeTo({ pubSubName })
+  D({ data }: { data: unknown }) {
+    console.log("topicD =>", data, this);
+    console.log("publishing to topic A");
     PubSub.publish({
-      pubSubName: PUBSUBNAME,
+      pubSubName,
       topicName: "A",
-      data: { text },
+      data,
     });
   }
+}
 
+@Dapr.AppController()
+class ServiceExample1 {
   private counter = 0;
 
   @Service.expose()
   async test({ request }: { request: Request }) {
-    console.log(
-      `test service called, counter: ${++this.counter}, data = "${await request
-        .text()}"`,
-    );
-    await sleep(1000);
+    // deno-fmt-ignore
+    console.log(`test service called, counter: ${++this.counter}, data = "${await request.text()}"`);
     return {
       body: `test reply, counter: ${this.counter}`,
     };
   }
+
+  @Bindings.listenTo()
+  tweets({ text }: { text: Record<string, unknown> }) {
+    console.log(`🐦  => "${text}"`);
+  }
 }
 
-@Dapr.App()
-// deno-lint-ignore no-unused-vars
-class TestActor {
-  counter = 0;
+@Dapr.AppController()
+class TestActor1 {
+  private counter = 0;
 
-  @Actor.eventHandler()
-  async activate(
-    { actorType, actorId }: { actorType: string; actorId: string },
-  ) {
-    console.log(this);
-    console.log(
-      `TestActor with actorId="${actorId}" activated, counter reset\nCreating reminder and timer...`,
-    );
+  @Actor.event()
+  activate({ actorType, actorId }: { actorType: string; actorId: string }) {
+    console.log("TestActor1 activated", this);
     this.counter = 0;
-    await Actor.createReminder({
+    Actor.setReminder({
       actorType,
       actorId,
-      methodName: "testReminder",
-      dueTime: "20s",
-      period: "0",
-    });
-    console.log("getReminder =>", await (await Actor.getReminder({actorType, actorId, methodName: "testReminder"})).text());
-    await Actor.createTimer({
-      actorType,
-      actorId,
-      methodName: "testTimer",
-      dueTime: "5s",
-      period: "0s",
+      reminderName: "reminder",
+      period: "5s",
     });
   }
 
-  @Actor.eventHandler()
-  deactivate({ actorId }: { actorId: string }) {
-    console.log(`TestActor with actorId="${actorId}" deactivated`);
+  @Actor.event()
+  async deactivate({ actorType, actorId }: { actorType: string; actorId: string }) {
+    console.log("TestActor1 deactivation", this);
+    const reminder = await Actor.getReminder({actorType, actorId, reminderName: "reminder"});
+    console.log("reminder =>", reminder);
+    await Actor.deleteReminder({ actorType, actorId, reminderName: "reminder" });
+  }
+
+  @Actor.event()
+  reminder() {
+    console.log("TestActor1 reminder called");
   }
 
   @Actor.method()
-  testReminder(
-    { actorType, actorId, methodName }: {
-      actorType: string;
-      actorId: string;
-      methodName: string;
-    },
-  ) {
-    console.log(
-      `⏱ Actor reminder invoked, actorType="${actorType}", actorId="${actorId}", reminder="${methodName}"`,
-    );
-  }
-
-  @Actor.method()
-  testTimer(
-    { actorType, actorId, methodName }: {
-      actorType: string;
-      actorId: string;
-      methodName: string;
-    },
-  ) {
-    console.log(
-      `⏰ Actor timer invoked, actorType="${actorType}", actorId="${actorId}", reminder="${methodName}"`,
-    );
-  }
-
-  @Actor.method()
-  async testMethod1(
-    { actorType, actorId, methodName, request }: {
-      actorType: string;
-      actorId: string;
-      methodName: string;
-      request: Request;
-    },
-  ) {
+  async testMethod1({ request }: { request: Request }) {
     const data = await request.text();
     console.log(
-      `actor invoked with data="${data}", actorType="${actorType}", actorId="${actorId}", method="${methodName}", counter=${this.counter}`,
+      "TestActor1/testMethod1() called, data =",
+      data,
+      ", counter =",
+      ++this.counter,
     );
-    return `counter: ${++this.counter}`;
   }
+}
+
+@Dapr.AppController()
+class TestActor2 {
+  private readonly tag = "TestActor2";
 
   @Actor.method()
-  async testMethod2(
-    { actorType, actorId, methodName, request }: {
-      actorType: string;
-      actorId: string;
-      methodName: string;
-      request: Request;
-    },
-  ) {
-    const data = await request.text();
-    console.log(
-      `actor invoked with data="${data}", actorType="${actorType}", actorId="${actorId}", method="${methodName}"`,
-    );
-    if (this.counter < 10) {
-      // Invokes itself asynchronously
-      Actor.invoke({
-        actorType,
-        actorId,
-        methodName,
-        data: `test data from myself, counter=${this.counter}`,
-      });
-    }
-    return `counter: ${++this.counter}`;
+  testMethod1({ actorType, actorId }: { actorType: string; actorId: string }) {
+    console.log("TestActor2/testMethod1() called,", this);
+    Actor.setTimer({ actorType, actorId, timerName: "timer", dueTime: "10s" });
+  }
+
+  @Actor.event()
+  timer() {
+    console.log("TestActor2/timer fired");
   }
 }
 
@@ -274,37 +247,26 @@ await State.set({
   storename: "example-state-store",
   data: [{ key: "key1", value: "value1" }, { key: "key3", value: "value3" }],
 });
-console.log(
-  `key1=${
-    JSON.stringify(
-      await (await State.get({ storename: "example-state-store", key: "key1" }))
-        .text(),
-    )
-  }`,
-);
-console.log(
-  `missing=${
-    JSON.stringify(
-      await (await State.get({
-        storename: "example-state-store",
-        key: "missing",
-      })).text(),
-    )
-  }`,
-);
-console.log(
-  `bulk=${
-    JSON.stringify(
-      await (await State.getBulk({
-        storename: "example-state-store",
-        data: { keys: ["key1", "missing", "key3"] },
-      })).text(),
-    )
-  }`,
-);
+// deno-fmt-ignore
+console.log("key1=", await State.get({ storename: "example-state-store", key: "key1" }));
+// deno-fmt-ignore
+console.log("missing=", await State.get({storename: "example-state-store", key: "missing" }));
+// deno-fmt-ignore
+console.log("bulk=", await State.getBulk({storename: "example-state-store", data: { keys: ["key1", "missing", "key3"] }}));
 
 console.log("Dapr app started...");
-Dapr.start({ appPort: 3000, actorIdleTimeout: "5s" });
+Dapr.start({
+  appPort: 3000,
+  actorIdleTimeout: "5s",
+  controllers: [
+    PubSubExample1,
+    PubSubExample2,
+    PubSubExample3,
+    ServiceExample1,
+    TestActor1,
+    TestActor2,
+  ],
+});
 ```
 ## Running tests
 ```sh
