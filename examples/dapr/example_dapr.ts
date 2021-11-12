@@ -112,7 +112,7 @@ class TestActor1 {
       actorType,
       actorId,
       reminderName: "reminder",
-      dueTime: "10s",
+      dueTime: "30s",
     });
   }
 
@@ -164,7 +164,7 @@ console.log("bulk=", await State.getBulk({storename: "example-state-store", data
 console.log("Dapr app started...");
 Dapr.start({
   appPort: 3000,
-  actorIdleTimeout: "5s",
+  actorIdleTimeout: "1s",
   controllers: [
     PubSubExample1,
     PubSubExample2,

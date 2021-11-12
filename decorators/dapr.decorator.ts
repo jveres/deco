@@ -761,11 +761,11 @@ export class Dapr {
                   console.error(
                     `Reminder invocation error, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"\n${err}`,
                   );
-                  return { init: { status: 500 } };
+                  return { init: { status: 500 } }; // Internal error
                 }
               } else {
                 console.warn(
-                  `Reminder not found, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
+                  `Actor has no reminder handler defined, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
                 );
               }
             },
