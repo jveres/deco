@@ -426,7 +426,7 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
+        `Actor.invoke() error, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -452,7 +452,7 @@ export class Actor {
     if (res.status !== 204) {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.setReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        `Actor.setReminder() error, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -475,7 +475,7 @@ export class Actor {
     else {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.getReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        `Actor.getReminder() error, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -497,7 +497,55 @@ export class Actor {
     if (res.status !== 204) {
       const { status, statusText } = res;
       throw Error(
-        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        `Actor.deleteReminder() error, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async setTimer(
+    { actorType, actorId, timerName, dueTime = "0", period = "", data }: {
+      actorType: string;
+      actorId: string;
+      timerName: string;
+      dueTime?: string;
+      period?: string;
+      data?: any;
+    },
+  ) {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/timers/${timerName}`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({ dueTime, period, ...data && { data } }),
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status !== 204) {
+      const { status, statusText } = res;
+      throw Error(
+        `Actor.setTimer() error, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async deleteTimer(
+    { actorType, actorId, timerName }: {
+      actorType: string;
+      actorId: string;
+      timerName: string;
+    },
+  ) {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/timers/${timerName}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status !== 204) {
+      const { status, statusText } = res;
+      throw Error(
+        `Actor.deleteTimer() error, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}", code=${status}, text="${statusText}"`,
         { cause: { status, statusText } },
       );
     }
@@ -765,7 +813,61 @@ export class Dapr {
                 }
               } else {
                 console.warn(
-                  `Actor has no reminder handler defined, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
+                  `Actor has no reminder event defined, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
+                );
+              }
+            },
+          },
+        },
+      );
+      // Register timer invocation
+      Http.router.add(
+        {
+          method: "PUT",
+          path: `/actors/:actorType/:actorId/method/timer/:timerName`,
+          action: {
+            handler: async function (
+              { actorType, actorId, timerName, request }: {
+                actorType: string;
+                actorId: string;
+                timerName: string;
+                request: Request;
+              },
+            ) {
+              console.log(
+                `Actor timer called, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}"`,
+              );
+              const { actor, controller } = findActor(
+                controllers,
+                actorType,
+              );
+              if (!controller || !actor || !actor.instances.has(actorId)) {
+                // Actor not found
+                console.error(
+                  `Actor not found for timer invocation, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}"`,
+                );
+                return { init: { status: 404 } };
+              }
+              if (actor.events.has(timerName)) {
+                try {
+                  await actor.events.get(timerName)?.apply(
+                    getMetadata(controller.prototype, Http.TARGET_KEY),
+                    [{
+                      actorType,
+                      actorId,
+                      timerName,
+                      request,
+                    }],
+                  );
+                } catch (err) {
+                  console.error(
+                    `Timer invocation error, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}"\n${err}`,
+                  );
+                  return { init: { status: 500 } }; // Internal error
+                }
+              } else {
+                console.warn(
+                  `Actor has no timer event defined, actorType="${actorType}", actorId="${actorId}", timerName="${timerName}"`,
                 );
               }
             },

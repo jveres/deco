@@ -15,7 +15,7 @@
 // Invoke "test" service
 //    dapr invoke --app-id deco-app --verb GET --method test
 // Send data to the actor
-//    curl -X POST "http://localhost:3500/v1.0/actors/TestActor/1/method/testMethod1" -d "{test: 'data'}"
+//    curl -X POST "http://localhost:3500/v1.0/actors/TestActor1/1/method/testMethod1" -d "{test: 'data'}"
 
 import {
   Actor,
@@ -112,14 +112,16 @@ class TestActor1 {
       actorType,
       actorId,
       reminderName: "reminder",
-      dueTime: "30s",
+      period: "5s",
     });
   }
 
   @Actor.event()
-  deactivate({ actorType, actorId }: { actorType: string; actorId: string }) {
-    Actor.deleteReminder({ actorType, actorId, reminderName: "reminder" });
-    console.log("TestActor1 deactivated", this);
+  async deactivate({ actorType, actorId }: { actorType: string; actorId: string }) {
+    console.log("TestActor1 deactivation", this);
+    const reminder = await Actor.getReminder({actorType, actorId, reminderName: "reminder"});
+    console.log("reminder =>", reminder);
+    await Actor.deleteReminder({ actorType, actorId, reminderName: "reminder" });
   }
 
   @Actor.event()
@@ -144,8 +146,14 @@ class TestActor2 {
   private readonly tag = "TestActor2";
 
   @Actor.method()
-  testMethod1() {
+  testMethod1({ actorType, actorId }: { actorType: string; actorId: string }) {
     console.log("TestActor2/testMethod1() called,", this);
+    Actor.setTimer({ actorType, actorId, timerName: "timer", dueTime: "10s" });
+  }
+
+  @Actor.event()
+  timer() {
+    console.log("TestActor2/timer fired");
   }
 }
 
