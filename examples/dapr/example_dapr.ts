@@ -117,7 +117,7 @@ class TestActor1 {
 
   @Actor.method()
   testMethod1() {
-    console.log("TestActor1/testMethod1() called, counter=", this.counter++);
+    console.log("TestActor1/testMethod1() called, counter=", ++this.counter);
   }
 }
 

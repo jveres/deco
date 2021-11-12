@@ -344,6 +344,7 @@ export enum ActorEvent {
 
 type VirtualActor = {
   instances: Set</* ActorId */ string>;
+  methods: Map</* ActorMethod */ string, Function>;
   events: Map<ActorEvent, Function>;
 };
 
@@ -360,6 +361,7 @@ const getOrCreateVirtualActor = (
   if (!virtualActor) {
     virtualActor = {
       instances: new Set<string>(),
+      methods: new Map<string, Function>(),
       events: new Map<ActorEvent, Function>(),
     };
     actors.set(actorType, virtualActor);
@@ -403,50 +405,28 @@ export class Actor {
     ): void => {
       actorType ??= target.constructor.name;
       methodName ??= stringFromPropertyKey(propertyKey);
-      // Register for invocation
-      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
-        method: "PUT",
-        path: `/actors/${actorType}/:actorId/method/${methodName}`,
-        handler: async function ({ actorId, request }: {
-          actorId: string;
-          request: Request;
-        }) {
-          console.log(
-            `Invoke actor service code called, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
-          );
-          try {
-            const virtualActor = getOrCreateVirtualActor(target, actorType!);
-            if (!virtualActor.instances.has(actorId)) {
-              // Activate actor instance
-              console.log(
-                `Activate actor, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
-              );
-              virtualActor.instances.add(actorId);
-              await virtualActor.events.get(ActorEvent.Activate)?.apply(this, [{
-                actorType,
-                actorId,
-                methodName,
-                request,
-              }]);
-            }
-            const res = await descriptor.value.apply(this, [{
-              actorType,
-              actorId,
-              methodName,
-              request,
-            }]);
-            return { body: JSON.stringify(res) };
-          } catch (err) {
-            console.error(
-              `Invoke actor failed, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"\n${err}`,
-            );
-            return { init: { status: 500 } };
-          }
-        },
-      });
+      getOrCreateVirtualActor(target, actorType).methods.set(
+        methodName,
+        descriptor.value,
+      );
     };
   }
 }
+
+const findActor = (
+  controllers: Function[],
+  actorType: string,
+) => {
+  for (const controller of controllers) {
+    const actors = <Map<string, VirtualActor>> getMetadata(
+      controller.prototype,
+      Actor.ACTORS_KEY,
+    );
+    const actor = actors?.get(actorType);
+    if (actor) return { actor, controller };
+  }
+  return {};
+};
 
 export class Dapr {
   static AppController(
@@ -542,12 +522,71 @@ export class Dapr {
           },
         },
       });
+      // Register actor invocation
+      Http.router.add({
+        method: "PUT",
+        path: "/actors/:actorType/:actorId/method/:methodName",
+        action: {
+          handler: async function (
+            { actorType, actorId, methodName, request }: {
+              actorType: string;
+              actorId: string;
+              methodName: string;
+              request: Request;
+            },
+          ) {
+            console.log(
+              `Invoke actor service code called, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
+            );
+            const { actor, controller } = findActor(
+              controllers,
+              actorType,
+            );
+            if (!controller || !actor || !actor.methods.has(methodName)) {
+              console.warn(
+                `Actor not found, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
+              );
+              return { init: { status: 404 } }; // Actor not found
+            }
+            const target = getMetadata(controller.prototype, Http.TARGET_KEY);
+            try {
+              if (!actor.instances.has(actorId)) {
+                // Activate actor
+                console.log(
+                  `Activate actor, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
+                );
+                await actor.events.get(ActorEvent.Activate)?.apply(target, [{
+                  actorType,
+                  actorId,
+                  methodName,
+                  request,
+                }]);
+                actor.instances.add(actorId);
+              }
+              // Run actor method
+              await actor.methods.get(methodName)!.apply(
+                target,
+                [{
+                  actorType,
+                  actorId,
+                  request,
+                }],
+              );
+            } catch (err) {
+              console.error(
+                `Invoke actor failed, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"\n${err}`,
+              );
+              return { init: { status: 500 } };
+            }
+          },
+        },
+      });
       // Actor deactivation
       Http.router.add({
         method: "DELETE",
         path: `/actors/:actorType/:actorId`,
         action: {
-          handler: function (
+          handler: async function (
             { actorType, actorId, request }: {
               actorType: string;
               actorId: string;
@@ -557,28 +596,27 @@ export class Dapr {
             console.log(
               `Deactivate actor service code called, actorType="${actorType}", actorId="${actorId}"`,
             );
-            for (const controller of controllers) {
-              const actors = <Map<string, VirtualActor>> getMetadata(
-                controller.prototype,
-                Actor.ACTORS_KEY,
+            const { actor, controller } = findActor(
+              controllers,
+              actorType,
+            );
+            if (!controller || !actor || !actor.instances.has(actorId)) {
+              console.warn(
+                `Actor instance not found for deactivation, actorType="${actorType}", actorId="${actorId}"`,
               );
-              const virtualActor = actors?.get(actorType);
-              if (
-                virtualActor?.instances.has(actorId) &&
-                virtualActor.events.has(ActorEvent.Deactivate)
-              ) {
-                virtualActor.instances.delete(actorId);
-                virtualActor.events.get(ActorEvent.Deactivate)?.apply(
-                  getMetadata(controller.prototype, Http.TARGET_KEY),
-                  [{
-                    actorType,
-                    actorId,
-                    request,
-                  }],
-                );
-                break;
-              }
+              return; // Actor not found
             }
+            if (actor.events.has(ActorEvent.Deactivate)) {
+              await actor.events.get(ActorEvent.Deactivate)?.apply(
+                getMetadata(controller.prototype, Http.TARGET_KEY),
+                [{
+                  actorType,
+                  actorId,
+                  request,
+                }],
+              );
+            }
+            actor.instances.delete(actorId);
           },
         },
       });
