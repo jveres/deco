@@ -337,10 +337,7 @@ export class State {
   }
 }
 
-export enum ActorEvent {
-  Activate = "activate",
-  Deactivate = "deactivate",
-}
+type ActorEvent = "activate" | "deactivate" | string;
 
 type VirtualActor = {
   instances: Set</* ActorId */ string>;
@@ -373,9 +370,9 @@ export class Actor {
   static readonly ACTORS_KEY = "__actors__";
 
   static event(
-    { actorType, event }: {
+    { actorType, eventName }: {
       actorType?: string;
-      event?: ActorEvent;
+      eventName?: ActorEvent;
     } = {},
   ): MethodDecorator {
     return (
@@ -384,9 +381,9 @@ export class Actor {
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
       actorType ??= target.constructor.name;
-      event ??= stringFromPropertyKey(propertyKey) as ActorEvent;
+      eventName ??= stringFromPropertyKey(propertyKey) as ActorEvent;
       getOrCreateVirtualActor(target, actorType).events.set(
-        event,
+        eventName,
         descriptor.value,
       );
     };
@@ -410,6 +407,100 @@ export class Actor {
         descriptor.value,
       );
     };
+  }
+
+  static async invoke({ actorType, actorId, methodName, data }: {
+    actorType: string;
+    actorId: string;
+    methodName: string;
+    data?: any;
+  }) {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/method/${methodName}`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status === 200) return await res.json();
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.invoke(): actorType="${actorType}", actorId="${actorId}", methodName="${methodName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async setReminder(
+    { actorType, actorId, reminderName, dueTime = "0", period = "", data }: {
+      actorType: string;
+      actorId: string;
+      reminderName: string;
+      dueTime?: string;
+      period?: string;
+      data?: any;
+    },
+  ) {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({ dueTime, period, ...data && { data } }),
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status !== 204) {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.setReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async getReminder(
+    { actorType, actorId, reminderName }: {
+      actorType: string;
+      actorId: string;
+      reminderName: string;
+    },
+  ) {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status === 200) return await res.json();
+    else {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.getReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
+  }
+
+  static async deleteReminder(
+    { actorType, actorId, reminderName }: {
+      actorType: string;
+      actorId: string;
+      reminderName: string;
+    },
+  ) {
+    const url =
+      `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/reminders/${reminderName}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+    });
+    if (res.status !== 204) {
+      const { status, statusText } = res;
+      throw Error(
+        `Error during Actor.deleteReminder(): actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}", code=${status}, text="${statusText}"`,
+        { cause: { status, statusText } },
+      );
+    }
   }
 }
 
@@ -556,7 +647,7 @@ export class Dapr {
                   `Activate actor, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
                 );
                 actor.instances.add(actorId);
-                await actor.events.get(ActorEvent.Activate)?.apply(target, [{
+                await actor.events.get("activate")?.apply(target, [{
                   actorType,
                   actorId,
                   methodName,
@@ -608,9 +699,9 @@ export class Dapr {
               return;
             }
             actor.instances.delete(actorId);
-            if (actor.events.has(ActorEvent.Deactivate)) {
+            if (actor.events.has("deactivate")) {
               try {
-                await actor.events.get(ActorEvent.Deactivate)?.apply(
+                await actor.events.get("deactivate")?.apply(
                   getMetadata(controller.prototype, Http.TARGET_KEY),
                   [{
                     actorType,
@@ -627,6 +718,60 @@ export class Dapr {
           },
         },
       });
+      // Register reminder invocation
+      Http.router.add(
+        {
+          method: "PUT",
+          path: `/actors/:actorType/:actorId/method/remind/:reminderName`,
+          action: {
+            handler: async function (
+              { actorType, actorId, reminderName, request }: {
+                actorType: string;
+                actorId: string;
+                reminderName: string;
+                request: Request;
+              },
+            ) {
+              console.log(
+                `Actor reminder called, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
+              );
+              const { actor, controller } = findActor(
+                controllers,
+                actorType,
+              );
+              if (!controller || !actor || !actor.instances.has(actorId)) {
+                // Actor not found
+                console.error(
+                  `Actor not found for reminder invocation, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
+                );
+                return { init: { status: 404 } };
+              }
+              if (actor.events.has(reminderName)) {
+                try {
+                  await actor.events.get(reminderName)?.apply(
+                    getMetadata(controller.prototype, Http.TARGET_KEY),
+                    [{
+                      actorType,
+                      actorId,
+                      reminderName,
+                      request,
+                    }],
+                  );
+                } catch (err) {
+                  console.error(
+                    `Reminder invocation error, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"\n${err}`,
+                  );
+                  return { init: { status: 500 } };
+                }
+              } else {
+                console.warn(
+                  `Reminder not found, actorType="${actorType}", actorId="${actorId}", reminderName="${reminderName}"`,
+                );
+              }
+            },
+          },
+        },
+      );
       // Health check
       Http.router.add({
         method: "GET",

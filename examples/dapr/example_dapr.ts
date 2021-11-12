@@ -105,19 +105,37 @@ class TestActor1 {
   private counter = 0;
 
   @Actor.event()
-  activate() {
+  activate({ actorType, actorId }: { actorType: string; actorId: string }) {
     console.log("TestActor1 activated", this);
     this.counter = 0;
+    Actor.setReminder({
+      actorType,
+      actorId,
+      reminderName: "reminder",
+      dueTime: "10s",
+    });
   }
 
   @Actor.event()
-  deactivate() {
+  deactivate({ actorType, actorId }: { actorType: string; actorId: string }) {
+    Actor.deleteReminder({ actorType, actorId, reminderName: "reminder" });
     console.log("TestActor1 deactivated", this);
   }
 
+  @Actor.event()
+  reminder() {
+    console.log("TestActor1 reminder called");
+  }
+
   @Actor.method()
-  testMethod1() {
-    console.log("TestActor1/testMethod1() called, counter=", ++this.counter);
+  async testMethod1({ request }: { request: Request }) {
+    const data = await request.text();
+    console.log(
+      "TestActor1/testMethod1() called, data =",
+      data,
+      ", counter =",
+      ++this.counter,
+    );
   }
 }
 
