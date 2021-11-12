@@ -555,13 +555,13 @@ export class Dapr {
                 console.log(
                   `Activate actor, actorType="${actorType}", actorId="${actorId}", methodName="${methodName}"`,
                 );
+                actor.instances.add(actorId);
                 await actor.events.get(ActorEvent.Activate)?.apply(target, [{
                   actorType,
                   actorId,
                   methodName,
                   request,
                 }]);
-                actor.instances.add(actorId);
               }
               // Run actor method
               await actor.methods.get(methodName)!.apply(
@@ -601,22 +601,29 @@ export class Dapr {
               actorType,
             );
             if (!controller || !actor || !actor.instances.has(actorId)) {
+              // Actor not found
               console.warn(
                 `Actor instance not found for deactivation, actorType="${actorType}", actorId="${actorId}"`,
               );
-              return; // Actor not found
-            }
-            if (actor.events.has(ActorEvent.Deactivate)) {
-              await actor.events.get(ActorEvent.Deactivate)?.apply(
-                getMetadata(controller.prototype, Http.TARGET_KEY),
-                [{
-                  actorType,
-                  actorId,
-                  request,
-                }],
-              );
+              return;
             }
             actor.instances.delete(actorId);
+            if (actor.events.has(ActorEvent.Deactivate)) {
+              try {
+                await actor.events.get(ActorEvent.Deactivate)?.apply(
+                  getMetadata(controller.prototype, Http.TARGET_KEY),
+                  [{
+                    actorType,
+                    actorId,
+                    request,
+                  }],
+                );
+              } catch (err) {
+                console.warn(
+                  `Deactivate actor error, actorType="${actorType}", actorId="${actorId}"\n${err}`,
+                );
+              }
+            }
           },
         },
       });

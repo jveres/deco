@@ -312,3 +312,5 @@ deno test --allow-net
 ```
 ## Http server performance (~90k RPS on MBP/M1)
 ![Http server benchmark](images/bench.png)
+
+![Alt](https://repobeats.axiom.co/api/embed/65f6f2f7d5aacd6dd7e28591bd3878d151d34f6a.svg "Repobeats analytics image")
