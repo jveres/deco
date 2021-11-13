@@ -117,11 +117,21 @@ class TestActor1 {
   }
 
   @Actor.event()
-  async deactivate({ actorType, actorId }: { actorType: string; actorId: string }) {
+  async deactivate(
+    { actorType, actorId }: { actorType: string; actorId: string },
+  ) {
     console.log("TestActor1 deactivation", this);
-    const reminder = await Actor.getReminder({actorType, actorId, reminderName: "reminder"});
+    const reminder = await Actor.getReminder({
+      actorType,
+      actorId,
+      reminderName: "reminder",
+    });
     console.log("reminder =>", reminder);
-    await Actor.deleteReminder({ actorType, actorId, reminderName: "reminder" });
+    await Actor.deleteReminder({
+      actorType,
+      actorId,
+      reminderName: "reminder",
+    });
   }
 
   @Actor.event()
@@ -157,6 +167,31 @@ class TestActor2 {
   }
 }
 
+@Dapr.AppController()
+class TestActor3 {
+  @Actor.method()
+  async testMethod1(
+    { actorType, actorId }: { actorType: string; actorId: string },
+  ) {
+    let counter =
+      await Actor.State.get({ actorType, actorId: "1", key: "counter" }) ?? 0;
+    console.log("TestActor3/testMethod1() called, counter =", counter);
+    await Actor.State.set({
+      actorType,
+      actorId: "1",
+      data: [
+        {
+          "operation": "upsert",
+          "request": {
+            "key": "counter",
+            "value": ++counter,
+          },
+        },
+      ],
+    });
+  }
+}
+
 // Setting and getting state
 await State.set({
   storename: "example-state-store",
@@ -180,5 +215,6 @@ Dapr.start({
     ServiceExample1,
     TestActor1,
     TestActor2,
+    TestActor3,
   ],
 });

@@ -567,7 +567,7 @@ export class Actor {
       else {
         const { status, statusText } = res;
         throw Error(
-          `Actor.invoke() error, actorType="${actorType}", actorId="${actorId}", key="${key}", code=${status}, text="${statusText}"`,
+          `Actor.State.get() error, actorType="${actorType}", actorId="${actorId}", key="${key}", code=${status}, text="${statusText}"`,
           { cause: { status, statusText } },
         );
       }
@@ -583,15 +583,15 @@ export class Actor {
       const url =
         `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/state`;
       const res = await fetch(url, {
-        method: "POST",
+        method: "PUT",
         body: JSON.stringify(data),
         headers: { "content-type": "application/json" },
       });
-      if (res.status === 200) return;
+      if (res.status === 204) return;
       else {
         const { status, statusText } = res;
         throw Error(
-          `Actor.invoke() error, actorType="${actorType}", actorId="${actorId}", code=${status}, text="${statusText}"`,
+          `Actor.State.set() error, actorType="${actorType}", actorId="${actorId}", code=${status}, text="${statusText}"`,
           { cause: { status, statusText } },
         );
       }
