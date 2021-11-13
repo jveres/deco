@@ -25,35 +25,6 @@ paths:
                 example-3:
                   summary: This is a valid example
                   value: Hello from example response 3️⃣
-        '202':
-          description: Streaming response
-          headers:
-            Cache-control:
-              schema:
-                type: string
-                default: no-cache
-            Connection:
-              schema:
-                type: string
-                default: keep-alive
-          content:
-            text/event-stream:
-              schema:
-                type: string
-              examples:
-                example-1:
-                  summary: This is a valid streaming example
-                  value: |-
-                    Hello from example response line 1️⃣
-                    Hello from example response line 2️⃣
-                    Hello from example response line 3️⃣
-                    Hello from example response line 4️⃣
-                    Hello from example response line 5️⃣
       description: Test endpoint
-      parameters:
-        - schema:
-            type: boolean
-          in: query
-          name: stream
       summary: ''
     parameters: []

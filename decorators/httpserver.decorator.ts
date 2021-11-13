@@ -5,8 +5,13 @@
 // deno-lint-ignore-file ban-types no-explicit-any
 
 import { HttpMethod, Router } from "../utils/Router.ts";
-import { loadOpenApiSpecification } from "../utils/openapi.ts";
+import {
+  documentationHTML,
+  loadOpenAPISchema,
+} from "../utils/openapi.ts";
 import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
+import { parse as yamlParse } from "https://deno.land/std@0.114.0/encoding/yaml.ts";
+import * as path from "https://deno.land/std@0.114.0/path/mod.ts";
 
 export class Http {
   static readonly TARGET_KEY = "__target__";
@@ -18,11 +23,20 @@ export class Http {
   static readonly router = new Router();
 
   static ServerController(
-    { schema }: { schema?: string } = {},
+    { schemaFile }: { schemaFile?: string } = {},
   ): ClassDecorator {
     return (target: Function): void => {
-      if (schema !== undefined) {
-        const api = loadOpenApiSpecification(schema);
+      if (schemaFile) {
+        const text = Deno.readTextFileSync(schemaFile);
+        const json = path.extname(schemaFile) === ".yaml"
+          ? yamlParse(text)
+          : JSON.parse(text);
+        const api = loadOpenAPISchema(json);
+        const routes = getMetadata<object[]>(
+          target.prototype,
+          Http.ROUTES_KEY,
+          [],
+        );
         for (const endpoint of api) {
           const examples: string[] = [];
           endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
@@ -36,11 +50,6 @@ export class Http {
             "text/plain";
           const headers = { "content-type": mime };
           const init: ResponseInit = { status, headers };
-          const routes = getMetadata<object[]>(
-            target.prototype,
-            Http.ROUTES_KEY,
-            [],
-          );
           if (
             routes.findIndex((route: any) =>
               route["method"] === method && route["path"] === path
@@ -58,6 +67,26 @@ export class Http {
             });
           }
         }
+        routes.push({
+          method: "GET",
+          path: `/${schemaFile}`,
+          handler: () => {
+            return {
+              body: text,
+              init: { headers: { "content-type": "text/plain; charset=utf-8" } },
+            };
+          },
+        });
+        routes.push({
+          method: "GET",
+          path: "/openapi",
+          handler: () => {
+            return {
+              body: documentationHTML(schemaFile),
+              init: { headers: { "content-type": "text/html" } },
+            };
+          },
+        });
       }
     };
   }
@@ -100,7 +129,11 @@ export class Http {
     // Initialize controllers and routes
     for (const controller of controllers) {
       if (!hasMetadata(controller.prototype, Http.TARGET_KEY)) {
-        setMetadata(controller.prototype, Http.TARGET_KEY, Reflect.construct(controller, []));
+        setMetadata(
+          controller.prototype,
+          Http.TARGET_KEY,
+          Reflect.construct(controller, []),
+        );
       }
       const target = getMetadata<object>(controller.prototype, Http.TARGET_KEY);
       const routes = getMetadata<object[]>(

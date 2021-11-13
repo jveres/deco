@@ -4,7 +4,7 @@
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 
-@Http.ServerController({ schema: "api.yaml" })
+@Http.ServerController({ schemaFile: "api.yaml" })
 class ExampleOpenAPI {}
 
 @Http.ServerController()
