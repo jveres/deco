@@ -561,9 +561,12 @@ export class Actor {
     ) {
       const url =
         `http://localhost:${DAPR_HTTP_PORT}/v1.0/actors/${actorType}/${actorId}/state/${key}`;
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: { "content-type": "application/json" },
+      });
+      console.log(url)
       if (res.status === 200) return await res.json();
-      else if(res.status === 204) return;
+      else if (res.status === 204 || res.status === 400) return;
       else {
         const { status, statusText } = res;
         throw Error(

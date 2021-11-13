@@ -105,14 +105,16 @@ class TestActor1 {
   private counter = 0;
 
   @Actor.event()
-  activate({ actorType, actorId }: { actorType: string; actorId: string }) {
+  async activate(
+    { actorType, actorId }: { actorType: string; actorId: string },
+  ) {
     console.log("TestActor1 activated", this);
     this.counter = 0;
-    Actor.setReminder({
+    await Actor.setReminder({
       actorType,
       actorId,
       reminderName: "reminder",
-      period: "5s",
+      period: "0s",
     });
   }
 
@@ -155,10 +157,14 @@ class TestActor1 {
 class TestActor2 {
   private readonly tag = "TestActor2";
 
+  @Actor.event()
+  activate({ actorType, actorId }: { actorType: string; actorId: string }) {
+    Actor.setTimer({ actorType, actorId, timerName: "timer", dueTime: "5s" });
+  }
+
   @Actor.method()
-  testMethod1({ actorType, actorId }: { actorType: string; actorId: string }) {
+  testMethod1() {
     console.log("TestActor2/testMethod1() called,", this);
-    Actor.setTimer({ actorType, actorId, timerName: "timer", dueTime: "10s" });
   }
 
   @Actor.event()
@@ -174,11 +180,11 @@ class TestActor3 {
     { actorType, actorId }: { actorType: string; actorId: string },
   ) {
     let counter =
-      await Actor.State.get({ actorType, actorId: "1", key: "counter" }) ?? 0;
+      await Actor.State.get({ actorType, actorId, key: "counter" }) ?? 0;
     console.log("TestActor3/testMethod1() called, counter =", counter);
     await Actor.State.set({
       actorType,
-      actorId: "1",
+      actorId,
       data: [
         {
           "operation": "upsert",
@@ -208,6 +214,7 @@ console.log("Dapr app started...");
 Dapr.start({
   appPort: 3000,
   actorIdleTimeout: "5s",
+  actorScanInterval: "5s",
   controllers: [
     PubSubExample1,
     PubSubExample2,
