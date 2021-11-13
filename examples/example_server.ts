@@ -39,24 +39,26 @@ class ExampleCustomAPI {
 
 @Http.ServerController()
 class ExampleStream {
-  counter = 0;
 
   @Http.Get("/stream")
   stream() {
     let cancelled = true;
-    // deno-lint-ignore no-this-alias
-    const self = this;
+    let counter = 0;
     const stream = new ReadableStream({
       start(controller) {
         cancelled = false;
         console.log("Stream started");
-        controller.enqueue(": Welcome to the /sse endpoint!\n\n");
+        controller.enqueue(": Welcome to the /stream endpoint!\n\n");
         (function time() {
           setTimeout(() => {
-            if (!cancelled) {
+            if (counter > 9) {
+              console.log("Stream closed");
+              controller.close();
+            }
+            else if (!cancelled) {
               const body = `event: timer, counter\ndata: ${
                 new Date().toISOString()
-              }, ${++self.counter}\n\n\n`;
+              }, ${++counter}\n\n\n`;
               controller.enqueue(body);
               time();
             }
