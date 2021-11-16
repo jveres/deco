@@ -6,10 +6,10 @@ info:
 paths:
   /api:
     get:
-      operationId: get-deco
+      operationId: Get example response
       responses:
         '200':
-          description: REST response
+          description: Returns an example text
           content:
             text/plain:
               schema:

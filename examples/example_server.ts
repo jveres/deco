@@ -4,7 +4,7 @@
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 
-@Http.ServerController({ schemaFile: "api.yaml" })
+@Http.ServerController({ schema: { fileName: "api.yaml" } })
 class ExampleOpenAPI {}
 
 @Http.ServerController()
@@ -39,7 +39,6 @@ class ExampleCustomAPI {
 
 @Http.ServerController()
 class ExampleStream {
-
   @Http.Get("/stream")
   stream() {
     let cancelled = true;
@@ -54,8 +53,7 @@ class ExampleStream {
             if (counter > 9) {
               console.log("Stream closed");
               controller.close();
-            }
-            else if (!cancelled) {
+            } else if (!cancelled) {
               const body = `event: timer, counter\ndata: ${
                 new Date().toISOString()
               }, ${++counter}\n\n\n`;

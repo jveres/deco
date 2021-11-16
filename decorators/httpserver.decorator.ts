@@ -5,10 +5,7 @@
 // deno-lint-ignore-file ban-types no-explicit-any
 
 import { HttpMethod, Router } from "../utils/Router.ts";
-import {
-  documentationHTML,
-  loadOpenAPISchema,
-} from "../utils/openapi.ts";
+import { documentationHTML, loadOpenAPISchema } from "../utils/openapi.ts";
 import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
 import { parse as yamlParse } from "https://deno.land/std@0.114.0/encoding/yaml.ts";
 import * as path from "https://deno.land/std@0.114.0/path/mod.ts";
@@ -23,12 +20,13 @@ export class Http {
   static readonly router = new Router();
 
   static ServerController(
-    { schemaFile }: { schemaFile?: string } = {},
+    { schema }: { schema?: { fileName: string; publishPath?: string } } =
+      {},
   ): ClassDecorator {
     return (target: Function): void => {
-      if (schemaFile) {
-        const text = Deno.readTextFileSync(schemaFile);
-        const json = path.extname(schemaFile) === ".yaml"
+      if (schema) {
+        const text = Deno.readTextFileSync(schema.fileName);
+        const json = path.extname(schema.fileName) === ".yaml"
           ? yamlParse(text)
           : JSON.parse(text);
         const api = loadOpenAPISchema(json);
@@ -69,20 +67,22 @@ export class Http {
         }
         routes.push({
           method: "GET",
-          path: `/${schemaFile}`,
+          path: `/${schema.fileName}`,
           handler: () => {
             return {
               body: text,
-              init: { headers: { "content-type": "text/plain; charset=utf-8" } },
+              init: {
+                headers: { "content-type": "text/plain; charset=utf-8" },
+              },
             };
           },
         });
         routes.push({
           method: "GET",
-          path: "/openapi",
+          path: schema.publishPath ?? "/openapi",
           handler: () => {
             return {
-              body: documentationHTML(schemaFile),
+              body: documentationHTML(schema.fileName),
               init: { headers: { "content-type": "text/html" } },
             };
           },
