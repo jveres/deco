@@ -7,12 +7,14 @@
 import { HttpMethod, Router } from "../utils/Router.ts";
 import { documentationHTML, loadOpenAPISchema } from "../utils/openapi.ts";
 import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
-import { parse as yamlParse } from "https://deno.land/std@0.114.0/encoding/yaml.ts";
-import * as path from "https://deno.land/std@0.114.0/path/mod.ts";
+import { parse as yamlParse } from "https://deno.land/std@0.115.0/encoding/yaml.ts";
+import * as path from "https://deno.land/std@0.115.0/path/mod.ts";
+import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 
 export class Http {
   static readonly TARGET_KEY = "__target__";
   static readonly ROUTES_KEY = "__routes__";
+  static readonly CRYPTOKEY_KEY = "__crypto_key__";
 
   static readonly DEFAULT_SERVER_HOSTNAME = "127.0.0.1";
   static readonly DEFAULT_SERVER_PORT = 8080;
@@ -20,8 +22,10 @@ export class Http {
   static readonly router = new Router();
 
   static ServerController(
-    { schema }: { schema?: { fileName: string; publishPath?: string } } =
-      {},
+    { schema, cryptoKey }: {
+      schema?: { fileName: string; publishPath?: string };
+      cryptoKey?: CryptoKey;
+    } = {},
   ): ClassDecorator {
     return (target: Function): void => {
       if (schema) {
@@ -88,6 +92,9 @@ export class Http {
           },
         });
       }
+      if (cryptoKey) {
+        setMetadata(target, Http.CRYPTOKEY_KEY, cryptoKey);
+      }
     };
   }
 
@@ -117,6 +124,39 @@ export class Http {
     path = "/",
   ): MethodDecorator {
     return Http.Route({ method: "POST", path });
+  }
+
+  static Auth(
+    { cryptoKey, headerKey = "x-auth-token" }: {
+      cryptoKey?: CryptoKey;
+      headerKey?: string;
+    } = {},
+  ): MethodDecorator {
+    return (
+      target: Object,
+      _propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      const fn = descriptor.value;
+      descriptor.value = async function (...args: any[]) {
+        const { request }: { request: Request } = args[0];
+        const token = request.headers.get(headerKey);
+        if (token === null) return { init: { status: 401 } }; // Unauthorized
+        try {
+          cryptoKey ??= getMetadata<CryptoKey>(
+            target.constructor,
+            Http.CRYPTOKEY_KEY,
+          );
+          if (cryptoKey === undefined) throw Error("missing verification key");
+          const payload = await verify(token, cryptoKey);
+          Object.assign(args[0], { auth: payload });
+          return await fn.apply(this, args);
+        } catch (err) {
+          console.error(`@Auth() exception: ${err}`);
+          return { init: { status: 403 } }; // Forbidden
+        }
+      };
+    };
   }
 
   static async serve(

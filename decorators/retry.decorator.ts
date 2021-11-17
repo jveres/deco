@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-explicit-any ban-types
 
 import { sleep, stringFromPropertyKey } from "../utils/utils.ts";
-import * as Colors from "https://deno.land/std@0.114.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.115.0/fmt/colors.ts";
 
 export const DEFAULT_MAX_ATTEMPTS = 3;
 export const DEFAULT_BACKOFF_MS = 1000;

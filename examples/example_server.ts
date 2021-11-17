@@ -2,12 +2,28 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// curl http://localhost:8080/api
+// curl http://localhost:8080/api/1
+// curl -v -X POST localhost:8080/api -d "test data" -H "x-auth-token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZGVjbyJ9.ae9rDEkN3goWCuc1-Dsbm9lX7kVJPHC8dlnKMFI1Gs-Y26kvGGo0UyQkMih0-zicLgx1viGLSufwfOctC1nWLQ"
+
 import { Http } from "../decorators/httpserver.decorator.ts";
 
 @Http.ServerController({ schema: { fileName: "api.yaml" } })
 class ExampleOpenAPI {}
 
-@Http.ServerController()
+const jwk = JSON.parse(Deno.readTextFileSync("key.jwk"));
+const key = await crypto.subtle.importKey(
+  "jwk",
+  jwk,
+  { name: "HMAC", hash: "SHA-512" },
+  true,
+  [
+    "sign",
+    "verify",
+  ],
+);
+
+@Http.ServerController({ cryptoKey: key })
 class ExampleCustomAPI {
   counter = 0;
 
@@ -21,9 +37,17 @@ class ExampleCustomAPI {
   }
 
   @Http.Post("/api")
-  async post({ url, request }: { url: URL; request: Request }) {
+  @Http.Auth()
+  async post(
+    { url, request, auth }: {
+      url: URL;
+      request: Request;
+      auth: Record<string, unknown>;
+    },
+  ) {
     return {
-      body: `[POST /api/:id] 😎 (got data: "${await request.text()}", query: "${
+      body: `[POST /api] 😎 (got data: "${await request
+        .text()}", auth data: "${JSON.stringify(auth)}", query: "${
         decodeURIComponent(url.searchParams.toString())
       }", counter="${++this.counter}")`,
     };

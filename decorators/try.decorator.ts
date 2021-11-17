@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import * as Colors from "https://deno.land/std@0.114.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.115.0/fmt/colors.ts";
 
 interface TryOptions {
   catch?: string[];
