@@ -11,10 +11,9 @@ import { Http } from "../decorators/httpserver.decorator.ts";
 @Http.ServerController({ schema: { fileName: "api.yaml" } })
 class ExampleOpenAPI {}
 
-const jwk = JSON.parse(Deno.readTextFileSync("key.jwk"));
 const key = await crypto.subtle.importKey(
   "jwk",
-  jwk,
+  JSON.parse(Deno.readTextFileSync("key.jwk")),
   { name: "HMAC", hash: "SHA-512" },
   true,
   [
