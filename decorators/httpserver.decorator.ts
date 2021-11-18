@@ -7,8 +7,8 @@
 import { HttpMethod, Router } from "../utils/Router.ts";
 import { documentationHTML, loadOpenAPISchema } from "../utils/openapi.ts";
 import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
-import { parse as yamlParse } from "https://deno.land/std@0.115.0/encoding/yaml.ts";
-import * as path from "https://deno.land/std@0.115.0/path/mod.ts";
+import { parse as yamlParse } from "https://deno.land/std@0.115.1/encoding/yaml.ts";
+import * as path from "https://deno.land/std@0.115.1/path/mod.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 
 export class Http {
@@ -126,8 +126,20 @@ export class Http {
     return Http.Route({ method: "POST", path });
   }
 
+  static Put(
+    path = "/",
+  ): MethodDecorator {
+    return Http.Route({ method: "PUT", path });
+  }
+
+  static Delete(
+    path = "/",
+  ): MethodDecorator {
+    return Http.Route({ method: "DELETE", path });
+  }
+
   static Auth(
-    { cryptoKey, headerKey = "x-auth-token" }: {
+    { cryptoKey, headerKey = "x-access-token" }: {
       cryptoKey?: CryptoKey;
       headerKey?: string;
     } = {},

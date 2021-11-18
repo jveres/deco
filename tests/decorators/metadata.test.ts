@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { getMetadata, Metadata } from "../../decorators/metadata.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 
 Deno.test({
   name: "@Metadata() -> setMetadata(), getMetadata()",

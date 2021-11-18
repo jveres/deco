@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { Http } from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 
 const MESSAGE = "Hello from Deco!";
 

@@ -4,7 +4,7 @@
 
 // curl http://localhost:8080/api
 // curl http://localhost:8080/api/1
-// curl -v -X POST localhost:8080/api -d "test data" -H "x-auth-token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZGVjbyJ9.ae9rDEkN3goWCuc1-Dsbm9lX7kVJPHC8dlnKMFI1Gs-Y26kvGGo0UyQkMih0-zicLgx1viGLSufwfOctC1nWLQ"
+// curl -v -X POST "http://localhost:8080/api?q=1" -d "test data" -H "x-access-token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZGVjbyJ9.ae9rDEkN3goWCuc1-Dsbm9lX7kVJPHC8dlnKMFI1Gs-Y26kvGGo0UyQkMih0-zicLgx1viGLSufwfOctC1nWLQ"
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 
@@ -23,7 +23,7 @@ const key = await crypto.subtle.importKey(
   ],
 );
 
-@Http.ServerController({ cryptoKey: key })
+@Http.ServerController()
 class ExampleCustomAPI {
   counter = 0;
 
@@ -37,7 +37,7 @@ class ExampleCustomAPI {
   }
 
   @Http.Post("/api")
-  @Http.Auth()
+  @Http.Auth({ cryptoKey: key })
   async post(
     { url, request, auth }: {
       url: URL;
@@ -45,9 +45,11 @@ class ExampleCustomAPI {
       auth: Record<string, unknown>;
     },
   ) {
+    const data = await request.text();
     return {
-      body: `[POST /api] 😎 (got data: "${await request
-        .text()}", auth data: "${JSON.stringify(auth)}", query: "${
+      body: `[POST /api] 😎 (got data: "${data}", auth data: "${
+        JSON.stringify(auth)
+      }", query: "${
         decodeURIComponent(url.searchParams.toString())
       }", counter="${++this.counter}")`,
     };
