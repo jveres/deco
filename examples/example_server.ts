@@ -65,8 +65,10 @@ class ExampleCustomAPI {
 
 @Http.ServerController()
 class ExampleStream {
+  #priv = 0;
   @Http.EventStream()
   async *stream() {
+    console.log(`calls: ${++this.#priv}`);
     let counter = 0;
     yield ": Hello from stream\n\n";
     while (counter++ < 10) {

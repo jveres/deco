@@ -185,12 +185,14 @@ export class Http {
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method: "GET",
         path,
-        handler: function () {
+        handler: function (...args: any[]) {
           let cancelled = false;
+          const that = getMetadata<object>(target, Http.TARGET_KEY);
           const stream = new ReadableStream({
             async start(controller) {
               console.log("EventStream started");
-              for await (const event of descriptor.value.apply(target, [])) {
+              Object.assign(args[0], { controller });
+              for await (const event of descriptor.value.apply(that, args)) {
                 if (!cancelled) controller.enqueue(event);
               }
               controller.close();
@@ -263,7 +265,13 @@ export class Http {
             action.target,
             [{ ...params, url, request: http.request }],
           ) || {};
-          http.respondWith(new Response(body, init)).catch(() => {});
+          http.respondWith(new Response(body, init)).catch((err: unknown) => {
+            if (err instanceof Error && err.name === "Http") {
+              console.warn(`Http.serve() exception: ${err.message}`);
+            } else {
+              throw err;
+            }
+          });
         }
       })();
     }
