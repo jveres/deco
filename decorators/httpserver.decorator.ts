@@ -186,21 +186,13 @@ export class Http {
         method: "GET",
         path,
         handler: function (...args: any[]) {
-          let cancelled = false;
           const that = getMetadata<object>(target, Http.TARGET_KEY);
           const stream = new ReadableStream({
             async start(controller) {
-              console.log("EventStream started");
               Object.assign(args[0], { controller });
               for await (const event of descriptor.value.apply(that, args)) {
-                if (!cancelled) controller.enqueue(event);
+                controller.enqueue(event);
               }
-              controller.close();
-              console.log("EventStream closed");
-            },
-            cancel() {
-              cancelled = true;
-              console.log("EventStream cancelled");
             },
           });
           return {
@@ -267,7 +259,7 @@ export class Http {
           ) || {};
           http.respondWith(new Response(body, init)).catch((err: unknown) => {
             if (err instanceof Error && err.name === "Http") {
-              console.warn(`Http.serve() exception: ${err.message}`);
+              console.warn(`Http.serve() warning: ${err.message}`);
             } else {
               throw err;
             }

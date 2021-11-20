@@ -69,9 +69,8 @@ class ExampleStream {
   @Http.EventStream()
   async *stream() {
     console.log(`calls: ${++this.#priv}`);
-    let counter = 0;
     yield ": Hello from stream\n\n";
-    while (counter++ < 10) {
+    while (true) {
       await sleep(1000);
       yield `event: tick\ndata: ${new Date().toISOString()}\n\n\n`;
     }
