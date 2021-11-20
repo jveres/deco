@@ -10,6 +10,7 @@ import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
 import { parse as yamlParse } from "https://deno.land/std@0.115.1/encoding/yaml.ts";
 import * as path from "https://deno.land/std@0.115.1/path/mod.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
 export class Http {
   static readonly TARGET_KEY = "__target__";
@@ -99,13 +100,14 @@ export class Http {
   }
 
   static Route(
-    { method, path }: { method: HttpMethod; path: string },
+    { method = "GET", path }: { method?: HttpMethod; path?: string },
   ): MethodDecorator {
     return (
       target: Object,
-      _propertyKey: string | symbol,
+      propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
+      path ??= `/${stringFromPropertyKey(propertyKey)}`;
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method,
         path,
@@ -115,25 +117,25 @@ export class Http {
   }
 
   static Get(
-    path = "/",
+    path?: string,
   ): MethodDecorator {
     return Http.Route({ method: "GET", path });
   }
 
   static Post(
-    path = "/",
+    path?: string,
   ): MethodDecorator {
     return Http.Route({ method: "POST", path });
   }
 
   static Put(
-    path = "/",
+    path?: string,
   ): MethodDecorator {
     return Http.Route({ method: "PUT", path });
   }
 
   static Delete(
-    path = "/",
+    path?: string,
   ): MethodDecorator {
     return Http.Route({ method: "DELETE", path });
   }
@@ -168,6 +170,48 @@ export class Http {
           return { init: { status: 403 } }; // Forbidden
         }
       };
+    };
+  }
+
+  static EventStream(
+    path?: string,
+  ): MethodDecorator {
+    return (
+      target: Object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      path ??= `/${stringFromPropertyKey(propertyKey)}`;
+      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
+        method: "GET",
+        path,
+        handler: function () {
+          let cancelled = false;
+          const stream = new ReadableStream({
+            async start(controller) {
+              console.log("EventStream started");
+              for await (const event of descriptor.value.apply(target, [])) {
+                if (!cancelled) controller.enqueue(event);
+              }
+              controller.close();
+              console.log("EventStream closed");
+            },
+            cancel() {
+              cancelled = true;
+              console.log("EventStream cancelled");
+            },
+          });
+          return {
+            body: stream.pipeThrough(new TextEncoderStream()),
+            init: {
+              headers: {
+                "cache-control": "no-cache",
+                "content-type": "text/event-stream",
+              },
+            },
+          };
+        },
+      });
     };
   }
 
