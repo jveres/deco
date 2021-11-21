@@ -12,6 +12,12 @@ import * as path from "https://deno.land/std@0.115.1/path/mod.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import { stringFromPropertyKey } from "../utils/utils.ts";
 
+export interface HttpMetrics {
+  rps: number;
+  connections: number;
+  requests: number;
+}
+
 export class Http {
   static readonly TARGET_KEY = "__target__";
   static readonly ROUTES_KEY = "__routes__";
@@ -209,11 +215,14 @@ export class Http {
     };
   }
 
+  static metrics: HttpMetrics = { rps: 0, connections: 0, requests: 0 };
+
   static async serve(
-    { hostname, port, controllers }: {
+    { hostname, port, controllers, metrics = true }: {
       hostname?: string;
       port?: number;
       controllers: Function[];
+      metrics?: boolean | string;
     },
   ) {
     // Initialize controllers and routes
@@ -239,6 +248,21 @@ export class Http {
         });
       });
     }
+    // Metrics
+    if (metrics) {
+      Http.router.add({
+        method: "GET",
+        path: typeof metrics === "string" ? metrics : "/metrics",
+        action: {
+          handler: () => {
+            return {
+              body: JSON.stringify(Http.metrics),
+              init: { headers: { "content-type": "application/json" } },
+            };
+          },
+        },
+      });
+    }
     // Start listener
     for await (
       const conn of Deno.listen({
@@ -248,6 +272,8 @@ export class Http {
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
+          Http.metrics.requests++;
+          Http.metrics.connections++;
           const url = new URL(http.request.url);
           const { action, params } = Http.router.find(
             http.request.method,
@@ -257,13 +283,15 @@ export class Http {
             action.target,
             [{ ...params, url, request: http.request }],
           ) || {};
-          http.respondWith(new Response(body, init)).catch((err: unknown) => {
-            if (err instanceof Error && err.name === "Http") {
-              console.warn(`Http.serve() warning: ${err.message}`);
-            } else {
-              throw err;
-            }
-          });
+          http.respondWith(new Response(body, init))
+            .catch((err: unknown) => {
+              if (err instanceof Error && err.name === "Http") {
+                console.warn(`Http.serve() warning: ${err.message}`);
+              } else {
+                throw err;
+              }
+            })
+            .finally(() => Http.metrics.connections--);
         }
       })();
     }
