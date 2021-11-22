@@ -61,6 +61,9 @@ class ExampleCustomAPI {
       body: `[GET /static/*] 😎 (got path: "${path}")`,
     };
   }
+
+  @Http.Get()
+  dummy() {}
 }
 
 @Http.ServerController()
@@ -79,7 +82,7 @@ class ExampleStream {
 class ExampleLimits {
   @Http.Get()
   @Http.RateLimit({ rps: 50 })
-  rpsTest() {}
+  ratelimited() {}
 }
 
 console.log("Server started...");

@@ -14,7 +14,12 @@ import { stringFromPropertyKey } from "../utils/utils.ts";
 import { decode as base64Decode } from "https://deno.land/std@0.115.1/encoding/base64.ts";
 import { RateLimit, RateLimitError } from "./ratelimit.decorator.ts";
 
-export const DEFAULT_FAVICON = {
+export type FavIcon = {
+  mime: "image/x-icon";
+  data: Uint8Array;
+};
+
+export const DEFAULT_FAVICON: FavIcon = {
   "mime": "image/x-icon",
   "data": base64Decode(
     "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwAAAI8AAADVAAAA8wUFBfQKCgrWAAAAjwAAACsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAlAAAAP0AAAD/AAAA/wAAAP8oKCj/+fn5/7W1tf8+Pj79AAAAlAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAvQAAAP8AAAD/AAAA/wAAAP8AAAD/Ozs7/////////////////5CQkP8EBAS9AAAABgAAAAAAAAAAAAAAlAAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/25ubv//////////////////////kJCQ/wAAAJQAAAAAAAAAKwAAAP0AAAD/AAAA/wAAAP8DAwP/HR0d/yQkJP/Q0ND//////////////////////+Li4v8GBgb9AAAAKwAAAI8AAAD/AAAA/wwMDP8wMDD/lJSU/9HR0f/l5eX///////////////////////////+Ghob/AAAA/wAAAI8AAADVAAAA/woKCv9jY2P/////////////////////////////////////////////////OTk5/wAAAP8AAADVAAAA8wAAAP8kJCT//////////////////////////////////////////////////v7+/yEhIf8AAAD/AAAA8wAAAPMAAAD/NTU1////////////////////////////5eXl//7+/v///////////83Nzf8NDQ3/AAAA/wAAAPMAAADVAAAA/yMjI///////////////////////xMTE/wAAAP+EhIT///////////9HR0f/AAAA/wAAAP8AAADVAAAAjwAAAP8ICAj/bW1t/////////////////+jo6P9SUlL/w8PD//////+3t7f/FhYW/wAAAP8AAAD/AAAAjwAAACsAAAD9AAAA/xISEv9WVlb/8fHx//////////////////z8/P+EhIT/GBgY/wAAAP8AAAD/AAAA/QAAACsAAAAAAAAAlAAAAP8AAAD/AAAA/x4eHv8sLCz/Ozs7/zAwMP8iIiL/BQUF/wAAAP8AAAD/AAAA/wAAAJQAAAAAAAAAAAAAAAYAAAC9AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAL0AAAAGAAAAAAAAAAAAAAAAAAAABgAAAJQAAAD9AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/QAAAJQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwAAAI8AAADVAAAA8wAAAPMAAADVAAAAjwAAACsAAAAAAAAAAAAAAAAAAAAA+B8AAOAHAADAAwAAgAEAAIABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAgAEAAMADAADgBwAA+B8AAA==",
@@ -24,6 +29,10 @@ export const DEFAULT_FAVICON = {
 export interface HttpMetrics {
   connections: number;
   requests: number;
+  cpus: number;
+  memory: Deno.MemoryUsage;
+  opsDispatched: number;
+  opsCompleted: number;
 }
 
 export class Http {
@@ -110,19 +119,6 @@ export class Http {
       if (cryptoKey) {
         setMetadata(target, Http.CRYPTOKEY_KEY, cryptoKey);
       }
-      // Favicon
-      routes.push({
-        method: "GET",
-        path: "/favicon.ico",
-        handler: () => {
-          return {
-            body: DEFAULT_FAVICON.data,
-            init: {
-              headers: { "content-type": DEFAULT_FAVICON.mime },
-            },
-          };
-        },
-      });
     };
   }
 
@@ -262,14 +258,22 @@ export class Http {
     };
   }
 
-  static metrics: HttpMetrics = { connections: 0, requests: 0 };
+  static metrics: HttpMetrics = {
+    connections: 0,
+    requests: 0,
+    cpus: navigator.hardwareConcurrency,
+    memory: { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 },
+    opsDispatched: 0,
+    opsCompleted: 0,
+  };
 
   static async serve(
-    { hostname, port, controllers, metrics = true }: {
+    { hostname, port, controllers, metrics = true, favIcon = true }: {
       hostname?: string;
       port?: number;
       controllers: Function[];
       metrics?: boolean | string;
+      favIcon?: boolean | FavIcon;
     },
   ) {
     // Initialize controllers and routes
@@ -302,9 +306,32 @@ export class Http {
         path: typeof metrics === "string" ? metrics : "/metrics",
         action: {
           handler: () => {
+            const metrics = Deno.metrics();
+            Http.metrics.memory = Deno.memoryUsage();
+            Http.metrics.opsDispatched = metrics.opsDispatched;
+            Http.metrics.opsCompleted = metrics.opsCompleted;
             return {
               body: JSON.stringify(Http.metrics),
               init: { headers: { "content-type": "application/json" } },
+            };
+          },
+        },
+      });
+    }
+    // Favicon
+    if (favIcon) {
+      Http.router.add({
+        method: "GET",
+        path: "/favicon.ico",
+        action: {
+          handler: () => {
+            return {
+              body: typeof favIcon === "boolean"
+                ? DEFAULT_FAVICON.data
+                : favIcon.data,
+              init: {
+                headers: { "content-type": DEFAULT_FAVICON.mime },
+              },
             };
           },
         },
