@@ -65,10 +65,8 @@ class ExampleCustomAPI {
 
 @Http.ServerController()
 class ExampleStream {
-  #priv = 0;
   @Http.EventStream()
   async *stream() {
-    console.log(`calls: ${++this.#priv}`);
     yield ": Hello from stream\n\n";
     while (true) {
       await sleep(1000);
@@ -77,5 +75,14 @@ class ExampleStream {
   }
 }
 
+@Http.ServerController()
+class ExampleLimits {
+  @Http.Get()
+  @Http.RateLimit({ rps: 50 })
+  rpsTest() {}
+}
+
 console.log("Server started...");
-Http.serve({ controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream] });
+Http.serve({
+  controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream, ExampleLimits],
+});

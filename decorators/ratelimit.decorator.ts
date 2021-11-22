@@ -2,48 +2,45 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any ban-types
+// deno-lint-ignore-file ban-types no-explicit-any
 
 import { Denque } from "../utils/utils.ts";
 
-export class RateLimited extends Error {}
+export class RateLimitError extends Error {}
 
-export interface RateLimitOptions {
-  interval?: number;
-  rate?: number;
-}
+const DEFAULT_RATE = 1;
+const DEFAULT_INTERVAL = 1000;
 
-const DEFAULT_RATE_LIMIT = 1;
-const DEFAULT_RATE_INTERVAL_MS = 1000;
-
-export const RateLimit = (options?: RateLimitOptions): MethodDecorator =>
+export const RateLimit = (
+  { limit = DEFAULT_RATE, interval = DEFAULT_INTERVAL,  }: {
+    limit?: number;
+    interval?: number;
+  } = {},
+): MethodDecorator =>
   (
-    _target: Object,
+    _target: object,
     _propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
-    const originalFn = descriptor.value;
-    const queue = new Denque();
-
-    const getCurrentRate = (): number => {
-      while (
-        queue.peekFront() &&
-        (Date.now() - queue.peekFront() >
-          (options?.interval ?? DEFAULT_RATE_INTERVAL_MS))
-      ) {
-        queue.shift();
-      }
-      return queue.size();
+    const ratelimiter = {
+      fn: descriptor.value,
+      queue: new Denque(),
+      get rps() {
+        while (
+          this.queue.peekFront() &&
+          (Date.now() - this.queue.peekFront() > interval)
+        ) {
+          this.queue.shift();
+        }
+        return this.queue.size() as number;
+      },
     };
-
     descriptor.value = async function (...args: any[]) {
-      if (getCurrentRate() >= (options?.rate ?? DEFAULT_RATE_LIMIT)) {
-        throw new RateLimited("Rate limit exceeded");
+      if (ratelimiter.rps > limit) {
+        throw new RateLimitError("Rate limit exceeded");
       }
-      queue.push(Date.now());
-      return await originalFn.apply(
-        this,
-        args.concat([{ options, getCurrentRate }]),
-      );
+      ratelimiter.queue.push(Date.now());
+      args?.push({ rps: ratelimiter.rps });
+      return await ratelimiter.fn.apply(this, args);
     };
   };

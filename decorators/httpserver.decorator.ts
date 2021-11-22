@@ -11,9 +11,17 @@ import { parse as yamlParse } from "https://deno.land/std@0.115.1/encoding/yaml.
 import * as path from "https://deno.land/std@0.115.1/path/mod.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import { stringFromPropertyKey } from "../utils/utils.ts";
+import { decode as base64Decode } from "https://deno.land/std@0.115.1/encoding/base64.ts";
+import { RateLimit, RateLimitError } from "./ratelimit.decorator.ts";
+
+export const DEFAULT_FAVICON = {
+  "mime": "image/x-icon",
+  "data": base64Decode(
+    "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwAAAI8AAADVAAAA8wUFBfQKCgrWAAAAjwAAACsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAlAAAAP0AAAD/AAAA/wAAAP8oKCj/+fn5/7W1tf8+Pj79AAAAlAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAvQAAAP8AAAD/AAAA/wAAAP8AAAD/Ozs7/////////////////5CQkP8EBAS9AAAABgAAAAAAAAAAAAAAlAAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/25ubv//////////////////////kJCQ/wAAAJQAAAAAAAAAKwAAAP0AAAD/AAAA/wAAAP8DAwP/HR0d/yQkJP/Q0ND//////////////////////+Li4v8GBgb9AAAAKwAAAI8AAAD/AAAA/wwMDP8wMDD/lJSU/9HR0f/l5eX///////////////////////////+Ghob/AAAA/wAAAI8AAADVAAAA/woKCv9jY2P/////////////////////////////////////////////////OTk5/wAAAP8AAADVAAAA8wAAAP8kJCT//////////////////////////////////////////////////v7+/yEhIf8AAAD/AAAA8wAAAPMAAAD/NTU1////////////////////////////5eXl//7+/v///////////83Nzf8NDQ3/AAAA/wAAAPMAAADVAAAA/yMjI///////////////////////xMTE/wAAAP+EhIT///////////9HR0f/AAAA/wAAAP8AAADVAAAAjwAAAP8ICAj/bW1t/////////////////+jo6P9SUlL/w8PD//////+3t7f/FhYW/wAAAP8AAAD/AAAAjwAAACsAAAD9AAAA/xISEv9WVlb/8fHx//////////////////z8/P+EhIT/GBgY/wAAAP8AAAD/AAAA/QAAACsAAAAAAAAAlAAAAP8AAAD/AAAA/x4eHv8sLCz/Ozs7/zAwMP8iIiL/BQUF/wAAAP8AAAD/AAAA/wAAAJQAAAAAAAAAAAAAAAYAAAC9AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAL0AAAAGAAAAAAAAAAAAAAAAAAAABgAAAJQAAAD9AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/QAAAJQAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwAAAI8AAADVAAAA8wAAAPMAAADVAAAAjwAAACsAAAAAAAAAAAAAAAAAAAAA+B8AAOAHAADAAwAAgAEAAIABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAgAEAAMADAADgBwAA+B8AAA==",
+  ),
+};
 
 export interface HttpMetrics {
-  rps: number;
   connections: number;
   requests: number;
 }
@@ -35,17 +43,17 @@ export class Http {
     } = {},
   ): ClassDecorator {
     return (target: Function): void => {
+      const routes = getMetadata<object[]>(
+        target.prototype,
+        Http.ROUTES_KEY,
+        [],
+      );
       if (schema) {
         const text = Deno.readTextFileSync(schema.fileName);
         const json = path.extname(schema.fileName) === ".yaml"
           ? yamlParse(text)
           : JSON.parse(text);
         const api = loadOpenAPISchema(json);
-        const routes = getMetadata<object[]>(
-          target.prototype,
-          Http.ROUTES_KEY,
-          [],
-        );
         for (const endpoint of api) {
           const examples: string[] = [];
           endpoint.responses?.[0]?.contents?.[0]?.examples?.map((
@@ -102,6 +110,19 @@ export class Http {
       if (cryptoKey) {
         setMetadata(target, Http.CRYPTOKEY_KEY, cryptoKey);
       }
+      // Favicon
+      routes.push({
+        method: "GET",
+        path: "/favicon.ico",
+        handler: () => {
+          return {
+            body: DEFAULT_FAVICON.data,
+            init: {
+              headers: { "content-type": DEFAULT_FAVICON.mime },
+            },
+          };
+        },
+      });
     };
   }
 
@@ -109,7 +130,7 @@ export class Http {
     { method = "GET", path }: { method?: HttpMethod; path?: string },
   ): MethodDecorator {
     return (
-      target: Object,
+      target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
@@ -153,7 +174,7 @@ export class Http {
     } = {},
   ): MethodDecorator {
     return (
-      target: Object,
+      target: object,
       _propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
@@ -183,7 +204,7 @@ export class Http {
     path?: string,
   ): MethodDecorator {
     return (
-      target: Object,
+      target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
@@ -215,7 +236,33 @@ export class Http {
     };
   }
 
-  static metrics: HttpMetrics = { rps: 0, connections: 0, requests: 0 };
+  static RateLimit({ rps }: { rps: number }): MethodDecorator {
+    return (
+      target: object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      RateLimit({ limit: rps, interval: 1000 })(
+        target,
+        propertyKey,
+        descriptor,
+      );
+      const fn = descriptor.value;
+      descriptor.value = async function (...args: any[]) {
+        try {
+          return await fn.apply(this, args);
+        } catch (e: unknown) {
+          if (e instanceof RateLimitError) {
+            return { body: "Rate limit exceeded", init: { status: 429 } }; // Too many requests
+          } else {
+            throw e;
+          }
+        }
+      };
+    };
+  }
+
+  static metrics: HttpMetrics = { connections: 0, requests: 0 };
 
   static async serve(
     { hostname, port, controllers, metrics = true }: {
