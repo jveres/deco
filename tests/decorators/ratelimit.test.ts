@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-empty
+
 import { RateLimit } from "../../decorators/ratelimit.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
@@ -10,12 +12,11 @@ class SomeClass {
   public count = 0;
 
   @RateLimit()
-  async asyncMethodTest1(ms: number) {
-    await sleep(ms);
+  methodTest1() {
     this.count++;
   }
 
-  @RateLimit({ rate: 1, interval: 1000 })
+  @RateLimit({ limit: 1, interval: 100 })
   async asyncMethodTest2(ms: number) {
     await sleep(ms);
     this.count++;
@@ -23,29 +24,30 @@ class SomeClass {
 }
 
 Deno.test({
-  name: "@RateLimit with defaults",
+  name: "@RateLimit() with defaults",
   sanitizeOps: false,
   async fn() {
     const c = new SomeClass();
     for (let i = 0; i < 10; ++i) {
       try {
-        await c.asyncMethodTest1(100);
-      } catch {() => {}}
+        c.methodTest1();
+        await sleep(100);
+      } catch {}
     }
     assertEquals(c.count, 1);
   },
 });
 
 Deno.test({
-  name: "@RateLimit with { rate: 1, interval: 1000 }",
+  name: "@RateLimit({ limit: 1, interval: 100 })",
   sanitizeOps: false,
   async fn() {
     const c = new SomeClass();
-    for (let i = 0; i < 2; ++i) {
+    for (let i = 0; i < 10; ++i) {
       try {
         await c.asyncMethodTest2(100);
-      } catch {() => {}}
+      } catch {}
     }
-    assertEquals(c.count, 1);
+    assertEquals(c.count, 10);
   },
 });

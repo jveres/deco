@@ -12,7 +12,7 @@ const DEFAULT_RATE = 1;
 const DEFAULT_INTERVAL = 1000;
 
 export const RateLimit = (
-  { limit = DEFAULT_RATE, interval = DEFAULT_INTERVAL,  }: {
+  { limit = DEFAULT_RATE, interval = DEFAULT_INTERVAL }: {
     limit?: number;
     interval?: number;
   } = {},
@@ -25,7 +25,7 @@ export const RateLimit = (
     const ratelimiter = {
       fn: descriptor.value,
       queue: new Denque(),
-      get rps() {
+      get rate() {
         while (
           this.queue.peekFront() &&
           (Date.now() - this.queue.peekFront() > interval)
@@ -35,12 +35,12 @@ export const RateLimit = (
         return this.queue.size() as number;
       },
     };
-    descriptor.value = async function (...args: any[]) {
-      if (ratelimiter.rps > limit) {
+    descriptor.value = function (...args: any[]) {
+      if (ratelimiter.rate >= limit) {
         throw new RateLimitError("Rate limit exceeded");
       }
       ratelimiter.queue.push(Date.now());
-      args?.push({ rps: ratelimiter.rps });
-      return await ratelimiter.fn.apply(this, args);
+      args?.push({ rate: ratelimiter.rate });
+      return ratelimiter.fn.apply(this, args);
     };
   };

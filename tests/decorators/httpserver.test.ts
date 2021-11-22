@@ -7,8 +7,8 @@ import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 
 const MESSAGE = "Hello from Deco!";
 
-@Http.Server()
-class _ {
+@Http.ServerController()
+class TestClass1 {
   #message = MESSAGE;
 
   @Http.Get("/")
@@ -23,7 +23,7 @@ Deno.test({
   sanitizeOps: false,
   async fn() {
     const port = 8090;
-    Http.serve({ port });
+    Http.serve({ port, controllers: [TestClass1] });
     const resp = await fetch(`http://localhost:${port}`);
     const text = await resp.text();
     assertEquals(text, MESSAGE);

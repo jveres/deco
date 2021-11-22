@@ -81,7 +81,7 @@ class ExampleStream {
 @Http.ServerController()
 class ExampleLimits {
   @Http.Get()
-  @Http.RateLimit({ rps: 50 })
+  @Http.RateLimit({ rps: 1 })
   ratelimited() {}
 }
 
