@@ -8,10 +8,26 @@
 
 ## Server [example](examples/example_server.ts)
 ```typescript
-import { Http } from "../decorators/httpserver.decorator.ts";
+// curl http://localhost:8080/api
+// curl http://localhost:8080/api/1
+// curl -v -X POST "http://localhost:8080/api?q=1" -d "test data" -H "x-access-token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZGVjbyJ9.ae9rDEkN3goWCuc1-Dsbm9lX7kVJPHC8dlnKMFI1Gs-Y26kvGGo0UyQkMih0-zicLgx1viGLSufwfOctC1nWLQ"
 
-@Http.ServerController({ schema: "api.yaml" })
+import { Http } from "../decorators/httpserver.decorator.ts";
+import { sleep } from "../utils/utils.ts";
+
+@Http.ServerController({ schema: { fileName: "api.yaml" } })
 class ExampleOpenAPI {}
+
+const cryptoKey = await crypto.subtle.importKey(
+  "jwk",
+  JSON.parse(Deno.readTextFileSync("key.jwk")),
+  { name: "HMAC", hash: "SHA-512" },
+  true,
+  [
+    "sign",
+    "verify",
+  ],
+);
 
 @Http.ServerController()
 class ExampleCustomAPI {
@@ -26,10 +42,20 @@ class ExampleCustomAPI {
     };
   }
 
-  @Http.Post("/api")
-  async post({ url, request }: { url: URL; request: Request }) {
+  @Http.Post()
+  @Http.Auth({ cryptoKey })
+  async api(
+    { url, request, auth }: {
+      url: URL;
+      request: Request;
+      auth: Record<string, unknown>;
+    },
+  ) {
+    const data = await request.text();
     return {
-      body: `[POST /api/:id] 😎 (got data: "${await request.text()}", query: "${
+      body: `[POST /api] 😎 (got data: "${data}", auth data: "${
+        JSON.stringify(auth)
+      }", query: "${
         decodeURIComponent(url.searchParams.toString())
       }", counter="${++this.counter}")`,
     };
@@ -45,44 +71,27 @@ class ExampleCustomAPI {
 
 @Http.ServerController()
 class ExampleStream {
-  counter = 0;
-
-  @Http.Get("/stream")
-  stream() {
-    let cancelled = true;
-    // deno-lint-ignore no-this-alias
-    const self = this;
-    const stream = new ReadableStream({
-      start(controller) {
-        cancelled = false;
-        console.log("Stream started");
-        controller.enqueue(": Welcome to the /sse endpoint!\n\n");
-        (function time() {
-          setTimeout(() => {
-            if (!cancelled) {
-              const body = `event: timer, counter\ndata: ${
-                new Date().toISOString()
-              }, ${++self.counter}\n\n\n`;
-              controller.enqueue(body);
-              time();
-            }
-          }, 1000);
-        })();
-      },
-      cancel() {
-        cancelled = true;
-        console.log("Stream cancelled");
-      },
-    });
-    return {
-      body: stream.pipeThrough(new TextEncoderStream()),
-      init: { headers: { "content-type": "text/event-stream" } },
-    };
+  @Http.EventStream()
+  async *stream() {
+    yield ": Hello from stream\n\n";
+    while (true) {
+      await sleep(1000);
+      yield `event: tick\ndata: ${new Date().toISOString()}\n\n\n`;
+    }
   }
 }
 
+@Http.ServerController()
+class ExampleLimits {
+  @Http.Get()
+  @Http.RateLimit({ rps: 50 })
+  rpsTest() {}
+}
+
 console.log("Server started...");
-Http.serve({ controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream] });
+Http.serve({
+  controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream, ExampleLimits],
+});
 ```
 
 ## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
