@@ -23,6 +23,6 @@ export const Debounce = (
     _propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
-    const originalFn = descriptor.value;
-    descriptor.value = debounce(originalFn, wait, options);
+    const fn = descriptor.value;
+    descriptor.value = debounce(fn, wait, options);
   };

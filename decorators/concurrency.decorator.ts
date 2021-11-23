@@ -4,14 +4,12 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import { stringFromPropertyKey } from "../utils/utils.ts";
+import { Fn, stringFromPropertyKey } from "../utils/utils.ts";
 
 type ConcurrencyPoolItem = {
   key: string;
   promise: Promise<any>;
 };
-
-type Fn<T> = (...args: any[]) => T;
 
 type ConcurrencyDecorator = {
   (

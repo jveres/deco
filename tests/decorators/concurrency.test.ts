@@ -59,13 +59,13 @@ Deno.test({
   name: "@Concurrency() with resolver 2",
   async fn() {
     const promises: Promise<number>[] = [];
-    const nums = [1, 2, 2, 1, 3];
-    for (let i = 1; i <= 5; i++) {
-      promises.push(SomeClass.doSomething1(nums[i-1]));
+    const nums = [1, 2, 2, 1, 3, 1, 1, 3, 4];
+    for (let i = 0; i < nums.length; i++) {
+      promises.push(SomeClass.doSomething1(nums[i] + 1));
     }
     await Promise.all(promises);
-    const res = promises.filter((n, i) => promises.indexOf(n) === i);
-    assertEquals(res, [promises[0], promises[1], promises[4]]);
+    const distincts = promises.filter((n, i) => promises.indexOf(n) === i);
+    assertEquals(distincts, [promises[0], promises[1], promises[4], promises[8]]);
   },
 });
 

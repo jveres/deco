@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file no-explicit-any ban-types
 
 import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js";
 import _throttle from "https://cdn.skypack.dev/pin/lodash.throttle@v4.1.1-F50y3ZtJgnO9CirUfqrt/mode=imports,min/optimized/lodash.throttle.js";
@@ -97,3 +97,8 @@ export function consoleLogHook(options: ConsoleLogHookOptions) {
     };
   }
 }
+
+export type Fn<T> = (...args: any[]) => T;
+
+export const IsAsyncFunction = (fn: Function) =>
+  fn.constructor.name === "AsyncFunction";
