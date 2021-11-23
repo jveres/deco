@@ -4,53 +4,48 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import * as Colors from "https://deno.land/std@0.115.1/fmt/colors.ts";
-import { stringFromPropertyKey } from "../utils/utils.ts";
-
-interface TraceOptions {
-  stack?: boolean;
-}
+import { IsAsyncFunction, stringFromPropertyKey } from "../utils/utils.ts";
 
 export const Trace = (
-  options: TraceOptions = { stack: false },
+  { stack = false }: { stack?: boolean } = {},
 ): MethodDecorator =>
   (
     _target: Object,
     propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
-    const originalFn = descriptor.value;
+    const fn = descriptor.value;
+    const logDurationSince = (time: number) => {
+      console.log(
+        `${stringFromPropertyKey(propertyKey)}() finished in ${
+          (performance.now() - time).toFixed()
+        } ms`,
+      );
+    };
     let lastFrom: string | undefined;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = function (...args: any[]) {
       const e = new Error();
-      Error.captureStackTrace(e, options.stack ? undefined : descriptor.value);
-      const from = options.stack
+      Error.captureStackTrace(e, stack ? undefined : descriptor.value);
+      const from = stack
         ? "\n" + e.stack?.split("\n").slice(1).join("\n")
         : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
-      const p1 = performance.now();
+      const start = performance.now();
       console.log(
-        `${Colors.brightMagenta(stringFromPropertyKey(propertyKey) + "(…)")} ${
-          Colors.bold("called")
-        } ${options.stack ? "" : "from"} ${
-          Colors.brightCyan(from ?? lastFrom ?? "unknown")
-        }`,
+        `${stringFromPropertyKey(propertyKey)}() called ${
+          stack ? "" : "from"
+        } ${from ?? lastFrom ?? "n/a"}`,
       );
-
       if (from) lastFrom = from;
-
-      let result;
-      originalFn.constructor.name === "AsyncFunction"
-        ? result = await originalFn.apply(this, args)
-        : result = originalFn.apply(this, args);
-      console.log(`${
-        Colors.brightMagenta(
-          stringFromPropertyKey(propertyKey) +
-            "(…)",
-        )
-      } ${Colors.green("ended")} in ${
-        Colors.brightYellow((performance.now() - p1).toFixed() + "ms")
-      }`);
-      return result;
+      if (IsAsyncFunction(fn)) {
+        return fn.apply(this, args).then((result: any) => {
+          logDurationSince(start);
+          return result;
+        });
+      } else {
+        const result = fn.apply(this, args);
+        logDurationSince(start);
+        return result;
+      }
     };
   };

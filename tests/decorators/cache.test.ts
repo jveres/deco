@@ -129,7 +129,7 @@ Deno.test({
     const res = [];
     for (let i = 0; i < nums.length; i++) {
       res.push(await c.doPromise3(nums[i]));
-      await sleep(150);
+      await sleep(100);
     }
     assertEquals(res, nums);
   },

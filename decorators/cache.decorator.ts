@@ -27,7 +27,7 @@ export const Cache = ({ resolver, ttl }: {
       } else {
         if (ttl) timeout = Date.now() + ttl;
         if (isAsync) {
-          fn.apply(this, args).then((result: any) => {
+          return fn.apply(this, args).then((result: any) => {
             cache.put(key, result);
             return result;
           });

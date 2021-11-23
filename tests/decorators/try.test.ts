@@ -2,13 +2,14 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file require-await
+
 import { Try } from "../../decorators/try.decorator.ts";
 import {
   assert,
   assertEquals,
-  assertThrowsAsync,
+  assertRejects,
 } from "https://deno.land/std@0.115.1/testing/asserts.ts";
-import { setColorEnabled } from "https://deno.land/std@0.115.1/fmt/colors.ts";
 
 class SomeClass {
   @Try()
@@ -25,17 +26,17 @@ class SomeClass {
 
   @Try({
     log: true,
-    catch: ["TypeError"],
+    errors: ["TypeError"],
   })
   doSomething2() {
     throw TypeError("type error");
   }
 
   @Try({
-    catch: ["TypeError"],
+    errors: ["Error"],
   })
-  doSomething3() {
-    throw Error("error");
+  async doSomething3() {
+    throw TypeError("fake type error");
   }
 }
 
@@ -43,7 +44,6 @@ Deno.test({
   name: "@Try()",
   fn() {
     const c = new SomeClass();
-    setColorEnabled(false);
     const term: string[] = [];
     const error = console.error;
     console.error = (...args) => {
@@ -59,7 +59,6 @@ Deno.test({
   name: "@Try({ log: true })",
   fn() {
     const c = new SomeClass();
-    setColorEnabled(false);
     const term: string[] = [];
     const error = console.error;
     console.error = (...args) => {
@@ -72,61 +71,28 @@ Deno.test({
 });
 
 Deno.test({
-  name: '@Try({ log: true, catch: ["*"] })',
+  name: '@Try({ log: true, errors: ["TypeError"] })',
   fn() {
     const c = new SomeClass();
-    setColorEnabled(false);
-    const term: string[] = [];
-    const error = console.error;
-    console.error = (...args) => {
-      term.push(args.join(" "));
-    };
-    c.doSomething1();
-    assertEquals(term[0], "Runtime exception: error");
-    console.error = error;
-  },
-});
-
-Deno.test({
-  name: '@Try({ log: true, catch: ["error"] })',
-  fn() {
-    const c = new SomeClass();
-    setColorEnabled(false);
-    const term: string[] = [];
-    const error = console.error;
-    console.error = (...args) => {
-      term.push(args.join(" "));
-    };
-    c.doSomething1();
-    assertEquals(term[0], "Runtime exception: error");
-    console.error = error;
-  },
-});
-
-Deno.test({
-  name: '@Try({ log: true, catch: ["TypeError"] })',
-  fn() {
-    const c = new SomeClass();
-    setColorEnabled(false);
     const term: string[] = [];
     const error = console.error;
     console.error = (...args) => {
       term.push(args.join(" "));
     };
     c.doSomething2();
-    assertEquals(term[0], "Runtime exception: type error");
+    assertEquals(term[0], "Runtime exception: TypeError: type error");
     console.error = error;
   },
 });
 
 Deno.test({
-  name: '@Try({ catch: ["TypeError"] })',
+  name: '@Try({ errors: ["TypeError"] })',
   async fn() {
     const c = new SomeClass();
-    await assertThrowsAsync(
-      async (): Promise<void> => {
-        await c.doSomething3();
-      },
+    await assertRejects(
+      c.doSomething3,
+      TypeError,
+      "fake type error"
     );
   },
 });

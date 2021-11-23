@@ -7,7 +7,6 @@ import {
   assert,
   assertEquals,
 } from "https://deno.land/std@0.115.1/testing/asserts.ts";
-import { setColorEnabled } from "https://deno.land/std@0.115.1/fmt/colors.ts";
 
 class SomeClass {
   @Trace()
@@ -19,7 +18,6 @@ class SomeClass {
 Deno.test({
   name: "@Trace()",
   fn() {
-    setColorEnabled(false);
     const term: string[] = [];
     const log = console.log;
     console.log = (...args) => {
@@ -28,11 +26,11 @@ Deno.test({
     SomeClass.doSomething();
     assert(
       term[0].endsWith(
-        "tests/decorators/trace.test.ts:28:15)",
+        "tests/decorators/trace.test.ts:26:15)",
       ),
     );
     assertEquals(term[1], "logging for the console");
-    assert(term[2].startsWith("doSomething(…) ended in"));
+    assert(term[2].startsWith("doSomething() finished in"));
     console.log = log;
   },
 });
