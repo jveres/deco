@@ -18,7 +18,7 @@ export const RateLimit = (
   } = {},
 ): MethodDecorator =>
   (
-    _target: object,
+    _target: Object,
     _propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
@@ -40,7 +40,7 @@ export const RateLimit = (
         throw new RateLimitError("Rate limit exceeded");
       }
       ratelimiter.queue.push(Date.now());
-      args?.push({ rate: ratelimiter.rate });
+      args?.push({ ratelimit: { rate: ratelimiter.rate } });
       return ratelimiter.fn.apply(this, args);
     };
   };

@@ -2,37 +2,37 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any require-await
+// deno-lint-ignore-file require-await
 
 import { Concurrency } from "../../decorators/concurrency.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 
 class SomeClass {
   @Concurrency()
-  static async doSomething(arg: any) {
-    return arg;
+  static async doSomething(p: number) {
+    return p;
   }
 
   @Concurrency({
-    max: 1,
-    resolver: (arg: number) => {
-      return `${arg}`;
+    limit: 1,
+    resolver: (n: number) => {
+      return `${n}`;
     },
   })
-  static async doSomething1(arg: number) {
-    return arg;
+  static async doSomething1(n: number) {
+    return n;
   }
 
   @Concurrency({
-    max: 3,
+    limit: 3,
   })
-  static async doSomething2(arg: number) {
-    return arg;
+  static async doSomething2(n: number) {
+    return n;
   }
 }
 
 Deno.test({
-  name: "@Concurrency()",
+  name: "@Concurrency() with defaults",
   async fn() {
     const promises = [];
     for (let i = 1; i <= 5; i++) {
@@ -44,7 +44,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@Concurrency({ max: 1, resolver: ... })",
+  name: "@Concurrency() with resolver 1",
   async fn() {
     const promises = [];
     for (let i = 1; i <= 5; i++) {
@@ -56,7 +56,21 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@Concurrency({ max: 3 })",
+  name: "@Concurrency() with resolver 2",
+  async fn() {
+    const promises: Promise<number>[] = [];
+    const nums = [1, 2, 2, 1, 3];
+    for (let i = 1; i <= 5; i++) {
+      promises.push(SomeClass.doSomething1(nums[i-1]));
+    }
+    await Promise.all(promises);
+    const res = promises.filter((n, i) => promises.indexOf(n) === i);
+    assertEquals(res, [promises[0], promises[1], promises[4]]);
+  },
+});
+
+Deno.test({
+  name: "@Concurrency({ limit: 3 })",
   async fn() {
     const promises = [];
     for (let i = 1; i <= 5; i++) {

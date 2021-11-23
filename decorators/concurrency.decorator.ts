@@ -4,47 +4,55 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-interface ConcurrencyOptions {
-  max: number;
-  resolver?: (...args: any[]) => string;
-  onPooled?: (key: string) => void;
-}
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
-interface PoolItem {
+type ConcurrencyPoolItem = {
   key: string;
-  promise: Promise<unknown>;
-}
+  promise: Promise<any>;
+};
 
-export const Concurrency = (
-  options: ConcurrencyOptions = { max: 1 },
-): MethodDecorator =>
+type Fn<T> = (...args: any[]) => T;
+
+type ConcurrencyDecorator = {
   (
+    target: Object,
+    propertyKey: string | symbol,
+    descriptor: TypedPropertyDescriptor<Fn<Promise<any>>>,
+  ): TypedPropertyDescriptor<Fn<Promise<any>>>;
+};
+
+export const Concurrency = ({ limit = 1, resolver }: {
+  limit?: number;
+  resolver?: Fn<string>;
+} = {}): ConcurrencyDecorator => {
+  return (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<any>,
-  ): void => {
-    const originalFn = descriptor.value;
-    const pool: PoolItem[] = [];
-
-    descriptor.value = async function (...args: any[]) {
-      const key = options.resolver
-        ? options.resolver.apply(this, args)
-        : propertyKey.toString();
-      const count = pool.filter((e) => e.key === key).length;
-      if (count < options.max) {
-        const promise = originalFn.apply(this, args);
-        const result = promise.then((res: any) => {
-          const index = pool.findIndex((e) => e.key === key);
-          if (index > -1) pool.splice(index, 1);
+    descriptor: TypedPropertyDescriptor<Fn<Promise<any>>>,
+  ) => {
+    const fn = descriptor.value!;
+    const concurrencyPool: ConcurrencyPoolItem[] = [];
+    descriptor.value = function (...args: any[]) {
+      const key = resolver
+        ? resolver.apply(this, args)
+        : stringFromPropertyKey(propertyKey);
+      const count = concurrencyPool.filter((e) => e.key === key).length;
+      if (count < limit) {
+        args.push({ concurrency: { limit } });
+        const promise = fn.apply(this, args);
+        promise.then((res: any) => {
+          const index = concurrencyPool.findIndex((item) => item.key === key);
+          if (index > -1) concurrencyPool.splice(index, 1);
           return res;
         });
-        pool.push({ key, promise });
-        return await result;
+        concurrencyPool.push({ key, promise });
+        return promise;
       } else {
-        const index = pool.map((e) => e.key).lastIndexOf(key);
-        const promise = pool[index].promise;
-        options.onPooled?.apply(this, [key]);
+        const index = concurrencyPool.map((e) => e.key).lastIndexOf(key);
+        const { promise } = concurrencyPool[index];
         return promise;
       }
     };
+    return descriptor;
   };
+};
