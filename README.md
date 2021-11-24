@@ -1,12 +1,26 @@
 [![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco/mod.ts)
 
-# Deco (**deh** · kow) is a lightweight helper library for [Deno](https://deno.land) developers (still work in progress)
+# Deco is a toolbelt for [Deno](https://deno.land) based web service developers
 
-- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Memoize)
-- REST @Http API helpers with OpenAPI support
+- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Cache)
+- REST @Http API helpers with OpenAPI and EventStream support
 - @Dapr helpers (Service, PubSub, Bindings, State, Secrets, Actor) for resilient cloud native Deno microservices/actors
 
-## Server [example](examples/example_server.ts)
+## Minimal Http server example
+```typescript
+
+@Http.ServerController()
+class Server {
+  @Http.Get()
+  hello() {}
+}
+
+Http.serve({
+  controllers: [Server],
+});
+```
+
+## More complex [example](examples/example_server.ts)
 ```typescript
 // curl http://localhost:8080/api
 // curl http://localhost:8080/api/1
