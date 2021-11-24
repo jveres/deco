@@ -1,6 +1,6 @@
 [![Deno doc](https://doc.deno.land/badge.svg)](https://doc.deno.land/https/deno.land/x/deco/mod.ts)
 
-# Deco is a toolbelt for [Deno](https://deno.land) developers, creating web service developers
+# Deco is a toolbelt for [Deno](https://deno.land) developers, creating web services
 
 - Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Cache)
 - REST @Http API helpers with OpenAPI and EventStream support
