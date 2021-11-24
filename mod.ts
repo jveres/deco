@@ -6,7 +6,7 @@ export * from "./decorators/concurrency.decorator.ts";
 export * from "./decorators/dapr.decorator.ts";
 export * from "./decorators/debounce.decorator.ts";
 export * from "./decorators/httpserver.decorator.ts";
-export * from "./decorators/memoize.decorator.ts";
+export * from "./decorators/cache.decorator.ts";
 export * from "./decorators/metadata.decorator.ts";
 export * from "./decorators/ratelimit.decorator.ts";
 export * from "./decorators/retry.decorator.ts";
