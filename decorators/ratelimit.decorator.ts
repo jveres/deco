@@ -40,7 +40,9 @@ export const RateLimit = (
         throw new RateLimitError("Rate limit exceeded");
       }
       ratelimiter.queue.push(Date.now());
-      args?.push({ ratelimit: { rate: ratelimiter.rate } });
-      return ratelimiter.fn.apply(this, args);
+      return ratelimiter.fn.apply(
+        this,
+        args.concat({ Ratelimit: { rate: ratelimiter.rate, interval } }),
+      );
     };
   };

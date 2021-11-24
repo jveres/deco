@@ -3,9 +3,8 @@
 // license that can be found in the LICENSE file.
 
 import { Timeout } from "../../decorators/timeout.decorator.ts";
-import { assertThrowsAsync } from "https://deno.land/std@0.115.1/testing/asserts.ts";
+import { assertRejects } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
-import { setColorEnabled } from "https://deno.land/std@0.115.1/fmt/colors.ts";
 
 class SomeClass {
   @Timeout(1000)
@@ -28,13 +27,12 @@ Deno.test({
   sanitizeOps: false,
   async fn(): Promise<void> {
     const c = new SomeClass();
-    setColorEnabled(false);
-    await assertThrowsAsync(
+    await assertRejects(
       async (): Promise<void> => {
         await c.doSomethingElse();
       },
       Error,
-      "Timeout (1000ms) exceeded for doSomething(…)",
+      "doSomething() exception, timed out after 1000ms",
     );
   },
 });

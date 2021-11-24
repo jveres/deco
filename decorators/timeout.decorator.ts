@@ -4,23 +4,26 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import * as Colors from "https://deno.land/std@0.115.1/fmt/colors.ts";
-import { stringFromPropertyKey } from "../utils/utils.ts";
+import {
+  AsyncMethodDecorator,
+  AsyncTypedPropertyDescriptor,
+  stringFromPropertyKey,
+} from "../utils/utils.ts";
 
 export const DEFAULT_TIMEOUT_MS = 10000;
+export class TimeoutError extends Error {}
 
 export const Timeout = (
   timeout: number = DEFAULT_TIMEOUT_MS,
-): MethodDecorator =>
+): AsyncMethodDecorator =>
   (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<any>,
-  ): void => {
-    const originalFn = descriptor.value;
+    descriptor: AsyncTypedPropertyDescriptor,
+  ) => {
+    const fn = descriptor.value!;
     descriptor.value = async function (...args: any[]) {
-      // Timeout wrapper function
-      const timeoutAsync = (
+      const timeoutFn = (
         fn: (...args: any[]) => any,
         args: any[],
         timeout: number,
@@ -32,38 +35,29 @@ export const Timeout = (
             id = setTimeout(() => {
               clearTimeout(id);
               abortController.abort();
-              reject(new Error("timeout"));
+              reject(new TimeoutError());
             }, timeout);
           }),
-          fn.apply(this, args.concat([{ timeout, abortController }])),
+          fn.apply(
+            this,
+            args.concat([{ Timeout: { timeout, abortController } }]),
+          ),
         ]).then((result) => {
           clearTimeout(id);
           return result;
         });
       };
-
       try {
-        return await timeoutAsync.apply(
-          this,
-          [
-            originalFn,
-            args,
-            timeout,
-          ],
-        );
-      } catch (e) {
-        if (e.message === "timeout") {
+        return await timeoutFn.apply(this, [fn, args, timeout]);
+      } catch (e: unknown) {
+        if (e instanceof TimeoutError) {
           e.message = `${
-            Colors.bold("Timeout (" + String(timeout) + "ms")
-          }) exceeded for ${
-            Colors.brightMagenta(
-              stringFromPropertyKey(propertyKey) +
-                "(…)",
-            )
-          }`;
+            stringFromPropertyKey(propertyKey)
+          }() exception, timed out after ${timeout}ms`;
           Error.captureStackTrace(e, descriptor.value);
         }
         throw e;
       }
     };
+    return descriptor;
   };

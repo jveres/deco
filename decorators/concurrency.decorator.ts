@@ -4,29 +4,26 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import { Fn, stringFromPropertyKey } from "../utils/utils.ts";
+import {
+  AsyncMethodDecorator,
+  AsyncTypedPropertyDescriptor,
+  Fn,
+  stringFromPropertyKey,
+} from "../utils/utils.ts";
 
 type ConcurrencyPoolItem = {
   key: string;
   promise: Promise<any>;
 };
 
-type ConcurrencyDecorator = {
-  (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<Fn<Promise<any>>>,
-  ): TypedPropertyDescriptor<Fn<Promise<any>>>;
-};
-
 export const Concurrency = ({ limit = 1, resolver }: {
   limit?: number;
   resolver?: Fn<string>;
-} = {}): ConcurrencyDecorator => {
+} = {}): AsyncMethodDecorator => {
   return (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<Fn<Promise<any>>>,
+    descriptor: AsyncTypedPropertyDescriptor,
   ) => {
     const fn = descriptor.value!;
     const concurrencyPool: ConcurrencyPoolItem[] = [];
@@ -36,8 +33,7 @@ export const Concurrency = ({ limit = 1, resolver }: {
         : stringFromPropertyKey(propertyKey);
       const count = concurrencyPool.filter((e) => e.key === key).length;
       if (count < limit) {
-        args.push({ concurrency: { limit } });
-        const promise = fn.apply(this, args);
+        const promise = fn.apply(this, args.concat({ Concurrency: { limit } }));
         promise.then((res: any) => {
           const index = concurrencyPool.findIndex((item) => item.key === key);
           if (index > -1) concurrencyPool.splice(index, 1);

@@ -12,6 +12,21 @@ export const Denque = denque as any;
 export const throttle = _throttle as any;
 export const debounce = _debounce as any;
 
+export type Fn<T> = (...args: any[]) => T;
+export type AsyncTypedPropertyDescriptor = TypedPropertyDescriptor<
+  Fn<Promise<any>>
+>;
+export type AsyncMethodDecorator = {
+  (
+    target: Object,
+    propertyKey: string | symbol,
+    descriptor: AsyncTypedPropertyDescriptor,
+  ): AsyncTypedPropertyDescriptor;
+};
+
+export const IsAsyncFunction = (fn: Function) =>
+  fn.constructor.name === "AsyncFunction";
+
 export const sleep = (wait: number) =>
   new Promise((resolve) => setTimeout(resolve, wait));
 
@@ -97,8 +112,3 @@ export function consoleLogHook(options: ConsoleLogHookOptions) {
     };
   }
 }
-
-export type Fn<T> = (...args: any[]) => T;
-
-export const IsAsyncFunction = (fn: Function) =>
-  fn.constructor.name === "AsyncFunction";
