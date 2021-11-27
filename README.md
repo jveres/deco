@@ -11,6 +11,8 @@
 ## Minimal Http server example
 
 ```typescript
+// curl localhost:8080/hello 
+// curl localhost:8080/metrics
 @Http.ServerController()
 class Server {
   @Http.Get()
