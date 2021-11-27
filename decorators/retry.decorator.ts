@@ -42,7 +42,6 @@ export const Retry = (
     descriptor: AsyncTypedPropertyDescriptor,
   ) => {
     const fn = descriptor.value!;
-    // set default value for ExponentialBackOffPolicy
     if (backOffPolicy === BackOffPolicy.ExponentialBackOffPolicy) {
       backOff ??= DEFAULT_BACKOFF_MS;
       exponentialOption = {
@@ -53,7 +52,6 @@ export const Retry = (
         ...exponentialOption,
       };
     }
-
     descriptor.value = async function (...args: any[]) {
       const retryAsync = async (
         fn: (...args: any[]) => any,
@@ -94,7 +92,6 @@ export const Retry = (
           ]);
         }
       };
-
       try {
         return await retryAsync.apply(
           this,
@@ -116,6 +113,5 @@ export const Retry = (
         throw e;
       }
     };
-
     return descriptor;
   };
