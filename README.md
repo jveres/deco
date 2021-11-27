@@ -314,7 +314,7 @@ Dapr.start({
 deno test --allow-net
 ```
 
-## Http server performance (~90k RPS on MBP/M1)
+## Http server performance, static route (~105k RPS on MBP/M1)
 
 ![Http server benchmark](images/bench.png)
 
