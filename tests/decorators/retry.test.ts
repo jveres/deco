@@ -4,7 +4,10 @@
 
 // deno-lint-ignore-file require-await
 
-import { DEFAULT_MAX_ATTEMPTS, Retry } from "../../decorators/retry.decorator.ts";
+import {
+  DEFAULT_MAX_ATTEMPTS,
+  Retry,
+} from "../../decorators/retry.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 
 class SomeClass {
@@ -43,7 +46,9 @@ Deno.test({
     assertEquals(c.i, 0);
     try {
       await c.retryDefault();
-    } catch {() => {}}
+    } catch {
+      (() => {});
+    }
     assertEquals(c.i, DEFAULT_MAX_ATTEMPTS + 1);
   },
 });
@@ -55,7 +60,9 @@ Deno.test({
     assertEquals(c.i, 0);
     try {
       await c.retryWithMaxAttempts();
-    } catch {() => {}}
+    } catch {
+      (() => {});
+    }
     assertEquals(c.i, 2);
   },
 });
@@ -69,7 +76,9 @@ Deno.test({
     assertEquals(c.i, 0);
     try {
       await c.retryWithBackOff();
-    } catch {() => {}}
+    } catch {
+      (() => {});
+    }
     assertEquals(c.i, 2);
     assertEquals<boolean>(performance.now() - t >= 1000, true);
   },

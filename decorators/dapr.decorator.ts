@@ -564,7 +564,7 @@ export class Actor {
       const res = await fetch(url, {
         headers: { "content-type": "application/json" },
       });
-      console.log(url)
+      console.log(url);
       if (res.status === 200) return await res.json();
       else if (res.status === 204 || res.status === 400) return;
       else {

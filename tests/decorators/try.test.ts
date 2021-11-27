@@ -92,7 +92,7 @@ Deno.test({
     await assertRejects(
       c.doSomething3,
       TypeError,
-      "fake type error"
+      "fake type error",
     );
   },
 });

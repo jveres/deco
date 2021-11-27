@@ -4,12 +4,16 @@
 
 // deno-lint-ignore-file ban-types
 
-export const hasMetadata = (target: object, key: string) => Reflect.has(target, key);
+export const hasMetadata = (target: object, key: string) =>
+  Reflect.has(target, key);
 
 export function getMetadata<T>(target: object, key: string): T | undefined;
 export function getMetadata<T>(target: object, key: string, defaultValue: T): T;
-export function getMetadata<T>(target: object, key: string, defaultValue?: unknown)
- {
+export function getMetadata<T>(
+  target: object,
+  key: string,
+  defaultValue?: unknown,
+) {
   if (!hasMetadata(target, key)) {
     if (defaultValue !== undefined) {
       setMetadata(target, key, defaultValue);

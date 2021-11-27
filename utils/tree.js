@@ -1,19 +1,9 @@
+// deno-lint-ignore-file no-this-alias
+
 const STATIC = 0;
 const ROOT = 1;
 const PARAM = 2;
 const CATCH_ALL = 3;
-
-/** @param {string} path */
-function countParams(path) {
-  let n = 0;
-  for (let i = 0; i < path.length; i++) {
-    if (path[i] === ":" || path[i] === "*") {
-      n++;
-    }
-  }
-
-  return n;
-}
 
 /**
  * Search for a wildcard segment and check the name for invalid characters.
@@ -35,7 +25,7 @@ function findWildcard(path) {
         return {
           wildcard: path.slice(i, i + 1 + end),
           i,
-          valid
+          valid,
         };
       }
       if (char === ":" || char === "*") {
@@ -46,14 +36,14 @@ function findWildcard(path) {
     return {
       wildcard: path.slice(i),
       i,
-      valid
+      valid,
     };
   }
 
   return {
     wildcard: "",
     i: -1,
-    valid: false
+    valid: false,
   };
 }
 
@@ -73,7 +63,6 @@ function longestCommonPrefix(a, b) {
 
 export default class Node {
   /**
-   *
    * @param {string} path
    * @param {boolean} wildChild
    * @param {number} type
@@ -89,7 +78,7 @@ export default class Node {
     indices = "",
     children = [],
     handle = null,
-    priority = 0
+    priority = 0,
   ) {
     this.path = path;
     this.wildChild = wildChild;
@@ -100,7 +89,6 @@ export default class Node {
     this.priority = priority;
   }
   /**
-   *
    * @param {number} pos
    */
   addPriority(pos) {
@@ -119,8 +107,7 @@ export default class Node {
 
     // Build new index char string
     if (newPos !== pos) {
-      this.indices =
-        this.indices.slice(0, newPos) +
+      this.indices = this.indices.slice(0, newPos) +
         this.indices[pos] +
         this.indices.slice(newPos, pos) +
         this.indices.slice(pos + 1);
@@ -136,7 +123,7 @@ export default class Node {
    */
   addRoute(path, handle, allowOverwrite = false) {
     let n = this;
-    let fullPath = path;
+    const fullPath = path;
     n.priority++;
 
     if (n.path.length === 0 && n.children.length === 0) {
@@ -145,107 +132,107 @@ export default class Node {
       return;
     }
 
-    walk: while (true) {
-      // Find the longest common prefix
-      // This also implies that the common prefix contains no ':' or '*'
-      // since the existing key can't contain those chars.
-      let i = longestCommonPrefix(path, n.path);
+    walk:
+      while (true) {
+        // Find the longest common prefix
+        // This also implies that the common prefix contains no ':' or '*'
+        // since the existing key can't contain those chars.
+        const i = longestCommonPrefix(path, n.path);
 
-      // Split edge
-      if (i < n.path.length) {
-        const child = new Node(
-          n.path.slice(i),
-          n.wildChild,
-          STATIC,
-          n.indices,
-          n.children,
-          n.handle,
-          n.priority - 1
-        );
+        // Split edge
+        if (i < n.path.length) {
+          const child = new Node(
+            n.path.slice(i),
+            n.wildChild,
+            STATIC,
+            n.indices,
+            n.children,
+            n.handle,
+            n.priority - 1,
+          );
 
-        n.children = [child];
-        n.indices = n.path[i];
-        n.path = path.slice(0, i);
-        n.handle = null;
-        n.wildChild = false;
-      }
+          n.children = [child];
+          n.indices = n.path[i];
+          n.path = path.slice(0, i);
+          n.handle = null;
+          n.wildChild = false;
+        }
 
-      // Make new node a child of this node
-      if (i < path.length) {
-        path = path.slice(i);
+        // Make new node a child of this node
+        if (i < path.length) {
+          path = path.slice(i);
 
-        if (n.wildChild) {
-          n = n.children[0];
-          n.priority++;
+          if (n.wildChild) {
+            n = n.children[0];
+            n.priority++;
 
-          // Check if the wildcard matches
-          if (
-            path.length >= n.path.length &&
-            n.path === path.slice(0, n.path.length) &&
-            // Adding a child to a catchAll is not possible
-            n.type !== CATCH_ALL &&
-            (n.path.length >= path.length || path[n.path.length] === "/")
-          ) {
-            continue walk;
-          } else {
-            // Wildcard conflict
-            let pathSeg = path;
-            if (n.type !== CATCH_ALL) {
-              pathSeg = path.split("/")[0];
+            // Check if the wildcard matches
+            if (
+              path.length >= n.path.length &&
+              n.path === path.slice(0, n.path.length) &&
+              // Adding a child to a catchAll is not possible
+              n.type !== CATCH_ALL &&
+              (n.path.length >= path.length || path[n.path.length] === "/")
+            ) {
+              continue walk;
+            } else {
+              // Wildcard conflict
+              let pathSeg = path;
+              if (n.type !== CATCH_ALL) {
+                pathSeg = path.split("/")[0];
+              }
+              const prefix = fullPath.slice(0, fullPath.indexOf(pathSeg)) +
+                n.path;
+              throw new Error(
+                `'${pathSeg}' in new path '${fullPath}' conflicts with existing wildcard '${n.path}' in existing prefix '${prefix}'`,
+              );
             }
-            const prefix =
-              fullPath.slice(0, fullPath.indexOf(pathSeg)) + n.path;
-            throw new Error(
-              `'${pathSeg}' in new path '${fullPath}' conflicts with existing wildcard '${n.path}' in existing prefix '${prefix}'`
-            );
           }
-        }
 
-        const c = path[0];
+          const c = path[0];
 
-        // Slash after param
-        if (n.type === PARAM && c === "/" && n.children.length === 1) {
-          n = n.children[0];
-          n.priority++;
-          continue walk;
-        }
-
-        // Check if a child with the next path char exists
-        for (let j = 0; j < n.indices.length; j++) {
-          if (c === n.indices[j]) {
-            j = n.addPriority(j);
-            n = n.children[j];
+          // Slash after param
+          if (n.type === PARAM && c === "/" && n.children.length === 1) {
+            n = n.children[0];
+            n.priority++;
             continue walk;
           }
+
+          // Check if a child with the next path char exists
+          for (let j = 0; j < n.indices.length; j++) {
+            if (c === n.indices[j]) {
+              j = n.addPriority(j);
+              n = n.children[j];
+              continue walk;
+            }
+          }
+
+          // Otherwise insert it
+          if (c !== ":" && c !== "*") {
+            n.indices += c;
+            const child = new Node("", false, STATIC);
+            n.children.push(child);
+            n.addPriority(n.indices.length - 1);
+            n = child;
+          }
+          n.insertChild(path, fullPath, handle);
+          return;
         }
 
-        // Otherwise insert it
-        if (c !== ":" && c !== "*") {
-          n.indices += c;
-          const child = new Node("", false, STATIC);
-          n.children.push(child);
-          n.addPriority(n.indices.length - 1);
-          n = child;
+        if (n.handle !== null) {
+          if (allowOverwrite === false) {
+            throw new Error(
+              "A handle is already registered for path '" + fullPath + "'",
+            );
+          } else {
+            return true;
+          }
         }
-        n.insertChild(path, fullPath, handle);
+        n.handle = handle;
         return;
       }
-
-      if (n.handle !== null) {
-        if (allowOverwrite === false) {
-          throw new Error(
-            "A handle is already registered for path '" + fullPath + "'"
-          );
-        } else {
-          return true;
-        }
-      }
-      n.handle = handle;
-      return;
-    }
   }
   /**
-   *
    * @param {string} path
    * @param {string} fullPath
    * @param {function} handle
@@ -258,7 +245,7 @@ export default class Node {
       let {
         wildcard,
         i,
-        valid
+        valid,
       } = findWildcard(path);
       if (i < 0) {
         break;
@@ -270,7 +257,7 @@ export default class Node {
           wildcard +
           "' in path '" +
           fullPath +
-          "'"
+          "'",
         );
       }
 
@@ -278,7 +265,7 @@ export default class Node {
         throw new Error(
           "wildcards must be named with a non-empty name in path '" +
           fullPath +
-          "'"
+          "'",
         );
       }
 
@@ -288,7 +275,7 @@ export default class Node {
           wildcard +
           "' conflicts with existing children in path '" +
           fullPath +
-          "'"
+          "'",
         );
       }
 
@@ -324,7 +311,7 @@ export default class Node {
           throw new Error(
             "catch-all routes are only allowed at the end of the path in path '" +
             fullPath +
-            "'"
+            "'",
           );
         }
 
@@ -332,7 +319,7 @@ export default class Node {
           throw new Error(
             "catch-all conflicts with existing handle for the path segment root in path '" +
             fullPath +
-            "'"
+            "'",
           );
         }
 
@@ -359,7 +346,7 @@ export default class Node {
           "",
           [],
           handle,
-          1
+          1,
         );
         n.children = [child];
 
@@ -372,7 +359,6 @@ export default class Node {
     n.handle = handle;
   }
   /**
-   *
    * @param {string} path
    */
   search(path) {
@@ -380,89 +366,92 @@ export default class Node {
     const params = [];
     let n = this;
 
-    walk: while (true) {
-      if (path.length > n.path.length) {
-        if (path.slice(0, n.path.length) === n.path) {
-          path = path.slice(n.path.length);
-          // If this node does not have a wildcard child,
-          // we can just look up the next child node and continue
-          // to walk down the tree
-          if (!n.wildChild) {
-            const c = path.charCodeAt(0);
-            for (let i = 0; i < n.indices.length; i++) {
-              if (c === n.indices.charCodeAt(i)) {
-                n = n.children[i];
-                continue walk;
-              }
-            }
-
-            // Nothing found.
-            return {
-              handle,
-              params
-            };
-          }
-
-          // Handle wildcard child
-          n = n.children[0];
-          switch (n.type) {
-            case PARAM:
-              // Find param end
-              let end = 0;
-              while (end < path.length && path.charCodeAt(end) !== 47) {
-                end++;
-              }
-
-              // Save param value
-              params.push({
-                key: n.path.slice(1),
-                value: path.slice(0, end)
-              });
-
-              // We need to go deeper!
-              if (end < path.length) {
-                if (n.children.length > 0) {
-                  path = path.slice(end);
-                  n = n.children[0];
+    walk:
+      while (true) {
+        if (path.length > n.path.length) {
+          if (path.slice(0, n.path.length) === n.path) {
+            path = path.slice(n.path.length);
+            // If this node does not have a wildcard child,
+            // we can just look up the next child node and continue
+            // to walk down the tree
+            if (!n.wildChild) {
+              const c = path.charCodeAt(0);
+              for (let i = 0; i < n.indices.length; i++) {
+                if (c === n.indices.charCodeAt(i)) {
+                  n = n.children[i];
                   continue walk;
                 }
-
-                // ... but we can't
-                return {
-                  handle,
-                  params
-                };
               }
 
-              handle = n.handle;
-
+              // Nothing found.
               return {
-                handle, params
+                handle,
+                params,
               };
+            }
 
-            case CATCH_ALL:
-              params.push({
-                key: n.path.slice(2),
-                value: path
-              });
+            // Handle wildcard child
+            n = n.children[0];
+            switch (n.type) {
+              case PARAM: {
+                // Find param end
+                let end = 0;
+                while (end < path.length && path.charCodeAt(end) !== 47) {
+                  end++;
+                }
 
-              handle = n.handle;
-              return {
-                handle, params
-              };
+                // Save param value
+                params.push({
+                  key: n.path.slice(1),
+                  value: path.slice(0, end),
+                });
 
-            default:
-              throw new Error("invalid node type");
+                // We need to go deeper!
+                if (end < path.length) {
+                  if (n.children.length > 0) {
+                    path = path.slice(end);
+                    n = n.children[0];
+                    continue walk;
+                  }
+
+                  // ... but we can't
+                  return {
+                    handle,
+                    params,
+                  };
+                }
+
+                handle = n.handle;
+
+                return {
+                  handle,
+                  params,
+                };
+              }
+              case CATCH_ALL:
+                params.push({
+                  key: n.path.slice(2),
+                  value: path,
+                });
+
+                handle = n.handle;
+                return {
+                  handle,
+                  params,
+                };
+
+              default:
+                throw new Error("invalid node type");
+            }
           }
+        } else if (path === n.path) {
+          handle = n.handle;
         }
-      } else if (path === n.path) {
-        handle = n.handle;
-      }
 
-      return {
-        handle,
-        params
-      };
-    }
+        return {
+          handle,
+          params,
+        };
+      }
   }
 }

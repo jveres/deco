@@ -2,13 +2,15 @@
 
 # Deco is a toolbelt for [Deno](https://deno.land) developers, for creating web services
 
-- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle, @RateLimit, @Concurrecy, @Cache)
+- Fault tolerance helpers (@Timeout, @Retry, @Try, @Trace, @Debounce, @Throttle,
+  @RateLimit, @Concurrecy, @Cache)
 - REST @Http API helpers with OpenAPI and EventStream support
-- @Dapr helpers (Service, PubSub, Bindings, State, Secrets, Actor) for resilient cloud native Deno microservices/actors
+- @Dapr helpers (Service, PubSub, Bindings, State, Secrets, Actor) for resilient
+  cloud native Deno microservices/actors
 
 ## Minimal Http server example
-```typescript
 
+```typescript
 @Http.ServerController()
 class Server {
   @Http.Get()
@@ -21,6 +23,7 @@ Http.serve({
 ```
 
 ## More complex [example](examples/example_server.ts)
+
 ```typescript
 // curl http://localhost:8080/api
 // curl http://localhost:8080/api/1
@@ -109,6 +112,7 @@ Http.serve({
 ```
 
 ## [Dapr](https://dapr.io) [example](examples/dapr/example_dapr.ts)
+
 ```typescript
 // Start Dapr sidecar in local environment:
 //    dapr run --app-id sidecar --dapr-http-port 3500 --components-path ./components
@@ -225,11 +229,21 @@ class TestActor1 {
   }
 
   @Actor.event()
-  async deactivate({ actorType, actorId }: { actorType: string; actorId: string }) {
+  async deactivate(
+    { actorType, actorId }: { actorType: string; actorId: string },
+  ) {
     console.log("TestActor1 deactivation", this);
-    const reminder = await Actor.getReminder({actorType, actorId, reminderName: "reminder"});
+    const reminder = await Actor.getReminder({
+      actorType,
+      actorId,
+      reminderName: "reminder",
+    });
     console.log("reminder =>", reminder);
-    await Actor.deleteReminder({ actorType, actorId, reminderName: "reminder" });
+    await Actor.deleteReminder({
+      actorType,
+      actorId,
+      reminderName: "reminder",
+    });
   }
 
   @Actor.event()
@@ -291,11 +305,15 @@ Dapr.start({
   ],
 });
 ```
+
 ## Running tests
+
 ```sh
 deno test --allow-net
 ```
+
 ## Http server performance (~90k RPS on MBP/M1)
+
 ![Http server benchmark](images/bench.png)
 
 ![Alt](https://repobeats.axiom.co/api/embed/65f6f2f7d5aacd6dd7e28591bd3878d151d34f6a.svg "Repobeats analytics image")

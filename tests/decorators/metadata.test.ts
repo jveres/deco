@@ -27,6 +27,6 @@ Deno.test({
     assertEquals(meta.constructor.name, "Array");
     assertEquals(meta, ["defaultValue1"]);
     meta.push("defaultValue2");
-    assertEquals(getMetadata(C, key), ["defaultValue1","defaultValue2"]);
+    assertEquals(getMetadata(C, key), ["defaultValue1", "defaultValue2"]);
   },
 });

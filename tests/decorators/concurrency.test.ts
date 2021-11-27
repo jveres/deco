@@ -65,7 +65,12 @@ Deno.test({
     }
     await Promise.all(promises);
     const distincts = promises.filter((n, i) => promises.indexOf(n) === i);
-    assertEquals(distincts, [promises[0], promises[1], promises[4], promises[8]]);
+    assertEquals(distincts, [
+      promises[0],
+      promises[1],
+      promises[4],
+      promises[8],
+    ]);
   },
 });
 

@@ -45,7 +45,7 @@ Deno.test({
     const c = new SomeClass();
     for (let i = 0; i < 10; ++i) {
       try {
-        await c.asyncMethodTest2(100);
+        await c.asyncMethodTest2(150);
       } catch {}
     }
     assertEquals(c.count, 10);
