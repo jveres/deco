@@ -6,7 +6,7 @@ import { Trace } from "../../decorators/trace.decorator.ts";
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.115.1/testing/asserts.ts";
+} from "https://deno.land/std@0.116.0/testing/asserts.ts";
 
 class SomeClass {
   @Trace()

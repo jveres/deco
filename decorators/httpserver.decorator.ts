@@ -7,11 +7,11 @@
 import { HttpMethod, Router } from "../utils/Router.ts";
 import { documentationHTML, loadOpenAPISchema } from "../utils/openapi.ts";
 import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
-import { parse as yamlParse } from "https://deno.land/std@0.115.1/encoding/yaml.ts";
-import * as path from "https://deno.land/std@0.115.1/path/mod.ts";
+import { parse as yamlParse } from "https://deno.land/std@0.116.0/encoding/yaml.ts";
+import * as path from "https://deno.land/std@0.116.0/path/mod.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import { stringFromPropertyKey } from "../utils/utils.ts";
-import { decode as base64Decode } from "https://deno.land/std@0.115.1/encoding/base64.ts";
+import { decode as base64Decode } from "https://deno.land/std@0.116.0/encoding/base64.ts";
 import { RateLimit, RateLimitError } from "./ratelimit.decorator.ts";
 
 export type FavIcon = {
@@ -347,25 +347,27 @@ export class Http {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           Http.metrics.requests++;
-          Http.metrics.connections++;
-          const url = new URL(http.request.url);
-          const { action, params } = Http.router.find(
-            http.request.method,
-            url.pathname,
-          );
-          const { body = "", init } = await action.handler.apply(
-            action.target,
-            [{ ...params, url, request: http.request }],
-          ) || {};
-          http.respondWith(new Response(body, init))
-            .catch((err: unknown) => {
-              if (err instanceof Error && err.name === "Http") {
-                console.warn(`Http.serve() warning: ${err.message}`);
-              } else {
-                throw err;
-              }
-            })
-            .finally(() => Http.metrics.connections--);
+          try {
+            Http.metrics.connections++;
+            const url = new URL(http.request.url);
+            const { action, params } = Http.router.find(
+              http.request.method,
+              url.pathname,
+            );
+            const { body, init } = await action.handler.apply(
+              action.target,
+              [{ ...params, url, request: http.request }],
+            ) || {};
+            await http.respondWith(new Response(body, init));
+          } catch (err: unknown) {
+            if (err instanceof Error && err.name === "Http") {
+              console.warn(`Http.serve() warning: ${err.message}`);
+            } else {
+              throw err;
+            }
+          } finally {
+            Http.metrics.connections--;
+          }
         }
       })();
     }

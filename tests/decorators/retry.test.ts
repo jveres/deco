@@ -8,7 +8,7 @@ import {
   DEFAULT_MAX_ATTEMPTS,
   Retry,
 } from "../../decorators/retry.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.116.0/testing/asserts.ts";
 
 class SomeClass {
   public i = 0;

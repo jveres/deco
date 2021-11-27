@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-empty
 
 import { RateLimit } from "../../decorators/ratelimit.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.116.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
 class SomeClass {
