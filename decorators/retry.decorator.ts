@@ -4,55 +4,57 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import { sleep, stringFromPropertyKey } from "../utils/utils.ts";
-import * as Colors from "https://deno.land/std@0.115.1/fmt/colors.ts";
+import {
+  AsyncMethodDecorator,
+  AsyncTypedPropertyDescriptor,
+  sleep,
+  stringFromPropertyKey,
+} from "../utils/utils.ts";
 
 export const DEFAULT_MAX_ATTEMPTS = 3;
 export const DEFAULT_BACKOFF_MS = 1000;
 export const DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS = 2000;
 export const DEFAULT_EXPONENTIAL_MULTIPLIER = 2;
 
-export interface RetryOptions {
-  maxAttempts: number;
-  backOffPolicy?: BackOffPolicy;
-  backOff?: number;
-  doRetry?: (e: any) => boolean;
-  exponentialOption?: { maxInterval: number; multiplier: number };
-}
-
 export enum BackOffPolicy {
   FixedBackOffPolicy = "FixedBackOffPolicy",
   ExponentialBackOffPolicy = "ExponentialBackOffPolicy",
 }
 
-/**
- * Retry decorator
- *
- * @param options the 'RetryOptions'
- */
 export const Retry = (
-  options: RetryOptions = { maxAttempts: DEFAULT_MAX_ATTEMPTS },
-): MethodDecorator =>
+  {
+    maxAttempts = DEFAULT_MAX_ATTEMPTS,
+    backOffPolicy,
+    backOff,
+    doRetry,
+    exponentialOption,
+  }: {
+    maxAttempts?: number;
+    backOffPolicy?: BackOffPolicy;
+    backOff?: number;
+    doRetry?: (err: unknown) => boolean;
+    exponentialOption?: { maxInterval: number; multiplier: number };
+  } = {},
+): AsyncMethodDecorator =>
   (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<any>,
-  ): void => {
-    const originalFn = descriptor.value;
+    descriptor: AsyncTypedPropertyDescriptor,
+  ) => {
+    const fn = descriptor.value!;
     // set default value for ExponentialBackOffPolicy
-    if (options.backOffPolicy === BackOffPolicy.ExponentialBackOffPolicy) {
-      !options.backOff && (options.backOff = DEFAULT_BACKOFF_MS);
-      options.exponentialOption = {
+    if (backOffPolicy === BackOffPolicy.ExponentialBackOffPolicy) {
+      backOff ??= DEFAULT_BACKOFF_MS;
+      exponentialOption = {
         ...{
           maxInterval: DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS,
           multiplier: DEFAULT_EXPONENTIAL_MULTIPLIER,
         },
-        ...options.exponentialOption,
+        ...exponentialOption,
       };
     }
 
     descriptor.value = async function (...args: any[]) {
-      // Retry async wrapper function
       const retryAsync = async (
         fn: (...args: any[]) => any,
         args: any[],
@@ -72,14 +74,14 @@ export const Retry = (
           if (backOff) {
             await sleep(backOff);
             if (
-              options.backOffPolicy ===
+              backOffPolicy ===
                 BackOffPolicy.ExponentialBackOffPolicy &&
-              options.exponentialOption
+              exponentialOption
             ) {
               const newBackOff: number = backOff *
-                options.exponentialOption.multiplier;
-              backOff = newBackOff > options.exponentialOption.maxInterval
-                ? options.exponentialOption.maxInterval
+                exponentialOption.multiplier;
+              backOff = newBackOff > exponentialOption.maxInterval
+                ? exponentialOption.maxInterval
                 : newBackOff;
             }
           }
@@ -97,21 +99,23 @@ export const Retry = (
         return await retryAsync.apply(
           this,
           [
-            originalFn,
+            fn,
             args,
-            options.maxAttempts,
-            options.backOff,
-            options.doRetry,
+            maxAttempts,
+            backOff,
+            doRetry,
           ],
         );
       } catch (e) {
         if (e.message === "maxAttempts") {
           e.code = "429";
-          e.message = `${Colors.brightRed("Failed")} for ${
-            Colors.brightMagenta(stringFromPropertyKey(propertyKey) + "(…)")
-          } for ${Colors.brightYellow(options.maxAttempts.toString())} times.`;
+          e.message = `${
+            stringFromPropertyKey(propertyKey)
+          }() error, retry failed for ${maxAttempts} times.`;
         }
         throw e;
       }
     };
+
+    return descriptor;
   };

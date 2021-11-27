@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file require-await
+
 import { DEFAULT_MAX_ATTEMPTS, Retry } from "../../decorators/retry.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.115.1/testing/asserts.ts";
 
@@ -13,13 +15,13 @@ class SomeClass {
   }
 
   @Retry()
-  retryDefault() {
+  async retryDefault() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
 
   @Retry({ maxAttempts: 1 })
-  retryWithMaxAttempts() {
+  async retryWithMaxAttempts() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
@@ -28,7 +30,7 @@ class SomeClass {
     maxAttempts: 1,
     backOff: 1000,
   })
-  retryWithBackOff() {
+  async retryWithBackOff() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
