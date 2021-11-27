@@ -8,6 +8,7 @@
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
+import { DECO_VERSION } from "../mod.ts";
 
 @Http.ServerController({ schema: { fileName: "api.yaml" } })
 class ExampleOpenAPI {}
@@ -85,7 +86,7 @@ class ExampleLimits {
   ratelimited() {}
 }
 
-console.log("Server started...");
+console.log(`Deco (v${DECO_VERSION}) http server started...`);
 Http.serve({
   controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream, ExampleLimits],
 });
