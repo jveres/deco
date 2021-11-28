@@ -5,6 +5,7 @@
 // curl http://localhost:8080/api
 // curl http://localhost:8080/api/1
 // curl -v -X POST "http://localhost:8080/api?q=1" -d "test data" -H "x-access-token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZGVjbyJ9.ae9rDEkN3goWCuc1-Dsbm9lX7kVJPHC8dlnKMFI1Gs-Y26kvGGo0UyQkMih0-zicLgx1viGLSufwfOctC1nWLQ"
+// curl --raw -X GET http://localhost:8080/chunked
 
 import { Http } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
@@ -75,6 +76,14 @@ class ExampleStream {
     while (true) {
       await sleep(1000);
       yield `event: tick\ndata: ${new Date().toISOString()}\n\n\n`;
+    }
+  }
+ 
+  @Http.Chunked()
+  async *chunked() {
+    for (let i = 1; i < 11; i++) {
+      yield `chunk #${i}`;
+      await sleep(1000);
     }
   }
 }

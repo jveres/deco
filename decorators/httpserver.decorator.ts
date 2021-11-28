@@ -29,6 +29,8 @@ export const DEFAULT_FAVICON: FavIcon = {
 export interface HttpMetrics {
   connections: number;
   requests: number;
+  listeners: number;
+  sockets: number;
   cpus: number;
   memory: Deno.MemoryUsage;
   opsDispatched: number;
@@ -232,6 +234,43 @@ export class Http {
     };
   }
 
+  static Chunked(
+    path?: string,
+  ): MethodDecorator {
+    return (
+      target: object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ): void => {
+      path ??= `/${stringFromPropertyKey(propertyKey)}`;
+      getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
+        method: "GET",
+        path,
+        handler: function (...args: any[]) {
+          const that = getMetadata<object>(target, Http.TARGET_KEY);
+          const stream = new ReadableStream({
+            async start(controller) {
+              Object.assign(args[0], { controller });
+              for await (const chunk of descriptor.value.apply(that, args)) {
+                controller.enqueue(chunk);
+              }
+              controller.close();
+            },
+          });
+          return {
+            body: stream.pipeThrough(new TextEncoderStream()),
+            init: {
+              headers: {
+                "content-type": "text/plain; charset=UTF-8",
+                "transfer-encoding": "chunked",
+              },
+            },
+          };
+        },
+      });
+    };
+  }
+
   static RateLimit({ rps }: { rps: number }): MethodDecorator {
     return (
       target: object,
@@ -261,6 +300,8 @@ export class Http {
   static metrics: HttpMetrics = {
     connections: 0,
     requests: 0,
+    listeners: 0,
+    sockets: 0,
     cpus: navigator.hardwareConcurrency,
     memory: { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 },
     opsDispatched: 0,
@@ -310,6 +351,19 @@ export class Http {
             Http.metrics.memory = Deno.memoryUsage();
             Http.metrics.opsDispatched = metrics.opsDispatched;
             Http.metrics.opsCompleted = metrics.opsCompleted;
+            const resources = Deno.resources();
+            Http.metrics.connections = Object.values(resources).reduce(
+              (n, x) => n + (x === "httpStream"),
+              0,
+            );
+            Http.metrics.listeners = Object.values(resources).reduce(
+              (n, x) => n + (x === "tcpListener"),
+              0,
+            );
+            Http.metrics.sockets = Object.values(resources).reduce(
+              (n, x) => n + (x === "httpConn"),
+              0,
+            );
             return {
               body: JSON.stringify(Http.metrics),
               init: { headers: { "content-type": "application/json" } },
@@ -348,7 +402,6 @@ export class Http {
         for await (const http of Deno.serveHttp(conn)) {
           try {
             Http.metrics.requests++;
-            Http.metrics.connections++;
             const url = new URL(http.request.url);
             const { action, params } = Http.router.find(
               http.request.method,
@@ -365,8 +418,6 @@ export class Http {
             } else {
               throw err;
             }
-          } finally {
-            Http.metrics.connections--;
           }
         }
       })();
