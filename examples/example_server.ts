@@ -72,18 +72,18 @@ class ExampleCustomAPI {
 class ExampleStream {
   @Http.EventStream()
   async *stream() {
-    yield ": Hello from stream\n\n";
+    yield ": Hello from stream";
     while (true) {
       await sleep(1000);
-      yield `event: tick\ndata: ${new Date().toISOString()}\n\n\n`;
+      yield Http.SSE({ event: "tick", data: new Date().toISOString() });
     }
   }
- 
+
   @Http.Chunked()
   async *chunked() {
     for (let i = 1; i < 11; i++) {
-      yield `chunk #${i}`;
       await sleep(1000);
+      yield `chunk #${i}`;
     }
   }
 }

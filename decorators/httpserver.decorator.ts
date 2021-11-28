@@ -27,14 +27,20 @@ export const DEFAULT_FAVICON: FavIcon = {
 };
 
 export interface HttpMetrics {
-  connections: number;
   requests: number;
-  listeners: number;
-  sockets: number;
+  tcp: {
+    listeners: number;
+  };
+  http: {
+    streams: number;
+    connections: number;
+  };
   cpus: number;
   memory: Deno.MemoryUsage;
-  opsDispatched: number;
-  opsCompleted: number;
+  ops: {
+    dispatched: number;
+    completed: number;
+  };
 }
 
 export class Http {
@@ -198,6 +204,13 @@ export class Http {
     };
   }
 
+  static SSE({ event, data }: { event?: string; data: string | string[] }) {
+    let res = event ? `event: ${event}\n` : "";
+    if (typeof data === "string") res += `data: ${data}\n`;
+    else data.map((data) => res += `data: ${data}\n`);
+    return res;
+  }
+
   static EventStream(
     path?: string,
   ): MethodDecorator {
@@ -216,7 +229,7 @@ export class Http {
             async start(controller) {
               Object.assign(args[0], { controller });
               for await (const event of descriptor.value.apply(that, args)) {
-                controller.enqueue(event);
+                controller.enqueue(`${event}\n\n`);
               }
             },
           });
@@ -298,14 +311,20 @@ export class Http {
   }
 
   static metrics: HttpMetrics = {
-    connections: 0,
     requests: 0,
-    listeners: 0,
-    sockets: 0,
+    tcp: {
+      listeners: 0,
+    },
+    http: {
+      streams: 0,
+      connections: 0,
+    },
     cpus: navigator.hardwareConcurrency,
     memory: { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 },
-    opsDispatched: 0,
-    opsCompleted: 0,
+    ops: {
+      dispatched: 0,
+      completed: 0,
+    },
   };
 
   static async serve(
@@ -349,19 +368,19 @@ export class Http {
           handler: () => {
             const metrics = Deno.metrics();
             Http.metrics.memory = Deno.memoryUsage();
-            Http.metrics.opsDispatched = metrics.opsDispatched;
-            Http.metrics.opsCompleted = metrics.opsCompleted;
+            Http.metrics.ops.dispatched = metrics.opsDispatched;
+            Http.metrics.ops.completed = metrics.opsCompleted;
             const resources = Deno.resources();
-            Http.metrics.connections = Object.values(resources).reduce(
+            Http.metrics.http.streams = Object.values(resources).reduce(
               (n, x) => n + (x === "httpStream"),
               0,
             );
-            Http.metrics.listeners = Object.values(resources).reduce(
-              (n, x) => n + (x === "tcpListener"),
+            Http.metrics.http.connections = Object.values(resources).reduce(
+              (n, x) => n + (x === "httpConn"),
               0,
             );
-            Http.metrics.sockets = Object.values(resources).reduce(
-              (n, x) => n + (x === "httpConn"),
+            Http.metrics.tcp.listeners = Object.values(resources).reduce(
+              (n, x) => n + (x === "tcpListener"),
               0,
             );
             return {
