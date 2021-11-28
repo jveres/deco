@@ -346,8 +346,8 @@ export class Http {
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
-          Http.metrics.requests++;
           try {
+            Http.metrics.requests++;
             Http.metrics.connections++;
             const url = new URL(http.request.url);
             const { action, params } = Http.router.find(

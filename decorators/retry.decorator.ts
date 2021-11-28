@@ -16,6 +16,8 @@ export const DEFAULT_BACKOFF_MS = 1000;
 export const DEFAULT_MAX_EXPONENTIAL_INTERVAL_MS = 2000;
 export const DEFAULT_EXPONENTIAL_MULTIPLIER = 2;
 
+export class RetryError extends Error {}
+
 export enum BackOffPolicy {
   FixedBackOffPolicy = "FixedBackOffPolicy",
   ExponentialBackOffPolicy = "ExponentialBackOffPolicy",
@@ -56,18 +58,22 @@ export const Retry = (
       const retryAsync = async (
         fn: (...args: any[]) => any,
         args: any[],
-        maxAttempts: number,
+        attempts: number,
         backOff?: number,
         doRetry?: (e: any) => boolean,
       ): Promise<any> => {
         try {
           return await fn.apply(this, args);
-        } catch (e) {
-          if (--maxAttempts < 0) {
-            console.error(e?.message);
-            throw new Error("maxAttempts");
-          } else if (doRetry && !doRetry(e)) {
-            throw e;
+        } catch (err: unknown) {
+          if (--attempts < 0) {
+            throw new RetryError(
+              `${stringFromPropertyKey(propertyKey)}() failed ${
+                maxAttempts + 1
+              } times`,
+              { cause: err },
+            );
+          } else if (doRetry && !doRetry(err)) {
+            throw err;
           }
           if (backOff) {
             await sleep(backOff);
@@ -86,32 +92,22 @@ export const Retry = (
           return retryAsync.apply(this, [
             fn,
             args,
-            maxAttempts,
+            attempts,
             backOff,
             doRetry,
           ]);
         }
       };
-      try {
-        return await retryAsync.apply(
-          this,
-          [
-            fn,
-            args,
-            maxAttempts,
-            backOff,
-            doRetry,
-          ],
-        );
-      } catch (e) {
-        if (e.message === "maxAttempts") {
-          e.code = "429";
-          e.message = `${
-            stringFromPropertyKey(propertyKey)
-          }() error, retry failed for ${maxAttempts} times.`;
-        }
-        throw e;
-      }
+      return await retryAsync.apply(
+        this,
+        [
+          fn,
+          args,
+          maxAttempts,
+          backOff,
+          doRetry,
+        ],
+      );
     };
     return descriptor;
   };

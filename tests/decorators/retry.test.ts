@@ -13,24 +13,20 @@ import { assertEquals } from "https://deno.land/std@0.116.0/testing/asserts.ts";
 class SomeClass {
   public i = 0;
 
-  reset_i() {
-    this.i = 0;
-  }
-
   @Retry()
   async retryDefault() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
 
-  @Retry({ maxAttempts: 1 })
+  @Retry({ maxAttempts: 3 })
   async retryWithMaxAttempts() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
 
   @Retry({
-    maxAttempts: 1,
+    maxAttempts: 2,
     backOff: 1000,
   })
   async retryWithBackOff() {
@@ -54,7 +50,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@Retry() with maxAttempts=1",
+  name: "@Retry() with maxAttempts=3",
   async fn(): Promise<void> {
     const c = new SomeClass();
     assertEquals(c.i, 0);
@@ -63,7 +59,7 @@ Deno.test({
     } catch {
       (() => {});
     }
-    assertEquals(c.i, 2);
+    assertEquals(c.i, 4);
   },
 });
 
@@ -76,10 +72,10 @@ Deno.test({
     assertEquals(c.i, 0);
     try {
       await c.retryWithBackOff();
-    } catch {
-      (() => {});
+    } catch (err) {
+      console.log(err);
     }
-    assertEquals(c.i, 2);
-    assertEquals<boolean>(performance.now() - t >= 1000, true);
+    assertEquals(c.i, 3);
+    assertEquals<boolean>(performance.now() - t >= 2000, true);
   },
 });
