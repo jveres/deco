@@ -4,12 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import {
-  AsyncMethodDecorator,
-  AsyncTypedPropertyDescriptor,
-  Fn,
-  stringFromPropertyKey,
-} from "../utils/utils.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
 type ConcurrencyPoolItem = {
   key: string;
@@ -18,12 +13,12 @@ type ConcurrencyPoolItem = {
 
 export const Concurrency = ({ limit = 1, resolver }: {
   limit?: number;
-  resolver?: Fn<string>;
-} = {}): AsyncMethodDecorator => {
+  resolver?: (...args: any[]) => string;
+} = {}) => {
   return (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: AsyncTypedPropertyDescriptor,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>,
   ) => {
     const fn = descriptor.value!;
     const concurrencyPool: ConcurrencyPoolItem[] = [];
@@ -47,6 +42,5 @@ export const Concurrency = ({ limit = 1, resolver }: {
         return promise;
       }
     };
-    return descriptor;
   };
 };

@@ -8,12 +8,12 @@ import { sleep } from "../../utils/utils.ts";
 
 class SomeClass {
   @Timeout(1000)
-  async doSomething(): Promise<string> {
+  async doSomething() {
     await sleep(2000);
     return "result";
   }
 
-  async doSomethingElse(): Promise<string> {
+  async doSomethingElse() {
     console.log("start...");
     const res = await this.doSomething();
     console.log(`...done with "${res}"`);

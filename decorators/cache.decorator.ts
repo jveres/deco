@@ -4,10 +4,10 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import { Fn, IsAsyncFunction, LruCache } from "../utils/utils.ts";
+import { IsAsyncFunction, LruCache } from "../utils/utils.ts";
 
 export const Cache = ({ resolver, ttl }: {
-  resolver?: Fn<string>;
+  resolver?: (...args: any[]) => string;
   ttl?: number;
 } = {}): MethodDecorator =>
   (

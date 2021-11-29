@@ -10,11 +10,7 @@ import { getMetadata, hasMetadata, setMetadata } from "./metadata.decorator.ts";
 import { parse as yamlParse } from "https://deno.land/std@0.116.0/encoding/yaml.ts";
 import * as path from "https://deno.land/std@0.116.0/path/mod.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
-import {
-  AsyncGeneratorMethodDecorator,
-  AsyncGeneratorTypedPropertyDescriptor,
-  stringFromPropertyKey,
-} from "../utils/utils.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 import { decode as base64Decode } from "https://deno.land/std@0.116.0/encoding/base64.ts";
 import { RateLimit, RateLimitError } from "./ratelimit.decorator.ts";
 
@@ -232,14 +228,12 @@ export class Http {
     }
   }
 
-  static EventStream<T>(path?: string) {
-    return (
+  static EventStream(path?: string) {
+    return function<T extends (...args: any[]) => Generator | AsyncGenerator>(
       target: object,
       propertyKey: string | symbol,
-      descriptor: T extends AsyncGeneratorMethodDecorator
-        ? AsyncGeneratorTypedPropertyDescriptor
-        : TypedPropertyDescriptor<any>,
-    ) => {
+      descriptor: TypedPropertyDescriptor<T>,
+    ) {
       path ??= `/${stringFromPropertyKey(propertyKey)}`;
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method: "GET",
@@ -249,7 +243,9 @@ export class Http {
           const stream = new ReadableStream({
             async start(controller) {
               Object.assign(args[0], { controller });
-              for await (const event of descriptor.value!.apply(that, args)) {
+              for await (
+                const event of descriptor.value!.apply(that, args)
+              ) {
                 controller.enqueue(`${event}\n\n`);
               }
             },
@@ -265,18 +261,15 @@ export class Http {
           };
         },
       });
-      return descriptor;
     };
   }
 
-  static Chunked<T>(path?: string) {
-    return (
+  static Chunked(path?: string) {
+    return function<T extends (...args: any[]) => Generator | AsyncGenerator>(
       target: object,
       propertyKey: string | symbol,
-      descriptor: T extends AsyncGeneratorMethodDecorator
-        ? AsyncGeneratorTypedPropertyDescriptor
-        : TypedPropertyDescriptor<any>,
-    ) => {
+      descriptor: TypedPropertyDescriptor<T>,
+    ) {
       path ??= `/${stringFromPropertyKey(propertyKey)}`;
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method: "GET",
@@ -286,7 +279,7 @@ export class Http {
           const stream = new ReadableStream({
             async start(controller) {
               Object.assign(args[0], { controller });
-              for await (const chunk of descriptor.value.apply(that, args)) {
+              for await (const chunk of descriptor.value!.apply(that, args)) {
                 controller.enqueue(chunk);
               }
               controller.close();

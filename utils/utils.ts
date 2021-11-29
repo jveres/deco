@@ -12,27 +12,6 @@ export const Denque = denque as any;
 export const throttle = _throttle as any;
 export const debounce = _debounce as any;
 
-export type Fn<T> = (...args: any[]) => T;
-
-export type AsyncTypedPropertyDescriptor = TypedPropertyDescriptor<
-  Fn<Promise<any>>
->;
-export type AsyncMethodDecorator = {
-  (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: AsyncTypedPropertyDescriptor,
-  ): AsyncTypedPropertyDescriptor;
-};
-export type AsyncGeneratorTypedPropertyDescriptor = TypedPropertyDescriptor<Fn<AsyncGenerator>>;
-export type AsyncGeneratorMethodDecorator = {
-  (
-    target: Object,
-    propertyKey: string | symbol,
-    descriptor: AsyncGeneratorTypedPropertyDescriptor,
-  ): AsyncGeneratorTypedPropertyDescriptor;
-};
-
 export const IsAsyncFunction = (fn: Function) =>
   fn.constructor.name === "AsyncFunction";
 

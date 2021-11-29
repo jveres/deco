@@ -4,22 +4,18 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import {
-  AsyncMethodDecorator,
-  AsyncTypedPropertyDescriptor,
-  stringFromPropertyKey,
-} from "../utils/utils.ts";
+import { stringFromPropertyKey } from "../utils/utils.ts";
 
 export const DEFAULT_TIMEOUT_MS = 10000;
 export class TimeoutError extends Error {}
 
 export const Timeout = (
   timeout: number = DEFAULT_TIMEOUT_MS,
-): AsyncMethodDecorator =>
+) =>
   (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: AsyncTypedPropertyDescriptor,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>,
   ) => {
     const fn = descriptor.value!;
     descriptor.value = async function (...args: any[]) {
@@ -59,5 +55,4 @@ export const Timeout = (
         throw e;
       }
     };
-    return descriptor;
   };

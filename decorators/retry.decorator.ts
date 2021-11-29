@@ -4,12 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any ban-types
 
-import {
-  AsyncMethodDecorator,
-  AsyncTypedPropertyDescriptor,
-  sleep,
-  stringFromPropertyKey,
-} from "../utils/utils.ts";
+import { sleep, stringFromPropertyKey } from "../utils/utils.ts";
 
 export const DEFAULT_MAX_ATTEMPTS = 3;
 export const DEFAULT_BACKOFF_MS = 1000;
@@ -37,11 +32,11 @@ export const Retry = (
     doRetry?: (err: unknown) => boolean;
     exponentialOption?: { maxInterval: number; multiplier: number };
   } = {},
-): AsyncMethodDecorator =>
+) =>
   (
     _target: Object,
     propertyKey: string | symbol,
-    descriptor: AsyncTypedPropertyDescriptor,
+    descriptor: TypedPropertyDescriptor<(...args: any[]) => Promise<any>>,
   ) => {
     const fn = descriptor.value!;
     if (backOffPolicy === BackOffPolicy.ExponentialBackOffPolicy) {
@@ -109,5 +104,4 @@ export const Retry = (
         ],
       );
     };
-    return descriptor;
   };
