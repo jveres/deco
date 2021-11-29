@@ -72,7 +72,7 @@ class ExampleCustomAPI {
 class ExampleStream {
   @Http.EventStream()
   async *stream() {
-    yield ": Hello from stream";
+    yield Http.SSE({comment: "Hello from stream"});
     while (true) {
       await sleep(1000);
       yield Http.SSE({ event: "tick", data: new Date().toISOString() });

@@ -43,6 +43,17 @@ export interface HttpMetrics {
   };
 }
 
+interface EventStreamEventFormat {
+  event?: string;
+  data: string | string[];
+  id?: string;
+  retry?: number;
+}
+
+interface EventStreamCommentFormat {
+  comment: string;
+}
+
 export class Http {
   static readonly TARGET_KEY = "__target__";
   static readonly ROUTES_KEY = "__routes__";
@@ -204,11 +215,17 @@ export class Http {
     };
   }
 
-  static SSE({ event, data }: { event?: string; data: string | string[] }) {
-    let res = event ? `event: ${event}\n` : "";
-    if (typeof data === "string") res += `data: ${data}\n`;
-    else data.map((data) => res += `data: ${data}\n`);
-    return res;
+  static SSE(event: EventStreamEventFormat | EventStreamCommentFormat): string {
+    if ("comment" in event) {
+      return `: ${event.comment}`;
+    } else {
+      let res = event.event ? `event: ${event.event}\n` : "";
+      if (typeof event.data === "string") res += `data: ${event.data}\n`;
+      else event.data.map((data) => res += `data: ${data}\n`);
+      if (event.id) res += `id: ${event.id}\n`;
+      if (event.retry) res += `retry: ${event.retry}\n`;
+      return res;
+    }
   }
 
   static EventStream(
