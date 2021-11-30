@@ -96,12 +96,12 @@ class ExampleLimits {
 
   @Http.Get()
   @Http.Concurrency({ limit: 1 })
-  async limited() {
+  async concurrent() {
     await sleep(5000);
   }
 }
 
-console.log(`Deco (v${DECO_VERSION}) http server started...`);
+console.log(`Deco (v:${DECO_VERSION}) http server started...`);
 Http.serve({
   controllers: [ExampleOpenAPI, ExampleCustomAPI, ExampleStream, ExampleLimits],
 });
