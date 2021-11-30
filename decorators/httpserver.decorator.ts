@@ -13,6 +13,7 @@ import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import { stringFromPropertyKey } from "../utils/utils.ts";
 import { decode as base64Decode } from "https://deno.land/std@0.116.0/encoding/base64.ts";
 import { RateLimit, RateLimitError } from "./ratelimit.decorator.ts";
+import { Concurrency } from "./concurrency.decorator.ts";
 
 export type FavIcon = {
   mime: "image/x-icon";
@@ -229,7 +230,7 @@ export class Http {
   }
 
   static EventStream(path?: string) {
-    return function<T extends (...args: any[]) => Generator | AsyncGenerator>(
+    return function <T extends (...args: any[]) => Generator | AsyncGenerator>(
       target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<T>,
@@ -265,7 +266,7 @@ export class Http {
   }
 
   static Chunked(path?: string) {
-    return function<T extends (...args: any[]) => Generator | AsyncGenerator>(
+    return function <T extends (...args: any[]) => Generator | AsyncGenerator>(
       target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<T>,
@@ -299,12 +300,12 @@ export class Http {
     };
   }
 
-  static RateLimit({ rps }: { rps: number }): MethodDecorator {
+  static RateLimit({ rps }: { rps: number }) {
     return (
       target: object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
-    ): void => {
+    ) => {
       RateLimit({ limit: rps, interval: 1000 })(
         target,
         propertyKey,
@@ -322,6 +323,26 @@ export class Http {
           }
         }
       };
+    };
+  }
+
+  static Concurrency({ limit }: { limit: number }): MethodDecorator {
+    return (
+      target: object,
+      propertyKey: string | symbol,
+      descriptor: TypedPropertyDescriptor<any>,
+    ) => {
+      Concurrency({
+        limit,
+        resolver: ({ url }: { url: URL }) => {
+          url.searchParams.sort();
+          return `${url.pathname}?${url.searchParams}`;
+        }
+      })(
+        target,
+        propertyKey,
+        descriptor,
+      );
     };
   }
 

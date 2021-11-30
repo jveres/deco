@@ -72,7 +72,7 @@ class ExampleCustomAPI {
 class ExampleStream {
   @Http.EventStream()
   async *stream() {
-    yield Http.SSE({comment: "Hello from stream"});
+    yield Http.SSE({ comment: "Hello from stream" });
     while (true) {
       await sleep(1000);
       yield Http.SSE({ event: "tick", data: new Date().toISOString() });
@@ -93,6 +93,12 @@ class ExampleLimits {
   @Http.Get()
   @Http.RateLimit({ rps: 1 })
   ratelimited() {}
+
+  @Http.Get()
+  @Http.Concurrency({ limit: 1 })
+  async limited() {
+    await sleep(5000);
+  }
 }
 
 console.log(`Deco (v${DECO_VERSION}) http server started...`);

@@ -28,7 +28,7 @@ export const Concurrency = ({ limit = 1, resolver }: {
         : stringFromPropertyKey(propertyKey);
       const count = concurrencyPool.filter((e) => e.key === key).length;
       if (count < limit) {
-        const promise = fn.apply(this, args.concat({ Concurrency: { limit } }));
+        const promise = fn.apply(this, args.concat({ Concurrency: { limit } })) ?? Promise.resolve();
         promise.then((res: any) => {
           const index = concurrencyPool.findIndex((item) => item.key === key);
           if (index > -1) concurrencyPool.splice(index, 1);
