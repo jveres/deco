@@ -96,6 +96,7 @@ class ExampleStream {
 @Http.ServerController()
 class ExampleLimits {
   @Http.Chunked()
+  @Http.Concurrency({ limit: 1 })
   async *limits() {
     for (let i = 1; i < 11; i++) {
       await sleep(1000);

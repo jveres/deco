@@ -148,7 +148,10 @@ export class Http {
     return function <
       T extends (
         ...args: any[]
-      ) => { body?: BodyInit | null; init?: ResponseInit } | Promise<{ body?: BodyInit | null; init?: ResponseInit }> | void,
+      ) =>
+        | { body?: BodyInit | null; init?: ResponseInit }
+        | Promise<{ body?: BodyInit | null; init?: ResponseInit }>
+        | void,
     >(
       target: object,
       propertyKey: string | symbol,
@@ -330,24 +333,14 @@ export class Http {
     };
   }
 
-  static Concurrency({ limit }: { limit: number }): MethodDecorator {
-    return (
-      target: object,
-      propertyKey: string | symbol,
-      descriptor: TypedPropertyDescriptor<any>,
-    ) => {
-      Concurrency({
-        limit,
-        resolver: ({ url }: { url: URL }) => {
-          url.searchParams.sort();
-          return `${url.pathname}?${url.searchParams}`;
-        },
-      })(
-        target,
-        propertyKey,
-        descriptor,
-      );
-    };
+  static Concurrency({ limit }: { limit: number }) {
+    return Concurrency({
+      limit,
+      resolver: ({ url }: { url: URL }) => {
+        url.searchParams.sort();
+        return `${url.pathname}?${url.searchParams}`;
+      },
+    });
   }
 
   static metrics: HttpMetrics = {
