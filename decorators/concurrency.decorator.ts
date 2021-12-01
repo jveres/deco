@@ -43,6 +43,29 @@ class Queue<T> {
   }
 }
 
+function queuedIterator<T>(iterable: AsyncIterable<T>, callback: Function) {
+  return {
+    queue: new Queue<T>(iterable),
+    generator: async function* () {
+      let buffer = this.queue.head;
+      while (true) {
+        if (buffer.next) {
+          buffer = buffer.next;
+          yield buffer.value;
+        } else if (this.queue.done) {
+          callback();
+          return;
+        } else {
+          await this.queue.next();
+        }
+      }
+    },
+    [Symbol.asyncIterator]() {
+      return this.generator();
+    },
+  };
+}
+
 interface ConcurrencyPoolItem {
   key: string;
   value: any;
@@ -65,28 +88,6 @@ export const Concurrency = ({ limit = 1, resolver }: {
       const index = concurrencyPool.findIndex((item) => item.key === key);
       if (index > -1) concurrencyPool.splice(index, 1);
     };
-    const wrapper = (iterable: AsyncIterable<T>, callback: Function) => {
-      const queue = new Queue<T>(iterable);
-      return {
-        generator: async function* () {
-          let buffer = queue.head;
-          while (true) {
-            if (buffer.next) {
-              buffer = buffer.next;
-              yield buffer.value;
-            } else if (queue.done) {
-              callback();
-              return;
-            } else {
-              await queue.next();
-            }
-          }
-        },
-        [Symbol.asyncIterator]() {
-          return this.generator();
-        }
-      };
-    };
     descriptor.value = <T> function (this: unknown, ...args: any[]) {
       const key = resolver
         ? resolver.apply(this, args)
@@ -95,7 +96,7 @@ export const Concurrency = ({ limit = 1, resolver }: {
       if (count < limit) {
         let res = fn.apply(this, args.concat({ Concurrency: { limit } }));
         if (res instanceof Promise) res.then(() => removeFromPool(key));
-        else res = wrapper(res, () => removeFromPool(key)) as AsyncIterable<any>;
+        else res = queuedIterator(res, () => removeFromPool(key));
         concurrencyPool.push({ key, value: res });
         return res;
       } else {
