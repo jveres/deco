@@ -144,12 +144,16 @@ export class Http {
 
   static Route(
     { method = "GET", path }: { method?: HttpMethod; path?: string },
-  ): MethodDecorator {
-    return (
+  ) {
+    return function <
+      T extends (
+        ...args: any[]
+      ) => { body?: BodyInit | null; init?: ResponseInit } | Promise<{ body?: BodyInit | null; init?: ResponseInit }> | void,
+    >(
       target: object,
       propertyKey: string | symbol,
-      descriptor: TypedPropertyDescriptor<any>,
-    ): void => {
+      descriptor: TypedPropertyDescriptor<T>,
+    ) {
       path ??= `/${stringFromPropertyKey(propertyKey)}`;
       getMetadata<object[]>(target, Http.ROUTES_KEY, []).push({
         method,
@@ -161,25 +165,25 @@ export class Http {
 
   static Get(
     path?: string,
-  ): MethodDecorator {
-    return Http.Route({ method: "GET", path });
+  ) {
+    return Http.Route({ path });
   }
 
   static Post(
     path?: string,
-  ): MethodDecorator {
+  ) {
     return Http.Route({ method: "POST", path });
   }
 
   static Put(
     path?: string,
-  ): MethodDecorator {
+  ) {
     return Http.Route({ method: "PUT", path });
   }
 
   static Delete(
     path?: string,
-  ): MethodDecorator {
+  ) {
     return Http.Route({ method: "DELETE", path });
   }
 

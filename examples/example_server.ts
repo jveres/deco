@@ -13,7 +13,6 @@
 // curl http://localhost:8080/concurrencylimited
 
 import { Http } from "../decorators/httpserver.decorator.ts";
-import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 import { DECO_VERSION } from "../mod.ts";
 
