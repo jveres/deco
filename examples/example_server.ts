@@ -2,12 +2,18 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// curl http://localhost:8080/openapi
+// curl http://localhost:8080/metrics
 // curl http://localhost:8080/api
 // curl http://localhost:8080/api/1
 // curl -v -X POST "http://localhost:8080/api?q=1" -d "test data" -H "x-access-token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZGVjbyJ9.ae9rDEkN3goWCuc1-Dsbm9lX7kVJPHC8dlnKMFI1Gs-Y26kvGGo0UyQkMih0-zicLgx1viGLSufwfOctC1nWLQ"
+// curl http://localhost:8080/stream
 // curl --raw -X GET http://localhost:8080/chunked
+// curl http://localhost:8080/ratelimited
+// curl http://localhost:8080/concurrencylimited
 
 import { Http } from "../decorators/httpserver.decorator.ts";
+import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 import { DECO_VERSION } from "../mod.ts";
 
@@ -90,14 +96,23 @@ class ExampleStream {
 
 @Http.ServerController()
 class ExampleLimits {
+  @Http.Chunked()
+  async *limits() {
+    for (let i = 1; i < 11; i++) {
+      await sleep(1000);
+      yield `chunk #${i}`;
+    }
+  }
+
   @Http.Get()
   @Http.RateLimit({ rps: 1 })
   ratelimited() {}
 
   @Http.Get()
   @Http.Concurrency({ limit: 1 })
-  async concurrent() {
+  async concurrencylimited() {
     await sleep(5000);
+    return { body: "done" };
   }
 }
 

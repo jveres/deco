@@ -12,7 +12,7 @@ export const Denque = denque as any;
 export const throttle = _throttle as any;
 export const debounce = _debounce as any;
 
-export const IsAsyncFunction = (fn: Function) =>
+export const IsAsyncFunction = (fn: any) =>
   fn.constructor.name === "AsyncFunction";
 
 export const sleep = (wait: number) =>

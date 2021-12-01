@@ -1,14 +1,14 @@
 openapi: 3.1.0
 info:
   title: Test endpoints for Deco
-  version: '1.0'
-  description: ''
+  version: "1.0"
+  description: ""
 paths:
   /api:
     get:
       operationId: Get example response
       responses:
-        '200':
+        "200":
           description: Returns an example text
           content:
             text/plain:
@@ -26,5 +26,5 @@ paths:
                   summary: This is a valid example
                   value: Hello from example response 3️⃣
       description: Test endpoint
-      summary: ''
+      summary: ""
     parameters: []

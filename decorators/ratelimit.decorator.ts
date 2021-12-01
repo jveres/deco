@@ -37,7 +37,7 @@ export const RateLimit = (
     };
     descriptor.value = function (...args: any[]) {
       if (ratelimiter.rate >= limit) {
-        throw new RateLimitError("Rate limit exceeded");
+        throw new RateLimitError();
       }
       ratelimiter.queue.push(Date.now());
       return ratelimiter.fn.apply(

@@ -337,7 +337,7 @@ export class Http {
         resolver: ({ url }: { url: URL }) => {
           url.searchParams.sort();
           return `${url.pathname}?${url.searchParams}`;
-        }
+        },
       })(
         target,
         propertyKey,
