@@ -153,7 +153,7 @@ export class Http {
         | Promise<{ body?: BodyInit | null; init?: ResponseInit }>
         | void,
     >(
-      target: object,
+      target: Object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<T>,
     ) {
@@ -197,7 +197,7 @@ export class Http {
     } = {},
   ): MethodDecorator {
     return (
-      target: object,
+      target: Object,
       _propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<any>,
     ): void => {
@@ -238,7 +238,7 @@ export class Http {
 
   static EventStream(path?: string) {
     return function <T extends (...args: any[]) => Generator | AsyncGenerator>(
-      target: object,
+      target: Object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<T>,
     ) {
@@ -274,7 +274,7 @@ export class Http {
 
   static Chunked(path?: string) {
     return function <T extends (...args: any[]) => Generator | AsyncGenerator>(
-      target: object,
+      target: Object,
       propertyKey: string | symbol,
       descriptor: TypedPropertyDescriptor<T>,
     ) {
@@ -287,10 +287,16 @@ export class Http {
           const stream = new ReadableStream({
             async start(controller) {
               Object.assign(args[0], { controller });
-              for await (const chunk of descriptor.value!.apply(that, args)) {
-                controller.enqueue(chunk);
+              try {
+                for await (const chunk of descriptor.value!.apply(that, args)) {
+                  controller.enqueue(chunk);
+                }
+              } catch (e: unknown) {
+                console.log(e);
+                throw e;
+              } finally {
+                controller.close();
               }
-              controller.close();
             },
           });
           return {
@@ -308,20 +314,20 @@ export class Http {
   }
 
   static RateLimit({ rps }: { rps: number }) {
-    return (
-      target: object,
+    return function <T extends (...args: any[]) => any>(
+      target: Object,
       propertyKey: string | symbol,
-      descriptor: TypedPropertyDescriptor<any>,
-    ) => {
+      descriptor: TypedPropertyDescriptor<T>,
+    ) {
       RateLimit({ limit: rps, interval: 1000 })(
         target,
         propertyKey,
         descriptor,
       );
-      const fn = descriptor.value;
-      descriptor.value = async function (...args: any[]) {
+      const fn = descriptor.value!;
+      descriptor.value = <T> function (this: unknown, ...args: any[]) {
         try {
-          return await fn.apply(this, args);
+          return fn.apply(this, args);
         } catch (e: unknown) {
           if (e instanceof RateLimitError) {
             return { body: "Rate limit exceeded", init: { status: 429 } }; // Too many requests

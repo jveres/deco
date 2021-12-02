@@ -16,33 +16,30 @@ export const RateLimit = (
     limit?: number;
     interval?: number;
   } = {},
-): MethodDecorator =>
-  (
+) => {
+  return function <T extends (...args: any[]) => any>(
     _target: Object,
     _propertyKey: string | symbol,
-    descriptor: TypedPropertyDescriptor<any>,
-  ): void => {
-    const ratelimiter = {
-      fn: descriptor.value,
-      queue: new Denque(),
-      get rate() {
-        while (
-          this.queue.peekFront() &&
-          (Date.now() - this.queue.peekFront() > interval)
-        ) {
-          this.queue.shift();
-        }
-        return this.queue.size() as number;
-      },
+    descriptor: TypedPropertyDescriptor<T>,
+  ) {
+    const fn = descriptor.value!;
+    const queue = new Denque();
+    const getRate = () => {
+      while (
+        queue.peekFront() &&
+        (Date.now() - queue.peekFront() > interval)
+      ) {
+        queue.shift();
+      }
+      return queue.size() as number;
     };
-    descriptor.value = function (...args: any[]) {
-      if (ratelimiter.rate >= limit) {
+    descriptor.value = <T> function (this: unknown, ...args: any[]) {
+      const rate = getRate();
+      if (rate >= limit) {
         throw new RateLimitError();
       }
-      ratelimiter.queue.push(Date.now());
-      return ratelimiter.fn.apply(
-        this,
-        args.concat({ Ratelimit: { rate: ratelimiter.rate, interval } }),
-      );
+      queue.push(Date.now());
+      return fn.apply(this, args.concat({ Ratelimit: { rate, interval } }));
     };
   };
+};
