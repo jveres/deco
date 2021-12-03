@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
+import { sleep } from "../utils/utils.ts";
 
-class _TestServer {
+class TestServer {
   @HttpServer.Get("/test")
   static() {}
 
@@ -13,11 +14,17 @@ class _TestServer {
 
   #priv = "Hello from Deco!";
 
-  @HttpServer.Get("/priv")
+  @HttpServer.Get()
   priv() {
+    return { body: this.#priv };
+  }
+
+  @HttpServer.Get()
+  async async() {
+    await sleep(1000);
     return { body: this.#priv };
   }
 }
 
 console.log("HttpServer() started...");
-HttpServer.serve({});
+HttpServer.serve({controllers: [TestServer]});

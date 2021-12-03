@@ -36,14 +36,26 @@ export class HttpServer {
     {
       hostname = DEFAULT_HTTPSERVER_HOSTNAME,
       port = DEFAULT_HTTPSERVER_PORT,
+      controllers = [],
     }: {
       hostname?: string;
       port?: number;
+      controllers: Function[];
     },
   ) {
+    const objects = new Map<string, Object>();
+    for (const controller of controllers) {
+      const name = controller.name;
+      if (!objects.has(name)) {
+        objects.set(name, Reflect.construct(controller, []));
+      }
+    }
     for (const [_, routes] of HttpServer.router.routes) {
       for (const route of routes) {
-        route.target = Reflect.construct(route.target.constructor, []);
+        const name = route.target.constructor.name;
+        if (objects.has(name)) {
+          route.target = objects.get(name)!;
+        }
       }
     }
     for await (
