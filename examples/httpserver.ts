@@ -4,13 +4,20 @@
 
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
 
-class TestServer {
+class _TestServer {
   @HttpServer.Get("/test")
   static() {}
 
   @HttpServer.Get("/test/:id")
   dynamic() {}
+
+  #priv = "Hello from Deco!";
+
+  @HttpServer.Get("/priv")
+  priv() {
+    return { body: this.#priv };
+  }
 }
 
 console.log("HttpServer() started...");
-HttpServer.serve({ controllers: [TestServer] });
+HttpServer.serve({});

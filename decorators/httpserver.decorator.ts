@@ -16,7 +16,7 @@ export class HttpServer {
     { method = "GET", path, target, property }: {
       method?: HttpMethod;
       path: string;
-      target: object;
+      target: Object;
       property: string;
     },
   ) {
@@ -26,7 +26,7 @@ export class HttpServer {
   static Get(
     path?: string,
   ) {
-    return function (target: object, property: string) {
+    return function (target: Object, property: string) {
       path ??= "/" + property;
       return HttpServer.AddRoute({ path, target, property });
     };
@@ -36,24 +36,27 @@ export class HttpServer {
     {
       hostname = DEFAULT_HTTPSERVER_HOSTNAME,
       port = DEFAULT_HTTPSERVER_PORT,
-      controllers = [],
     }: {
       hostname?: string;
       port?: number;
-      controllers: (Function | object)[];
     },
   ) {
+    for (const [_, routes] of HttpServer.router.routes) {
+      for (const route of routes) {
+        route.target = Reflect.construct(route.target.constructor, []);
+      }
+    }
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
-          const { target, property } = HttpServer.router.find(
+          const route = HttpServer.router.find(
             http.request.method,
             path,
-          ) || {};
-          const { body, init } = await target[property]() || {};
+          );
+          const { body, init } = await route.target[route.property]() || {};
           http.respondWith(new Response(body, init)).catch(
             () => {/* swallow Http errors */},
           );

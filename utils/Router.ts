@@ -30,7 +30,7 @@ const DEFAULT_HTTP_RESPONSES = {
   },
 };
 
-const ROUTE_404 = {
+const ROUTE_NOTFOUND = {
   target: DEFAULT_HTTP_RESPONSES,
   property: "NotFound",
   pattern: undefined!,
@@ -38,7 +38,7 @@ const ROUTE_404 = {
 };
 
 export class HttpRouter {
-  #routes = new Map</*method*/ string, Array<HttpRoute>>();
+  readonly routes = new Map</*method*/ string, Array<HttpRoute>>();
 
   add({ method, path, target, property }: {
     method: HttpMethod;
@@ -46,7 +46,7 @@ export class HttpRouter {
     target: Object;
     property: string;
   }) {
-    const map = this.#routes.get(method) ?? new Array<HttpRoute>();
+    const map = this.routes.get(method) ?? new Array<HttpRoute>();
     const isStatic = !(path.includes(":") || path.includes("*"));
     target ??= DEFAULT_HTTP_RESPONSES;
     property ??= "Ok";
@@ -54,17 +54,17 @@ export class HttpRouter {
       target,
       property,
       pattern: isStatic ? path : new URLPattern({ pathname: path }),
-      test: undefined!, // lol
+      test: undefined!,
     };
     route.test = isStatic
       ? staticRouteTester.bind(route)
       : dynamicRouteTester.bind(route);
     map.push(route);
-    this.#routes.set(method, map);
+    this.routes.set(method, map);
   }
 
   find(method: string, path: string) {
-    return this.#routes.get(method)?.find((route) => route.test(path)) ||
-      ROUTE_404;
+    return this.routes.get(method)?.find((route) => route.test(path)) ??
+      ROUTE_NOTFOUND;
   }
 }
