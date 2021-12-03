@@ -5,11 +5,11 @@
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
 
 class TestServer {
-  @HttpServer.Get()
+  @HttpServer.Get("/test")
   static() {}
 
-  @HttpServer.Get("/pattern/:id")
-  pattern() {}
+  @HttpServer.Get("/test/:id")
+  dynamic() {}
 }
 
 console.log("HttpServer() started...");
