@@ -2,47 +2,49 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any ban-types
-
-import _Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
-
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
-export type HttpFunction = (
-  params?: any,
-) => HttpResponse | Promise<HttpResponse | void> | void;
-export type HttpAction = { handler: HttpFunction; target?: Object };
+export interface HttpRoute {
+  pattern: string | URLPattern;
+  test(path: string): (() => boolean);
+}
 
-export const HTTP_RESPONSE_200: HttpResponse = {
-  init: { status: 200 },
-};
+/*
+if (isStatic) {
+          return function () {
+            return pathname === path;
+          };
+        } else {
+          const pattern = new URLPattern({ pathname: path });
+          console.log(pattern)
+          return function () {
+            return pattern.test({ pathname: pathname });
+          };
+        }
+      },
+*/
 
-export const HTTP_RESPONSE_405: HttpResponse = {
-  init: { status: 405 },
-};
+export class HttpRouter {
+  #routes = new Map</*method*/ string, Array<HttpRoute>>();
 
-export class Router {
-  #router = new _Router();
-
-  add({ method, path, action, upsert = true }: {
+  add({ method, path }: {
     method: HttpMethod;
     path: string;
-    action: HttpAction;
-    upsert?: boolean;
   }) {
-    const store = this.#router.register(path);
-    upsert ? store[method] = action : store[method] ??= action;
+    const map = this.#routes.get(method) ?? new Array<HttpRoute>();
+    const isStatic = !(path.includes(":") || path.includes("*"));
+    const pattern = isStatic ? path : new URLPattern({ pathname: path });
+    const test = isStatic
+      ? eval(`(function(path) { return path === this.pattern })`)
+      : eval(
+        `(function(path) { return this.pattern.test({ pathname: path }) })`,
+      );
+    const route: HttpRoute = { pattern, test };
+    map.push(route);
+    this.#routes.set(method, map);
   }
 
-  find(method: string, pathname: string) {
-    const res = this.#router.find(pathname);
-    return {
-      action: res?.store[method] || {
-        handler: (() => {
-          return HTTP_RESPONSE_405;
-        }),
-      },
-      params: res?.params,
-    };
+  find(method: string, path: string) {
+    return this.#routes.get(method)?.find((route) => route.test(path));
   }
 }
