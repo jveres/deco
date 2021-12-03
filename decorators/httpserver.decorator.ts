@@ -27,7 +27,7 @@ export class HttpServer {
     path?: string,
   ) {
     return function (target: Object, property: string) {
-      path ??= "/" + property;
+      path ||= "/" + property;
       return HttpServer.AddRoute({ path, target, property });
     };
   }
@@ -52,9 +52,9 @@ export class HttpServer {
     }
     for (const [_, routes] of HttpServer.router.routes) {
       for (const route of routes) {
-        const name = route.target.constructor.name;
+        const name = route.action.target.constructor.name;
         if (objects.has(name)) {
-          route.target = objects.get(name)!;
+          route.action.target = objects.get(name)!;
         }
       }
     }
@@ -64,11 +64,11 @@ export class HttpServer {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
-          const route = HttpServer.router.find(
+          const action = HttpServer.router.find(
             http.request.method,
             path,
           );
-          const { body, init } = await route.target[route.property]() || {};
+          const { body, init } = await action.target[action.property]() || {};
           http.respondWith(new Response(body, init)).catch(
             () => {/* swallow Http errors */},
           );

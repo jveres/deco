@@ -7,8 +7,10 @@
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export interface HttpRoute {
-  target: { [key: string]: any };
-  property: string;
+  action: {
+    target: { [key: string]: any };
+    property: string;
+  };
   pattern: string | URLPattern;
   test(path: string): boolean;
 }
@@ -30,11 +32,9 @@ const DEFAULT_HTTP_RESPONSES = {
   },
 };
 
-const ROUTE_NOTFOUND = {
+const ACTION_NOTFOUND = {
   target: DEFAULT_HTTP_RESPONSES,
   property: "NotFound",
-  pattern: undefined!,
-  test: undefined!,
 };
 
 export class HttpRouter {
@@ -48,11 +48,10 @@ export class HttpRouter {
   }) {
     const map = this.routes.get(method) ?? new Array<HttpRoute>();
     const isStatic = !(path.includes(":") || path.includes("*"));
-    target ??= DEFAULT_HTTP_RESPONSES;
-    property ??= "Ok";
+    target ||= DEFAULT_HTTP_RESPONSES;
+    property ||= "Ok";
     const route: HttpRoute = {
-      target,
-      property,
+      action: { target, property },
       pattern: isStatic ? path : new URLPattern({ pathname: path }),
       test: undefined!,
     };
@@ -64,7 +63,7 @@ export class HttpRouter {
   }
 
   find(method: string, path: string) {
-    return this.routes.get(method)?.find((route) => route.test(path)) ??
-      ROUTE_NOTFOUND;
+    return this.routes.get(method)?.find((route) => route.test(path))?.action ||
+      ACTION_NOTFOUND;
   }
 }
