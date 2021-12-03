@@ -13,4 +13,4 @@ class TestServer {
 }
 
 console.log("HttpServer() started...");
-HttpServer.serve({ controllers: [] });
+HttpServer.serve({ controllers: [TestServer] });

@@ -6,23 +6,16 @@ export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export interface HttpRoute {
   pattern: string | URLPattern;
-  test(path: string): (() => boolean);
+  test(path: string): boolean;
 }
 
-/*
-if (isStatic) {
-          return function () {
-            return pathname === path;
-          };
-        } else {
-          const pattern = new URLPattern({ pathname: path });
-          console.log(pattern)
-          return function () {
-            return pattern.test({ pathname: pathname });
-          };
-        }
-      },
-*/
+function staticRouteTester(this: HttpRoute, path: string) {
+  return path === this.pattern;
+}
+
+function dynamicRouteTester(this: HttpRoute, path: string) {
+  return (this.pattern as URLPattern).test({ pathname: path });
+}
 
 export class HttpRouter {
   #routes = new Map</*method*/ string, Array<HttpRoute>>();
@@ -33,13 +26,13 @@ export class HttpRouter {
   }) {
     const map = this.#routes.get(method) ?? new Array<HttpRoute>();
     const isStatic = !(path.includes(":") || path.includes("*"));
-    const pattern = isStatic ? path : new URLPattern({ pathname: path });
-    const test = isStatic
-      ? eval(`(function(path) { return path === this.pattern })`)
-      : eval(
-        `(function(path) { return this.pattern.test({ pathname: path }) })`,
-      );
-    const route: HttpRoute = { pattern, test };
+    const route: HttpRoute = {
+      pattern: isStatic ? path : new URLPattern({ pathname: path }),
+      test: undefined!, // lol
+    };
+    route.test = isStatic
+      ? staticRouteTester.bind(route)
+      : dynamicRouteTester.bind(route);
     map.push(route);
     this.#routes.set(method, map);
   }

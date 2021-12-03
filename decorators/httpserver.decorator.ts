@@ -35,7 +35,7 @@ export class HttpServer {
     }: {
       hostname?: string;
       port?: number;
-      controllers: Function[];
+      controllers: (Function | object)[];
     },
   ) {
     for await (
@@ -45,8 +45,10 @@ export class HttpServer {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
           const action = HttpServer.router.find(http.request.method, path);
-          console.log(action);
-          http.respondWith(new Response()).catch(() => {});
+          //console.log(action);
+          http.respondWith(new Response()).catch(
+            () => {/* swallow Http errors */},
+          );
         }
       })();
     }
