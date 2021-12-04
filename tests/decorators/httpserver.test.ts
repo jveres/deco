@@ -5,8 +5,6 @@
 import { HttpServer } from "../../decorators/httpserver.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.117.0/testing/asserts.ts";
 
-const MESSAGE = "Hello from Deco!";
-
 class ServerController {
   @HttpServer.Get()
   test() {}
@@ -19,7 +17,7 @@ Deno.test({
   async fn() {
     const port = 8090;
     HttpServer.serve({ port, controllers: [ServerController] });
-    const resp = await fetch(`http://localhost:${port}`);
+    const resp = await fetch(`http://localhost:${port}/test`);
     assertEquals(resp.status, 200);
   },
 });
