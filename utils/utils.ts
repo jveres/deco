@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js";
+import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js?dts";
 
 export const Denque = denque as any;
 

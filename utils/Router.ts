@@ -2,15 +2,17 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file ban-types no-explicit-any
+// deno-lint-ignore-file no-explicit-any
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
+export type HttpAction = {
+  target: any;
+  property: string;
+};
+
 export interface HttpRoute {
-  action: {
-    target: { [key: string]: any };
-    property: string;
-  };
+  action: HttpAction;
   pattern: string | URLPattern;
   test(path: string): boolean;
 }
@@ -23,35 +25,18 @@ function dynamicRouteTester(this: HttpRoute, path: string) {
   return (this.pattern as URLPattern).test({ pathname: path });
 }
 
-const DEFAULT_HTTP_RESPONSES = {
-  Ok() {
-    return { init: { status: 200 } };
-  },
-  NotFound() {
-    return { init: { status: 404 } };
-  },
-};
-
-const ACTION_NOTFOUND = {
-  target: DEFAULT_HTTP_RESPONSES,
-  property: "NotFound",
-};
-
 export class HttpRouter {
   readonly routes = new Map</*method*/ string, Array<HttpRoute>>();
 
-  add({ method, path, target, property }: {
+  add({ method, path, action }: {
     method: HttpMethod;
     path: string;
-    target: Object;
-    property: string;
+    action: HttpAction;
   }) {
     const map = this.routes.get(method) ?? new Array<HttpRoute>();
     const isStatic = !(path.includes(":") || path.includes("*"));
-    target ||= DEFAULT_HTTP_RESPONSES;
-    property ||= "Ok";
     const route: HttpRoute = {
-      action: { target, property },
+      action,
       pattern: isStatic ? path : new URLPattern({ pathname: path }),
       test: undefined!,
     };
@@ -63,7 +48,6 @@ export class HttpRouter {
   }
 
   find(method: string, path: string) {
-    return this.routes.get(method)?.find((route) => route.test(path))?.action ||
-      ACTION_NOTFOUND;
+    return this.routes.get(method)?.find((route) => route.test(path))?.action;
   }
 }

@@ -2,9 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file ban-types
+// deno-lint-ignore-file ban-types no-explicit-any
 
-import { HttpMethod, HttpRouter } from "../utils/Router.ts";
+import { HttpMethod, HttpResponse, HttpRouter } from "../utils/Router.ts";
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
@@ -16,11 +16,15 @@ export class HttpServer {
     { method = "GET", path, target, property }: {
       method?: HttpMethod;
       path: string;
-      target: Object;
+      target: any;
       property: string;
     },
   ) {
-    HttpServer.router.add({ method, path, target, property });
+    HttpServer.router.add({
+      method,
+      path,
+      action: { target, property },
+    });
   }
 
   static Get(
@@ -30,6 +34,10 @@ export class HttpServer {
       path ||= "/" + property;
       return HttpServer.AddRoute({ path, target, property });
     };
+  }
+
+  static 404(): HttpResponse {
+    return { init: { status: 404 } };
   }
 
   static async serve(
@@ -54,7 +62,7 @@ export class HttpServer {
       for (const route of routes) {
         const name = route.action.target.constructor.name;
         if (objects.has(name)) {
-          route.action.target = objects.get(name)!;
+          route.action.target = objects.get(name);
         }
       }
     }
@@ -67,10 +75,10 @@ export class HttpServer {
           const action = HttpServer.router.find(
             http.request.method,
             path,
-          );
-          const { body, init } = await action.target[action.property]() || {};
+          ) || { target: HttpServer, property: "404" };
+          const { body, init } = await action?.target[action.property]() || {};
           http.respondWith(new Response(body, init)).catch(
-            () => {/* swallow Http errors */},
+            () => {}, // swallow Http errors
           );
         }
       })();
