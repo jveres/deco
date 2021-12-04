@@ -58,19 +58,16 @@ export class HttpServer {
         objects.set(name, Reflect.construct(controller, []));
       }
     }
-    for (const [_, routes] of HttpServer.router.routes) {
-      for (const route of routes) {
-        const action = route.action;
-        const name = action.target.constructor.name;
-        if (objects.has(name)) {
-          action.target = objects.get(name);
-        }
-        action.promise = (...args: any[]) => {
-          return Promise.resolve(
-            action.target[action.property](args),
-          );
-        };
+    for (const action of HttpServer.router.actions) {
+      const name = action.target.constructor.name;
+      if (objects.has(name)) {
+        action.target = objects.get(name);
       }
+      action.promise = (...args: any[]) => {
+        return Promise.resolve(
+          action.target[action.property](args),
+        );
+      };
     }
     for await (
       const conn of Deno.listen({ port, hostname })
@@ -78,12 +75,12 @@ export class HttpServer {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
-          const promise = HttpServer.router.find(
-            http.request.method,
-            path,
-          ) || HttpServer["404"]();
+          const promise = HttpServer.router.find(http.request.method, path) ||
+            HttpServer["404"]();
           promise().then((response = {}) =>
-            http.respondWith(new Response(response.body, response.init)).catch(() => {}) // swallow Http errors
+            http.respondWith(new Response(response.body, response.init)).catch(
+              () => {},
+            ) // swallow Http errors
           );
         }
       })();

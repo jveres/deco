@@ -7,7 +7,9 @@ import { sleep } from "../utils/utils.ts";
 
 class TestServer {
   @HttpServer.Get("/test")
-  static() {}
+  static() {
+    return { body: "Hello from Deco!" };
+  }
 
   @HttpServer.Get("/test/:id")
   dynamic() {}

@@ -4,6 +4,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import $Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
+
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export type HttpAction = {
@@ -18,37 +20,22 @@ export interface HttpRoute {
   test(path: string): boolean;
 }
 
-function staticRouteTester(this: HttpRoute, path: string) {
-  return path === this.pattern;
-}
-
-function dynamicRouteTester(this: HttpRoute, path: string) {
-  return (this.pattern as URLPattern).test({ pathname: path });
-}
-
 export class HttpRouter {
-  readonly routes = new Map</*method*/ string, Array<HttpRoute>>();
+  readonly routes = new $Router();
+  readonly actions = new Array<HttpAction>();
 
-  add({ method, path, action }: {
+  add({ method, path, action, upsert = true }: {
     method: HttpMethod;
     path: string;
     action: HttpAction;
+    upsert?: boolean;
   }) {
-    const map = this.routes.get(method) ?? new Array<HttpRoute>();
-    const isStatic = !(path.includes(":") || path.includes("*"));
-    const route: HttpRoute = {
-      action,
-      pattern: isStatic ? path : new URLPattern({ pathname: path }),
-      test: undefined!,
-    };
-    route.test = isStatic
-      ? staticRouteTester.bind(route)
-      : dynamicRouteTester.bind(route);
-    map.push(route);
-    this.routes.set(method, map);
+    this.actions.push(action);
+    const store = this.routes.register(path);
+    upsert ? store[method] = action : store[method] ??= action;
   }
 
   find(method: string, path: string) {
-    return this.routes.get(method)?.find((route) => route.test(path))?.action.promise;
+    return (this.routes.find(path)?.store[method] as HttpAction).promise;
   }
 }
