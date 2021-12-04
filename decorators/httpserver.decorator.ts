@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file ban-types no-explicit-any
 
-import { HttpMethod, HttpResponse, HttpRouter } from "../utils/Router.ts";
+import { HttpAction, HttpMethod, HttpRouter } from "../utils/Router.ts";
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
@@ -23,7 +23,7 @@ export class HttpServer {
     HttpServer.router.add({
       method,
       path,
-      action: { target, property },
+      action: { target, property, promise: null! },
     });
   }
 
@@ -36,8 +36,8 @@ export class HttpServer {
     };
   }
 
-  static 404(): HttpResponse {
-    return { init: { status: 404 } };
+  static ["404"]() {
+    return () => Promise.resolve({ body: null, init: { status: 404 } });
   }
 
   static async serve(
@@ -60,10 +60,16 @@ export class HttpServer {
     }
     for (const [_, routes] of HttpServer.router.routes) {
       for (const route of routes) {
-        const name = route.action.target.constructor.name;
+        const action = route.action;
+        const name = action.target.constructor.name;
         if (objects.has(name)) {
-          route.action.target = objects.get(name);
+          action.target = objects.get(name);
         }
+        action.promise = (...args: any[]) => {
+          return Promise.resolve(
+            action.target[action.property](args),
+          );
+        };
       }
     }
     for await (
@@ -72,13 +78,12 @@ export class HttpServer {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
-          const action = HttpServer.router.find(
+          const promise = HttpServer.router.find(
             http.request.method,
             path,
-          ) || { target: HttpServer, property: "404" };
-          const { body, init } = await action?.target[action.property]() || {};
-          http.respondWith(new Response(body, init)).catch(
-            () => {}, // swallow Http errors
+          ) || HttpServer["404"]();
+          promise().then((response = {}) =>
+            http.respondWith(new Response(response.body, response.init)).catch(() => {}) // swallow Http errors
           );
         }
       })();

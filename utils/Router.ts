@@ -9,6 +9,7 @@ export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export type HttpAction = {
   target: any;
   property: string;
+  promise: (...args: any[]) => Promise<HttpResponse>;
 };
 
 export interface HttpRoute {
@@ -48,6 +49,6 @@ export class HttpRouter {
   }
 
   find(method: string, path: string) {
-    return this.routes.get(method)?.find((route) => route.test(path))?.action;
+    return this.routes.get(method)?.find((route) => route.test(path))?.action.promise;
   }
 }
