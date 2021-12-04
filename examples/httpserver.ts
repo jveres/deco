@@ -6,6 +6,9 @@ import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 
 class TestServer {
+  @HttpServer.Get()
+  dummy() {}
+
   @HttpServer.Get("/test")
   static() {
     return { body: "Hello from Deco!" };
