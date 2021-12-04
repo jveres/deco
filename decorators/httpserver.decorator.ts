@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file ban-types no-explicit-any
 
-import { HttpAction, HttpMethod, HttpRouter } from "../utils/Router.ts";
+import { HttpMethod, HttpRouter } from "../utils/Router.ts";
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
