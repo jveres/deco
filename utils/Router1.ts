@@ -24,12 +24,22 @@ export class HttpRouter {
   readonly routes: { [key: string]: any } = {};
   readonly actions = new Array<HttpAction>();
 
-  add({ method, path, action }: {
+  add({ method, path, target, property }: {
     method: HttpMethod;
     path: string;
-    action: HttpAction;
+    target: any;
+    property: string;
   }) {
     if (!this.routes[method]) this.routes[method] = createRouter();
+    const action: any = {
+      target,
+      property, 
+    }
+    action.promise = (...args: any[]) => {
+      return Promise.resolve(
+        action.target[action.property](args),
+      );
+    },
     this.actions.push(action);
     this.routes[method].insert(path, action);
   }

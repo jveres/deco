@@ -23,7 +23,8 @@ export class HttpServer {
     HttpServer.router.add({
       method,
       path,
-      action: { target, property, promise: null! },
+      target,
+      property,
     });
   }
 
@@ -63,11 +64,6 @@ export class HttpServer {
       if (objects.has(name)) {
         action.target = objects.get(name);
       }
-      action.promise = (...args: any[]) => {
-        return Promise.resolve(
-          action.target[action.property](args),
-        );
-      };
     }
     for await (
       const conn of Deno.listen({ port, hostname })
