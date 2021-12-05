@@ -16,7 +16,7 @@ export class HttpServer {
     { method = "GET", path, target, property }: {
       method?: HttpMethod;
       path: string;
-      target: any;
+      target: { [key: string]: any };
       property: string;
     },
   ) {
@@ -52,7 +52,7 @@ export class HttpServer {
       controllers: Function[];
     },
   ) {
-    const objects = new Map<string, Object>();
+    const objects = new Map<string, any>();
     for (const controller of controllers) {
       const name = controller.name;
       if (!objects.has(name)) {

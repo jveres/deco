@@ -9,7 +9,7 @@ import { createRouter } from "https://esm.sh/radix3";
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export type HttpAction = {
-  target: any;
+  target: { [key: string]: any };
   property: string;
   promise: (...args: any[]) => Promise<HttpResponse>;
 };
@@ -27,20 +27,19 @@ export class HttpRouter {
   add({ method, path, target, property }: {
     method: HttpMethod;
     path: string;
-    target: any;
+    target: { [key: string]: any };
     property: string;
   }) {
     if (!this.routes[method]) this.routes[method] = createRouter();
     const action: any = {
       target,
-      property, 
-    }
+      property,
+    };
     action.promise = (...args: any[]) => {
       return Promise.resolve(
         action.target[action.property](args),
       );
-    },
-    this.actions.push(action);
+    }, this.actions.push(action);
     this.routes[method].insert(path, action);
   }
 
