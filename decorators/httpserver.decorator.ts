@@ -13,8 +13,8 @@ export class HttpServer {
   static router = new HttpRouter();
 
   static AddRoute(
-    { method = "GET", path, target, property }: {
-      method?: HttpMethod;
+    { method, path, target, property }: {
+      method: HttpMethod;
       path: string;
       target: { [key: string]: any };
       property: string;
@@ -28,13 +28,25 @@ export class HttpServer {
     });
   }
 
+  static Route(
+    { method = "GET", path }: { method?: HttpMethod; path?: string },
+  ) {
+    return function (target: any, property: string) {
+      path ||= "/" + property;
+      return HttpServer.AddRoute({ method, path, target, property });
+    };
+  }
+
   static Get(
     path?: string,
   ) {
-    return function (target: Object, property: string) {
-      path ||= "/" + property;
-      return HttpServer.AddRoute({ path, target, property });
-    };
+    return HttpServer.Route({ path });
+  }
+
+  static Post(
+    path?: string,
+  ) {
+    return HttpServer.Route({ method: "POST", path });
   }
 
   static ["404"]() {

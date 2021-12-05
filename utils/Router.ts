@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { createRouter } from "https://esm.sh/radix3";
+import { createRouter } from "https://cdn.skypack.dev/radix3@0.1.0?min";
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
@@ -39,7 +39,8 @@ export class HttpRouter {
       return Promise.resolve(
         action.target[action.property](args),
       );
-    }, this.actions.push(action);
+    };
+    this.actions.push(action);
     this.routes[method].insert(path, action);
   }
 

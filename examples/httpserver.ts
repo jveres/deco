@@ -14,6 +14,11 @@ class TestServer {
     return { body: "Hello from Deco!" };
   }
 
+  @HttpServer.Post("/test")
+  test() {
+    return { body: "Hello from Deco!" };
+  }
+
   @HttpServer.Get("/test/:id")
   dynamic() {}
 
