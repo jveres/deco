@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import $Router from "https://cdn.skypack.dev/pin/@medley/router@v0.2.1-qsgLRjFoTcfu62jOFf5l/mode=imports,min/optimized/@medley/router.js";
+import { createRouter } from "https://esm.sh/radix3";
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
@@ -21,21 +21,30 @@ export interface HttpRoute {
 }
 
 export class HttpRouter {
-  readonly routes = new $Router();
+  readonly routes: { [key: string]: any } = {};
   readonly actions = new Array<HttpAction>();
 
-  add({ method, path, action, upsert = true }: {
+  add({ method, path, target, property }: {
     method: HttpMethod;
     path: string;
-    action: HttpAction;
-    upsert?: boolean;
+    target: any;
+    property: string;
   }) {
+    if (!this.routes[method]) this.routes[method] = createRouter();
+    const action: any = {
+      target,
+      property, 
+    }
+    action.promise = (...args: any[]) => {
+      return Promise.resolve(
+        action.target[action.property](args),
+      );
+    },
     this.actions.push(action);
-    const store = this.routes.register(path);
-    upsert ? store[method] = action : store[method] ??= action;
+    this.routes[method].insert(path, action);
   }
 
   find(method: string, path: string) {
-    return (this.routes.find(path)?.store[method] as HttpAction).promise;
+    return (this.routes[method]?.lookup(path) as HttpAction)?.promise;
   }
 }
