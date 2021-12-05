@@ -4,7 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { createRouter } from "https://cdn.skypack.dev/radix3@0.1.0?min";
+import { createRouter } from "https://cdn.skypack.dev/pin/radix3@v0.1.0-sqwTbihQDBcApBBbSzEH/mode=imports,min/optimized/radix3.js";
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
@@ -35,9 +35,21 @@ export class HttpRouter {
       target,
       property,
     };
+    /*action.promise = (...args: any[]) => {
+      return Promise.resolve("pre").then((_) =>
+        Promise.resolve(
+          action.target[action.property](args),
+        )
+      ).then((_) => Promise.resolve("post"));
+    };*/
     action.promise = (...args: any[]) => {
-      return Promise.resolve(
-        action.target[action.property](args),
+      return [].reduce(
+        function (promise: any, next: any) {
+          return promise.then(next);
+        },
+        Promise.resolve(
+          action.target[action.property](args),
+        ),
       );
     };
     this.actions.push(action);
