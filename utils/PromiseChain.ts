@@ -12,6 +12,7 @@ export class PromiseChain {
   private chain = new Array<PromiseFn>();
 
   constructor(promise?: PromiseFn) {
+    this.promise = this.promise.bind(this);
     if (promise) this.append(promise);
   }
 
