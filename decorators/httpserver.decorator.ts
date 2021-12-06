@@ -4,14 +4,19 @@
 
 // deno-lint-ignore-file ban-types no-explicit-any
 
-import { HttpMethod, HttpRouter } from "../utils/Router.ts";
+import {
+  HttpMethod,
+  HttpRequest,
+  HttpResponse,
+  HttpRouter,
+} from "../utils/Router.ts";
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
 
-enum HookType {
-  Before = "before",
-  After = "after",
+enum HttpServerHookType {
+  Before,
+  After,
 }
 
 export class HttpServer {
@@ -43,25 +48,31 @@ export class HttpServer {
     return HttpServer.Route({ method: "POST", path });
   }
 
-  static Hook(hook: HookType) {
+  static Hook(hook: HttpServerHookType) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      const promiseFn = ({ request }: { request: Request }) => {
-        console.log("hook =", hook);
-        return Promise.resolve({ request });
-      };
-      if (hook === HookType.Before) {
+      if (hook === HttpServerHookType.Before) {
+        const promiseFn = (request: HttpRequest) => {
+          console.log("hook =", hook);
+          return Promise.resolve(request);
+        };
         action.before.push(promiseFn);
-      } else action.after.push(promiseFn);
+      } else {
+        const promiseFn = (response: HttpResponse) => {
+          console.log("hook =", hook);
+          return Promise.resolve(response);
+        };
+        action.after.push(promiseFn);
+      }
     };
   }
 
   static Before() {
-    return HttpServer.Hook(HookType.Before);
+    return HttpServer.Hook(HttpServerHookType.Before);
   }
 
   static After() {
-    return HttpServer.Hook(HookType.After);
+    return HttpServer.Hook(HttpServerHookType.After);
   }
 
   static ["404"]() {
@@ -89,9 +100,15 @@ export class HttpServer {
     for (const action of HttpServer.router.actions) {
       const name = action.target.constructor.name;
       if (objects.has(name)) action.target = objects.get(name); // bind to instance
-      action.chain.append(action.before); // Pre-hooks
-      action.chain.append([action.target[action.property].bind(action.target)]); // Response function
-      action.chain.append(action.after); // Post-hooks
+
+      action.promise = (request: HttpRequest) => {
+        return [...action.before, action.target[action.property].bind(action.target), ...action.after].reduce(
+          (promise, next) => {
+            return promise.then(next);
+          },
+          Promise.resolve({ request }),
+        );
+      }
     }
     for await (
       const conn of Deno.listen({ port, hostname })

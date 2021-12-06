@@ -5,17 +5,18 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { createRouter } from "https://cdn.skypack.dev/pin/radix3@v0.1.0-sqwTbihQDBcApBBbSzEH/mode=imports,min/optimized/radix3.js";
-import { PromiseChain, PromiseFn } from "./PromiseChain.ts";
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
+
+export type HttpRequest = { request: Request };
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 
 export type HttpAction = {
   target: { [key: string]: any };
   property: string;
-  before: PromiseFn[];
-  after: PromiseFn[];
-  chain: PromiseChain;
+  before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
+  after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
+  promise: (request: HttpRequest) => Promise<HttpResponse>;
 };
 
 export interface HttpRoute {
@@ -43,7 +44,7 @@ export class HttpRouter {
         property,
         before: [],
         after: [],
-        chain: new PromiseChain(),
+        promise: undefined!
       };
       this.actions.push(action);
       return action;
@@ -59,10 +60,10 @@ export class HttpRouter {
     property: string;
   }) {
     if (!this.routes[method]) this.routes[method] = createRouter();
-    this.routes[method].insert(path, this.createAction({target, property}));
+    this.routes[method].insert(path, this.createAction({ target, property }));
   }
 
   find(method: string, path: string) {
-    return (this.routes[method]?.lookup(path) as HttpAction)?.chain.promise;
+    return (this.routes[method]?.lookup(path) as HttpAction)?.promise;
   }
 }
