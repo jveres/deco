@@ -9,9 +9,9 @@ class TestServer {
   @HttpServer.Get()
   dummy() {}
 
-  @HttpServer.Get("/test")
-  @HttpServer.After()
   @HttpServer.Before()
+  @HttpServer.After()
+  @HttpServer.Get("/test")
   static({ request }: { request: Request }) {
     console.log(request);
     return { body: "Hello from Deco!" };

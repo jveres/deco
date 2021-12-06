@@ -100,15 +100,18 @@ export class HttpServer {
     for (const action of HttpServer.router.actions) {
       const name = action.target.constructor.name;
       if (objects.has(name)) action.target = objects.get(name); // bind to instance
-
       action.promise = (request: HttpRequest) => {
-        return [...action.before, action.target[action.property].bind(action.target), ...action.after].reduce(
+        return [
+          ...action.before, // pre-hooks
+          action.target[action.property].bind(action.target), // response function
+          ...action.after, // post-hooks
+        ].reduce(
           (promise, next) => {
             return promise.then(next);
           },
-          Promise.resolve({ request }),
+          Promise.resolve(request),
         );
-      }
+      };
     }
     for await (
       const conn of Deno.listen({ port, hostname })
@@ -118,8 +121,8 @@ export class HttpServer {
           const [path] = http.request.url.split(":" + port)[1].split("?");
           const promise = HttpServer.router.find(http.request.method, path) ||
             HttpServer["404"]();
-          promise({ request: http.request }).then((response: any) =>
-            http.respondWith(new Response(response?.body, response?.init))
+          promise({ request: http.request }).then((response = {}) =>
+            http.respondWith(new Response(response.body, response.init))
               .catch(
                 () => {},
               ) // swallow Http errors
