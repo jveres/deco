@@ -12,28 +12,17 @@ const DEFAULT_HTTPSERVER_PORT = 8080;
 export class HttpServer {
   static router = new HttpRouter();
 
-  static AddRoute(
-    { method, path, target, property }: {
-      method: HttpMethod;
-      path: string;
-      target: { [key: string]: any };
-      property: string;
-    },
-  ) {
-    HttpServer.router.add({
-      method,
-      path,
-      target,
-      property,
-    });
-  }
-
   static Route(
     { method = "GET", path }: { method?: HttpMethod; path?: string },
   ) {
     return function (target: any, property: string) {
       path ||= "/" + property;
-      return HttpServer.AddRoute({ method, path, target, property });
+      HttpServer.router.add({
+        method,
+        path,
+        target,
+        property,
+      });
     };
   }
 
@@ -47,6 +36,22 @@ export class HttpServer {
     path?: string,
   ) {
     return HttpServer.Route({ method: "POST", path });
+  }
+
+  static Before() {
+    return function (target: any, property: string) {
+      const action = HttpServer.router.createAction({target, property});
+      const promiseFn = (...args: any[]) => Promise.resolve(args).then(console.log);
+      action.before.push(promiseFn);
+    };
+  }
+
+  static After() {
+    return function (target: any, property: string) {
+      const action = HttpServer.router.createAction({target, property});
+      const promiseFn = (...args: any[]) => Promise.resolve(args).then(console.log);
+      action.after.push(promiseFn);
+    };
   }
 
   static ["404"]() {
@@ -76,6 +81,11 @@ export class HttpServer {
       if (objects.has(name)) {
         action.target = objects.get(name);
       }
+      action.chain.append([
+        (...args: any[]) => action.target[action.property](args),
+      ]);
+      action.chain.prepend(action.before);
+      action.chain.prepend(action.after);
     }
     for await (
       const conn of Deno.listen({ port, hostname })

@@ -8,8 +8,10 @@ import { sleep } from "../utils/utils.ts";
 class TestServer {
   @HttpServer.Get()
   dummy() {}
-
+  
   @HttpServer.Get("/test")
+  @HttpServer.Before()
+  @HttpServer.After()
   static() {
     return { body: "Hello from Deco!" };
   }

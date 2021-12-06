@@ -11,17 +11,17 @@ export type PromiseFn = (...args: any[]) => Promise<any>;
 export class PromiseChain {
   private chain = new Array<PromiseFn>();
 
-  constructor(promise?: PromiseFn) {
+  constructor(promiseFn?: PromiseFn) {
     this.promise = this.promise.bind(this);
-    if (promise) this.append(promise);
+    if (promiseFn) this.append([promiseFn]);
   }
 
-  append(promise: PromiseFn) {
-    this.chain.push(promise);
+  append(promiseFn: PromiseFn[]) {
+    this.chain = this.chain.concat(promiseFn);
   }
 
-  prepend(promise: PromiseFn) {
-    this.chain = [promise].concat(this.chain);
+  prepend(promiseFn: PromiseFn[]) {
+    this.chain = promiseFn.concat(this.chain);
   }
 
   promise() {
