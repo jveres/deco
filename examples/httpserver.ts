@@ -9,10 +9,17 @@ class TestServer {
   @HttpServer.Get()
   dummy() {}
 
-  @HttpServer.Before()
-  @HttpServer.After()
+  @HttpServer.Before((r) => {
+    console.log(r);
+    Object.assign(r, { metadata: Date.now() });
+    return Promise.resolve(r);
+  })
+  @HttpServer.After((r) => {
+    console.log(r);
+    return Promise.resolve(r);
+  })
   @HttpServer.Get("/test")
-  static({ request }: { request: Request }) {
+  static(request: Record<string, unknown>) {
     console.log(request);
     return { body: "Hello from Deco!" };
   }

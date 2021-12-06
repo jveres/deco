@@ -48,31 +48,20 @@ export class HttpServer {
     return HttpServer.Route({ method: "POST", path });
   }
 
-  static Hook(hook: HttpServerHookType) {
+  static Hook(hook: any, type: HttpServerHookType) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      if (hook === HttpServerHookType.Before) {
-        const promiseFn = (request: HttpRequest) => {
-          console.log("hook =", hook);
-          return Promise.resolve(request);
-        };
-        action.before.push(promiseFn);
-      } else {
-        const promiseFn = (response: HttpResponse) => {
-          console.log("hook =", hook);
-          return Promise.resolve(response);
-        };
-        action.after.push(promiseFn);
-      }
+      if (type === HttpServerHookType.Before) action.before.push(hook);
+      else action.after.push(hook);
     };
   }
 
-  static Before() {
-    return HttpServer.Hook(HttpServerHookType.Before);
+  static Before(hook: (request: HttpRequest) => Promise<HttpRequest>) {
+    return HttpServer.Hook(hook, HttpServerHookType.Before);
   }
 
-  static After() {
-    return HttpServer.Hook(HttpServerHookType.After);
+  static After(hook: (response: HttpResponse) => Promise<HttpResponse>) {
+    return HttpServer.Hook(hook, HttpServerHookType.After);
   }
 
   static ["404"]() {
