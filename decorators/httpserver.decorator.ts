@@ -9,6 +9,11 @@ import { HttpMethod, HttpRouter } from "../utils/Router.ts";
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
 
+enum HookType {
+  Before = "before",
+  After = "after",
+}
+
 export class HttpServer {
   static router = new HttpRouter();
 
@@ -38,21 +43,25 @@ export class HttpServer {
     return HttpServer.Route({ method: "POST", path });
   }
 
-  static Before() {
+  static Hook(hook: HookType) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      const promiseFn = (...args: any[]) => Promise.resolve(args);
-      action.before.push(promiseFn);
+      const promiseFn = ({ request }: { request: Request }) => {
+        console.log("hook =", hook);
+        return Promise.resolve({ request });
+      };
+      if (hook === HookType.Before) {
+        action.before.push(promiseFn);
+      } else action.after.push(promiseFn);
     };
   }
 
+  static Before() {
+    return HttpServer.Hook(HookType.Before);
+  }
+
   static After() {
-    return function (target: any, property: string) {
-      const action = HttpServer.router.createAction({ target, property });
-      const promiseFn = (...args: any[]) =>
-        Promise.resolve(args).then(console.log);
-      action.after.push(promiseFn);
-    };
+    return HttpServer.Hook(HookType.After);
   }
 
   static ["404"]() {
@@ -79,12 +88,10 @@ export class HttpServer {
     }
     for (const action of HttpServer.router.actions) {
       const name = action.target.constructor.name;
-      if (objects.has(name)) {
-        action.target = objects.get(name);
-      }
-      action.chain.append([action.target[action.property]]); // Response function
-      action.chain.prepend(action.before); // Hooks
-      action.chain.prepend(action.after);
+      if (objects.has(name)) action.target = objects.get(name); // bind to instance
+      action.chain.append(action.before); // Pre-hooks
+      action.chain.append([action.target[action.property].bind(action.target)]); // Response function
+      action.chain.append(action.after); // Post-hooks
     }
     for await (
       const conn of Deno.listen({ port, hostname })
@@ -94,7 +101,7 @@ export class HttpServer {
           const [path] = http.request.url.split(":" + port)[1].split("?");
           const promise = HttpServer.router.find(http.request.method, path) ||
             HttpServer["404"]();
-          promise({request: http.request}).then((response: any) =>
+          promise({ request: http.request }).then((response: any) =>
             http.respondWith(new Response(response?.body, response?.init))
               .catch(
                 () => {},
