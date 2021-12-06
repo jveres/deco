@@ -50,7 +50,9 @@ export class HttpServer {
   }
 
   static ["404"]() {
-    return () => Promise.resolve({ body: null, init: { status: 404 } });
+    return {
+      promise: () => Promise.resolve({ body: null, init: { status: 404 } }),
+    };
   }
 
   static async serve(
@@ -83,9 +85,9 @@ export class HttpServer {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
-          const promise = HttpServer.router.find(http.request.method, path) ||
+          const action = HttpServer.router.find(http.request.method, path) ||
             HttpServer["404"]();
-          promise().then((response = {}) =>
+          action.promise().then((response = {}) =>
             http.respondWith(new Response(response.body, response.init)).catch(
               () => {},
             ) // swallow Http errors
