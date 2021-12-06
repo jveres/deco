@@ -4,9 +4,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import type { HttpResponse } from "./Router.ts";
-
-export type PromiseFn = (...args: any[]) => Promise<any>;
+export type PromiseFn = ({ request }: { request: Request }) => Promise<any>;
 
 export class PromiseChain {
   private chain = new Array<PromiseFn>();
@@ -24,12 +22,12 @@ export class PromiseChain {
     this.chain = promiseFn.concat(this.chain);
   }
 
-  promise() {
+  promise({ request }: { request: Request }) {
     return this.chain.reduce(
-      function (promise, next) {
+      (promise, next) => {
         return promise.then(next);
       },
-      Promise.resolve({} as HttpResponse),
+      Promise.resolve({ request }),
     );
   }
 }

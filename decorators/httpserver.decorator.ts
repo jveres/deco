@@ -40,16 +40,17 @@ export class HttpServer {
 
   static Before() {
     return function (target: any, property: string) {
-      const action = HttpServer.router.createAction({target, property});
-      const promiseFn = (...args: any[]) => Promise.resolve(args).then(console.log);
+      const action = HttpServer.router.createAction({ target, property });
+      const promiseFn = (...args: any[]) => Promise.resolve(args);
       action.before.push(promiseFn);
     };
   }
 
   static After() {
     return function (target: any, property: string) {
-      const action = HttpServer.router.createAction({target, property});
-      const promiseFn = (...args: any[]) => Promise.resolve(args).then(console.log);
+      const action = HttpServer.router.createAction({ target, property });
+      const promiseFn = (...args: any[]) =>
+        Promise.resolve(args).then(console.log);
       action.after.push(promiseFn);
     };
   }
@@ -81,10 +82,8 @@ export class HttpServer {
       if (objects.has(name)) {
         action.target = objects.get(name);
       }
-      action.chain.append([
-        (...args: any[]) => action.target[action.property](args),
-      ]);
-      action.chain.prepend(action.before);
+      action.chain.append([action.target[action.property]]); // Response function
+      action.chain.prepend(action.before); // Hooks
       action.chain.prepend(action.after);
     }
     for await (
@@ -95,10 +94,11 @@ export class HttpServer {
           const [path] = http.request.url.split(":" + port)[1].split("?");
           const promise = HttpServer.router.find(http.request.method, path) ||
             HttpServer["404"]();
-          promise().then((response = {}) =>
-            http.respondWith(new Response(response.body, response.init)).catch(
-              () => {},
-            ) // swallow Http errors
+          promise({request: http.request}).then((response: any) =>
+            http.respondWith(new Response(response?.body, response?.init))
+              .catch(
+                () => {},
+              ) // swallow Http errors
           );
         }
       })();
