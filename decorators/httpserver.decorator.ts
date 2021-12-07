@@ -50,6 +50,17 @@ export class HttpServer {
     return HttpServer.Route({ method: "POST", path });
   }
 
+  static Wrapper(
+    wrapper: (
+      promise: Promise<HttpRequest | HttpResponse>,
+    ) => Promise<HttpRequest | HttpResponse>,
+  ) {
+    return function (target: any, property: string) {
+      const action = HttpServer.router.createAction({ target, property });
+      action.wrappers.push(wrapper);
+    };
+  }
+
   static Hook(hook: any, type: HttpServerHookType) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
@@ -99,11 +110,17 @@ export class HttpServer {
     }
     for (const action of HttpServer.router.actions) {
       const name = action.target.constructor.name;
-      if (objects.has(name)) action.target = objects.get(name); // bind to instance
+      if (objects.has(name)) action.target = objects.get(name);
+      let fn = action.target[action.property].bind(action.target); // bind to instance
+      for (const wrapper of action.wrappers) {
+        const prevFn = fn;
+        const wrapped = () => wrapper(prevFn);
+        fn = wrapped;
+      }
       action.promise = (request: HttpRequest) => {
         return [
           ...action.before, // pre-hooks
-          action.target[action.property].bind(action.target), // response function
+          fn, // response function
           ...action.after, // post-hooks
         ].reduce(
           (promise, next) => {

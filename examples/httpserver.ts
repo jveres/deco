@@ -10,6 +10,11 @@ class TestServer {
   dummy() {}
 
   @HttpServer.Get("/test")
+  @HttpServer.Wrapper((promise: any) => {
+    const unwrap = promise();
+    console.log("unwrap =", unwrap);
+    return unwrap;
+  })
   static() {
     return { body: "Hello from Deco!" };
   }
@@ -22,6 +27,16 @@ class TestServer {
   @HttpServer.Get("/test/:id")
   dynamic(r: Record<string, unknown>) {
     return { body: `${JSON.stringify(r.params)}` };
+  }
+
+  @HttpServer.Get()
+  @HttpServer.Wrapper((promise: any) => {
+    const unwrap = promise();
+    console.log("unwrap =", unwrap);
+    return unwrap;
+  })
+  wrapped() {
+    return { body: "Hello from Deco!" };
   }
 
   #priv = "Hello from Deco!";
