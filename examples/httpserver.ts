@@ -9,25 +9,12 @@ class TestServer {
   @HttpServer.Get()
   dummy() {}
 
-  @HttpServer.Before((r) => {
-    console.log(r);
-    Object.assign(r, { metadata: Date.now() });
-    return Promise.resolve(r);
-  })
-  @HttpServer.After((r) => {
-    console.log(r);
-    return Promise.resolve(r);
-  })
   @HttpServer.Get("/test")
   static(request: Record<string, unknown>) {
     console.log(request);
     return { body: "Hello from Deco!" };
   }
 
-  @HttpServer.Before((r) => {
-    r.request.respondWith(new Response("Not allowed", { status: 405 }));
-    return Promise.reject("Not allowed");
-  })
   @HttpServer.Post("/test")
   test() {
     console.log("POST /test");
@@ -35,7 +22,9 @@ class TestServer {
   }
 
   @HttpServer.Get("/test/:id")
-  dynamic() {}
+  dynamic(r: Record<string, unknown>) {
+    return { body: `${JSON.stringify(r.params)}` };
+  }
 
   #priv = "Hello from Deco!";
 

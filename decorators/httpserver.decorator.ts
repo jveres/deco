@@ -115,16 +115,19 @@ export class HttpServer {
         );
       };
     }
+    const ACTION_404 = { promise: HttpServer.ResponseWithStatus(404) };
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
-          const promise = HttpServer.router.find(http.request.method, path) ||
-            HttpServer.ResponseWithStatus(404);
-          promise({ request: http }).then((response = {}) =>
-            http.respondWith(new Response(response.body, response.init))
+          const { promise, params } = HttpServer.router.find(
+            http.request.method,
+            path,
+          ) || ACTION_404;
+          promise({ request: http, params }).then((response: any) =>
+            http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // Http errors
           );
           //).catch(() => {}); // Runtime errors

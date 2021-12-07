@@ -64,6 +64,6 @@ export class HttpRouter {
   }
 
   find(method: string, path: string) {
-    return (this.routes[method]?.lookup(path) as HttpAction)?.promise;
+    return this.routes[method]?.lookup(path);
   }
 }
