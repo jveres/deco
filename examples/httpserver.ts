@@ -49,6 +49,13 @@ class TestServer {
     await sleep(1000);
     return { body: this.#priv };
   }
+
+  @HttpServer.Get()
+  @HttpServer.Timeout(1000)
+  async timeout() {
+    await sleep(2000);
+    return { body: this.#priv };
+  }
 }
 
 console.log("HttpServer() started...");

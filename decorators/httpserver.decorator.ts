@@ -11,6 +11,8 @@ import {
   HttpRouter,
 } from "../utils/Router.ts";
 
+import { Timeout } from "./timeout.decorator.ts";
+
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
 
@@ -64,6 +66,17 @@ export class HttpServer {
     return HttpServer.Hook(hook, HttpServerHookType.After);
   }
 
+  static Timeout(timeout: number) {
+    return function (target: any, property: string, descriptor: any) {
+      Timeout({
+        timeout,
+        onTimeout: () => {
+          return { init: { status: 408 } };
+        },
+      })(target, property, descriptor);
+    };
+  }
+
   static ["404"]() {
     return Promise.resolve({ body: null, init: { status: 404 } });
   }
@@ -113,7 +126,8 @@ export class HttpServer {
           promise({ request: http }).then((response = {}) =>
             http.respondWith(new Response(response.body, response.init))
               .catch(() => {}) // Http errors
-          ).catch(() => {}); // Errors
+          );
+          //).catch(() => {}); // Runtime errors
         }
       })();
     }
