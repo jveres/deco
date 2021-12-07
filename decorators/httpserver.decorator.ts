@@ -67,17 +67,15 @@ export class HttpServer {
   }
 
   static Timeout(timeout: number) {
-    return function (target: any, property: string, descriptor: any) {
-      Timeout({
-        timeout,
-        onTimeout: () => {
-          return HttpServer.ResponseWithStatus(408)();
-        },
-      })(target, property, descriptor);
-    };
+    return Timeout({
+      timeout,
+      onTimeout: () => {
+        return HttpServer.Status(408)();
+      },
+    });
   }
 
-  static ResponseWithStatus(status: number) {
+  static Status(status: number) {
     return () => Promise.resolve({ init: { status } });
   }
 
@@ -115,7 +113,7 @@ export class HttpServer {
         );
       };
     }
-    const ACTION_404 = { promise: HttpServer.ResponseWithStatus(404) };
+    const ACTION_404 = { promise: HttpServer.Status(404) };
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {
@@ -130,7 +128,7 @@ export class HttpServer {
             http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // Http errors
           );
-          //).catch(() => {}); // Runtime errors
+          //).catch(() => {}); // Runtime errorsq
         }
       })();
     }

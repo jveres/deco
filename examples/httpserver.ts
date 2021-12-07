@@ -10,14 +10,12 @@ class TestServer {
   dummy() {}
 
   @HttpServer.Get("/test")
-  static(request: Record<string, unknown>) {
-    console.log(request);
+  static() {
     return { body: "Hello from Deco!" };
   }
 
   @HttpServer.Post("/test")
   test() {
-    console.log("POST /test");
     return { body: "Hello from Deco!" };
   }
 
