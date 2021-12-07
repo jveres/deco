@@ -2,17 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
-
-import denque from "https://cdn.skypack.dev/pin/denque@v2.0.1-7VAkuu7E2GCqj7vx07sb/mode=imports,min/optimized/denque.js?dts";
-
-export const Denque = denque as any;
-
-export const sleep = (wait: number) =>
-  new Promise((resolve) => setTimeout(resolve, wait));
-
-export const stringFromPropertyKey = (s: PropertyKey) =>
-  typeof s === "symbol" ? (s.description || s.toString()) : String(s);
+export function sleep(wait: number) {
+  return new Promise((resolve) => setTimeout(resolve, wait));
+}
 
 export const DEFAULT_MAX_LRUCACHE_ENTRIES = 500;
 
