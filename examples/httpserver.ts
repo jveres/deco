@@ -24,8 +24,13 @@ class TestServer {
     return { body: "Hello from Deco!" };
   }
 
+  @HttpServer.Before((r) => {
+    r.request.respondWith(new Response("Not allowed", { status: 405 }));
+    return Promise.reject("Not allowed");
+  })
   @HttpServer.Post("/test")
   test() {
+    console.log("POST /test");
     return { body: "Hello from Deco!" };
   }
 
