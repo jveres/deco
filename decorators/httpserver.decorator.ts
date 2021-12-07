@@ -71,14 +71,14 @@ export class HttpServer {
       Timeout({
         timeout,
         onTimeout: () => {
-          return { init: { status: 408 } };
+          return HttpServer.ResponseWithStatus(408)();
         },
       })(target, property, descriptor);
     };
   }
 
-  static ["404"]() {
-    return Promise.resolve({ body: null, init: { status: 404 } });
+  static ResponseWithStatus(status: number) {
+    return () => Promise.resolve({ init: { status } });
   }
 
   static async serve(
@@ -122,7 +122,7 @@ export class HttpServer {
         for await (const http of Deno.serveHttp(conn)) {
           const [path] = http.request.url.split(":" + port)[1].split("?");
           const promise = HttpServer.router.find(http.request.method, path) ||
-            HttpServer["404"];
+            HttpServer.ResponseWithStatus(404);
           promise({ request: http }).then((response = {}) =>
             http.respondWith(new Response(response.body, response.init))
               .catch(() => {}) // Http errors
