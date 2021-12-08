@@ -112,11 +112,11 @@ export class HttpServer {
       const name = action.target.constructor.name;
       if (objects.has(name)) action.target = objects.get(name);
       let fn = action.target[action.property].bind(action.target); // bind to instance
-      for (const wrapper of action.wrappers) {
+      action.wrappers.map((wrapper) => {
         const prevFn = fn;
-        const wrapped = () => wrapper(prevFn);
+        const wrapped = () => wrapper(prevFn); // apply wrappers
         fn = wrapped;
-      }
+      });
       action.promise = (request: HttpRequest) => {
         return [
           ...action.before, // pre-hooks
@@ -143,11 +143,11 @@ export class HttpServer {
           ) || ACTION_404;
           promise({ request: http, params }).then((response: any) =>
             http.respondWith(new Response(response?.body, response?.init))
-              .catch(() => {}) // Http errors
+              .catch(() => {}) // catch Http errors
           );
-          //).catch(() => {}); // Runtime errorsq
+          //).catch(() => {}); // catch app errors
         }
-      })();
+      })().catch(() => {}); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
     }
   }
 }

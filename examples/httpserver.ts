@@ -2,6 +2,8 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// deno-lint-ignore-file no-explicit-any
+
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 
@@ -13,7 +15,7 @@ class TestServer {
   @HttpServer.Wrapper((promise: any) => {
     const unwrap = promise();
     console.log("unwrap =", unwrap);
-    return unwrap;
+    return promise;
   })
   static() {
     return { body: "Hello from Deco!" };
