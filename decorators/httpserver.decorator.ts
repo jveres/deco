@@ -11,7 +11,7 @@ import {
   HttpRouter,
 } from "../utils/Router.ts";
 
-import { Timeout } from "./timeout.decorator.ts";
+import { pTimeout, Timeout } from "./timeout.decorator.ts";
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
@@ -50,6 +50,14 @@ export class HttpServer {
     return HttpServer.Route({ method: "POST", path });
   }
 
+  static Hook(hook: any, type: HttpServerHookType) {
+    return function (target: any, property: string) {
+      const action = HttpServer.router.createAction({ target, property });
+      if (type === HttpServerHookType.Before) action.before.push(hook);
+      else action.after.push(hook);
+    };
+  }
+
   static Wrapper(
     wrapper: (
       promise: Promise<HttpRequest | HttpResponse>,
@@ -58,15 +66,7 @@ export class HttpServer {
   ) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      action.wrappers.push({ order, wrapper });
-    };
-  }
-
-  static Hook(hook: any, type: HttpServerHookType) {
-    return function (target: any, property: string) {
-      const action = HttpServer.router.createAction({ target, property });
-      if (type === HttpServerHookType.Before) action.before.push(hook);
-      else action.after.push(hook);
+      action.wrappers.push({ wrapper, order });
     };
   }
 
@@ -79,12 +79,15 @@ export class HttpServer {
   }
 
   static Timeout(timeout: number) {
-    return Timeout({
-      timeout,
-      onTimeout: () => {
-        return HttpServer.Status(408)();
-      },
-    });
+    return HttpServer.Wrapper((promise) =>
+      pTimeout({
+        promise,
+        timeout,
+        onTimeout: () => {
+          return HttpServer.Status(408)();
+        },
+      })
+    );
   }
 
   static Status(status: number) {
@@ -116,7 +119,7 @@ export class HttpServer {
       action.wrappers.sort((a, b) => (a.order - b.order)).map( // consider order for wrapping
         (item) => {
           const prevFn = fn;
-          const wrapped = () => item.wrapper(prevFn); // apply wrappers
+          const wrapped = () => item.wrapper(prevFn()); // apply wrappers
           fn = wrapped;
         },
       );
