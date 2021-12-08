@@ -15,7 +15,14 @@ export type HttpAction = {
   target: { [key: string]: any };
   property: string;
   before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
-  wrappers: Array<(promise: Promise<HttpRequest | HttpResponse>) => Promise<HttpRequest | HttpResponse>>;
+  wrappers: Array<
+    {
+      order: number;
+      wrapper: (
+        promise: Promise<HttpRequest | HttpResponse>,
+      ) => Promise<HttpRequest | HttpResponse>;
+    }
+  >;
   after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
   promise: (request: HttpRequest) => Promise<HttpResponse>;
 };
@@ -46,7 +53,7 @@ export class HttpRouter {
         before: [],
         wrappers: [],
         after: [],
-        promise: undefined!
+        promise: undefined!,
       };
       this.actions.push(action);
       return action;

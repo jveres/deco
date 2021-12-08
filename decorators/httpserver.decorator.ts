@@ -54,10 +54,11 @@ export class HttpServer {
     wrapper: (
       promise: Promise<HttpRequest | HttpResponse>,
     ) => Promise<HttpRequest | HttpResponse>,
+    order = 0,
   ) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      action.wrappers.push(wrapper);
+      action.wrappers.push({ order, wrapper });
     };
   }
 
@@ -112,11 +113,13 @@ export class HttpServer {
       const name = action.target.constructor.name;
       if (objects.has(name)) action.target = objects.get(name);
       let fn = action.target[action.property].bind(action.target); // bind to instance
-      action.wrappers.map((wrapper) => {
-        const prevFn = fn;
-        const wrapped = () => wrapper(prevFn); // apply wrappers
-        fn = wrapped;
-      });
+      action.wrappers.sort((a, b) => (a.order - b.order)).map( // consider order for wrapping
+        (item) => {
+          const prevFn = fn;
+          const wrapped = () => item.wrapper(prevFn); // apply wrappers
+          fn = wrapped;
+        },
+      );
       action.promise = (request: HttpRequest) => {
         return [
           ...action.before, // pre-hooks
