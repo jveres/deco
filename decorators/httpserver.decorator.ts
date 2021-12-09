@@ -11,7 +11,8 @@ import {
   HttpRouter,
 } from "../utils/Router.ts";
 
-import { pTimeout, Timeout } from "./timeout.decorator.ts";
+import { pTimeout } from "./timeout.decorator.ts";
+import { pConcurrency } from "./concurrency.decorator.ts";
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
@@ -60,7 +61,7 @@ export class HttpServer {
 
   static Wrapper(
     wrapper: (
-      promise: Promise<HttpRequest | HttpResponse>,
+      promise: () => Promise<HttpRequest | HttpResponse>,
     ) => Promise<HttpRequest | HttpResponse>,
     order = 0,
   ) {
@@ -79,15 +80,27 @@ export class HttpServer {
   }
 
   static Timeout(timeout: number) {
-    return HttpServer.Wrapper((promise) =>
+    return HttpServer.Wrapper((promiseFn) =>
       pTimeout({
-        promise,
+        promise: promiseFn(),
         timeout,
         onTimeout: () => {
           return HttpServer.Status(408)();
         },
       })
     );
+  }
+
+  static Concurrency(limit: number) {
+    return function (target: any, property: string) {
+      HttpServer.Wrapper((promiseFn) =>
+        pConcurrency({
+          promiseFn,
+          limit,
+          resolver: () => property
+        })
+      )(target, property);
+    };
   }
 
   static Status(status: number) {
@@ -119,7 +132,7 @@ export class HttpServer {
       action.wrappers.sort((a, b) => (a.order - b.order)).map( // consider order for wrapping
         (item) => {
           const prevFn = fn;
-          const wrapped = () => item.wrapper(prevFn()); // apply wrappers
+          const wrapped = () => item.wrapper(prevFn); // apply wrappers
           fn = wrapped;
         },
       );

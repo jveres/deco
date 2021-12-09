@@ -33,17 +33,17 @@ class TestServer {
 
   @HttpServer.Get()
   @HttpServer.Wrapper((promise: any) => {
-    const unwrap = promise;
+    const unwrap = promise();
     console.log("unwrap =", unwrap);
     unwrap.body += " 2️";
     return unwrap;
-  }, 1)
+  }, 0)
   @HttpServer.Wrapper((promise: any) => {
-    const unwrap = promise;
+    const unwrap = promise();
     console.log("unwrap =", unwrap);
     unwrap.body += " 1️";
     return unwrap;
-  }, 2)
+  }, 1)
   wrapped() {
     return { body: "Hello from Deco!" };
   }
@@ -62,9 +62,16 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Timeout(3000)
+  @HttpServer.Timeout(1000)
   async timeout() {
     await sleep(2000);
+    return { body: this.#priv };
+  }
+
+  @HttpServer.Get()
+  @HttpServer.Concurrency(1)
+  async concurrency() {
+    await sleep(5000);
     return { body: this.#priv };
   }
 }

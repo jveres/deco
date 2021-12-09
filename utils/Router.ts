@@ -10,20 +10,22 @@ export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 
 export type HttpRequest = { request: Deno.RequestEvent };
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
+export type PromiseFn<T> = (promise: Promise<T>) => Promise<T>;
+export type PromiseFnFn<T> = (promise: PromiseFn<T>) => Promise<T>;
 
 export type HttpAction = {
   target: { [key: string]: any };
   property: string;
-  before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
+  before: Array<PromiseFn<HttpRequest>>;
   wrappers: Array<
     {
       order: number;
       wrapper: (
-        promise: Promise<HttpRequest | HttpResponse>,
+        promise: () => Promise<HttpRequest | HttpResponse>,
       ) => Promise<HttpRequest | HttpResponse>;
     }
   >;
-  after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
+  after: Array<PromiseFn<HttpResponse>>;
   promise: (request: HttpRequest) => Promise<HttpResponse>;
 };
 
