@@ -30,7 +30,7 @@ export function pConcurrency(
     if (count < limit) {
       const res = promiseFn();
       concurrencyPool.push({ key, value: res });
-      Promise.resolve(res).then(resolve).finally(() => removeFromPool(key));
+      res.then(resolve).finally(() => removeFromPool(key));
     } else {
       const index = concurrencyPool.map((e) => e.key).lastIndexOf(key);
       resolve(concurrencyPool[index].value);

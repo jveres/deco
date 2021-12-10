@@ -61,8 +61,8 @@ export class HttpServer {
 
   static Wrapper(
     wrapper: (
-      promise: () => Promise<HttpRequest | HttpResponse>,
-    ) => Promise<HttpRequest | HttpResponse>,
+      promise: () => Promise<HttpResponse>,
+    ) => Promise<HttpResponse>,
     order = 0,
   ) {
     return function (target: any, property: string) {
@@ -97,7 +97,7 @@ export class HttpServer {
         pConcurrency({
           promiseFn,
           limit,
-          resolver: () => property
+          resolver: () => property,
         })
       )(target, property);
     };
@@ -129,7 +129,7 @@ export class HttpServer {
       const name = action.target.constructor.name;
       if (objects.has(name)) action.target = objects.get(name);
       let fn = action.target[action.property].bind(action.target); // bind to instance
-      action.wrappers.sort((a, b) => (a.order - b.order)).map( // consider order for wrapping
+      action.wrappers.sort((a, b) => (a.order - b.order)).map( // ordered wrapping
         (item) => {
           const prevFn = fn;
           const wrapped = () => item.wrapper(prevFn); // apply wrappers
