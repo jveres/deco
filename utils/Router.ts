@@ -18,7 +18,7 @@ export type HttpAction = {
   wrappers: Array<
     {
       order: number;
-      wrapper: (
+      hook: (
         promise: () => Promise<HttpResponse>,
       ) => Promise<HttpResponse>;
     }

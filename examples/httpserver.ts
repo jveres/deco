@@ -35,13 +35,13 @@ class TestServer {
   @HttpServer.Wrapper((promise: any) => {
     const unwrap = promise();
     console.log("unwrap =", unwrap);
-    unwrap.body += " 2️";
+    unwrap.body += " 2";
     return unwrap;
   }, 0)
   @HttpServer.Wrapper((promise: any) => {
     const unwrap = promise();
     console.log("unwrap =", unwrap);
-    unwrap.body += " 1️";
+    unwrap.body += " 1";
     return unwrap;
   }, 1)
   wrapped() {

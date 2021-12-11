@@ -18,7 +18,7 @@ export function pTimeout(
     new Promise((_, reject) => {
       id = setTimeout(() => {
         clearTimeout(id);
-        reject(new TimeoutError("Timeout"));
+        reject(new TimeoutError());
       }, timeout);
     }),
     promise,

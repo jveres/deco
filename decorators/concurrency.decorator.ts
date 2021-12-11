@@ -17,8 +17,8 @@ function removeFromPool(key: string) {
 }
 
 export function pConcurrency(
-  { promiseFn, limit, resolver }: {
-    promiseFn: () => Promise<any>;
+  { promise, limit, resolver }: {
+    promise: Promise<any>;
     limit: number;
     resolver?: () => string;
   },
@@ -26,11 +26,9 @@ export function pConcurrency(
   return new Promise((resolve, _) => {
     const key = resolver?.() || crypto.randomUUID();
     const count = concurrencyPool.filter((e) => e.key === key).length;
-    console.log(key, count);
     if (count < limit) {
-      const res = promiseFn();
-      concurrencyPool.push({ key, value: res });
-      res.then(resolve).finally(() => removeFromPool(key));
+      concurrencyPool.push({ key, value: promise });
+      promise.then(resolve).finally(() => removeFromPool(key));
     } else {
       const index = concurrencyPool.map((e) => e.key).lastIndexOf(key);
       resolve(concurrencyPool[index].value);
@@ -45,7 +43,7 @@ export function Concurrency(
     const fn = descriptor.value;
     descriptor.value = function (...args: any[]): Promise<any> {
       return pConcurrency({
-        promiseFn: fn.bind(this, args),
+        promise: fn.apply(this, args),
         limit,
         ...resolver && { resolver: resolver.bind(this, args) },
       });

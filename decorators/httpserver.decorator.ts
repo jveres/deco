@@ -60,14 +60,14 @@ export class HttpServer {
   }
 
   static Wrapper(
-    wrapper: (
+    hook: (
       promise: () => Promise<HttpResponse>,
     ) => Promise<HttpResponse>,
     order = 0,
   ) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      action.wrappers.push({ wrapper, order });
+      action.wrappers.push({ hook, order });
     };
   }
 
@@ -84,9 +84,7 @@ export class HttpServer {
       pTimeout({
         promise: promiseFn(),
         timeout,
-        onTimeout: () => {
-          return HttpServer.Status(408)();
-        },
+        onTimeout: () => HttpServer.Status(408)(),
       })
     );
   }
@@ -95,7 +93,7 @@ export class HttpServer {
     return function (target: any, property: string) {
       HttpServer.Wrapper((promiseFn) =>
         pConcurrency({
-          promiseFn,
+          promise: promiseFn(),
           limit,
           resolver: () => property,
         })
@@ -132,8 +130,8 @@ export class HttpServer {
       action.wrappers.sort((a, b) => (a.order - b.order)).map( // ordered wrapping
         (item) => {
           const prevFn = fn;
-          const wrapped = () => item.wrapper(prevFn); // apply wrappers
-          fn = wrapped;
+          const wrapper = () => item.hook(prevFn); // apply wrappers
+          fn = wrapper;
         },
       );
       action.promise = (request: HttpRequest) => {
