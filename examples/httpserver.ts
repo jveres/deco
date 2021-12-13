@@ -2,21 +2,16 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// deno-lint-ignore-file no-explicit-any
-
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
+import { Concurrency } from "../decorators/concurrency.decorator.ts";
+import { Timeout } from "../decorators/timeout.decorator.ts";
 
 class TestServer {
   @HttpServer.Get()
   dummy() {}
 
   @HttpServer.Get("/test")
-  @HttpServer.Wrapper((promise: any) => {
-    const unwrap = promise();
-    console.log("unwrap =", unwrap);
-    return promise;
-  })
   static() {
     return { body: "Hello from Deco!" };
   }
@@ -32,7 +27,7 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Wrapper((promise: any) => {
+  /*@HttpServer.Wrapper((promise: any) => {
     const unwrap = promise();
     console.log("unwrap =", unwrap);
     unwrap.body += " 2";
@@ -43,7 +38,7 @@ class TestServer {
     console.log("unwrap =", unwrap);
     unwrap.body += " 1";
     return unwrap;
-  }, 1)
+  }, 1)*/
   wrapped() {
     return { body: "Hello from Deco!" };
   }
@@ -62,14 +57,14 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Timeout(1000)
+  //@HttpServer.Timeout(1000)
   async timeout() {
     await sleep(2000);
     return { body: this.#priv };
   }
 
   @HttpServer.Get()
-  @HttpServer.Concurrency(1)
+  @HttpServer.Decorate([Timeout(6000), Concurrency({ limit: 1 })])
   async concurrency() {
     await sleep(5000);
     return { body: this.#priv };

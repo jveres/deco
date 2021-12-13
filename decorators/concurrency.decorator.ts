@@ -9,44 +9,35 @@ interface ConcurrencyPoolItem {
   value: Promise<any>;
 }
 
-const concurrencyPool: ConcurrencyPoolItem[] = [];
-
-function removeFromPool(key: string) {
-  const index = concurrencyPool.findIndex((item) => item.key === key);
-  if (index > -1) concurrencyPool.splice(index, 1);
-}
-
-export function pConcurrency(
-  { promise, limit, resolver }: {
-    promise: Promise<any>;
-    limit: number;
-    resolver?: () => string;
-  },
-): Promise<any> {
-  return new Promise((resolve, _) => {
-    const key = resolver?.() || crypto.randomUUID();
-    const count = concurrencyPool.filter((e) => e.key === key).length;
-    if (count < limit) {
-      concurrencyPool.push({ key, value: promise });
-      promise.then(resolve).finally(() => removeFromPool(key));
-    } else {
-      const index = concurrencyPool.map((e) => e.key).lastIndexOf(key);
-      resolve(concurrencyPool[index].value);
-    }
-  });
-}
-
-export function Concurrency(
-  { limit, resolver }: { limit: number; resolver?: () => string },
-) {
-  return function (_target: any, _property: string, descriptor: any) {
+export const Concurrency = ({ limit = 1, resolver }: {
+  limit?: number;
+  resolver?: (...args: any[]) => string;
+} = {}) => {
+  return function (
+    _target: any,
+    property: string,
+    descriptor: PropertyDescriptor,
+  ) {
+    const concurrencyPool: ConcurrencyPoolItem[] = [];
+    const removeFromPool = (key: string) => {
+      const index = concurrencyPool.findIndex((item) => item.key === key);
+      if (index > -1) concurrencyPool.splice(index, 1);
+    };
     const fn = descriptor.value;
-    descriptor.value = function (...args: any[]): Promise<any> {
-      return pConcurrency({
-        promise: fn.apply(this, args),
-        limit,
-        ...resolver && { resolver: resolver.bind(this, args) },
-      });
+    console.log(property);
+    descriptor.value = function (...args: any[]) {
+      const key = resolver ? resolver.apply(this, args) : property;
+      console.log("decor")
+      const count = concurrencyPool.filter((e) => e.key === key).length;
+      if (count < limit) {
+        const res = Promise.resolve(fn.apply(this, args));
+        concurrencyPool.push({ key, value: res });
+        res.then(() => removeFromPool(key));
+        return res;
+      } else {
+        const index = concurrencyPool.map((e) => e.key).lastIndexOf(key);
+        return concurrencyPool[index].value;
+      }
     };
   };
-}
+};

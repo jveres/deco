@@ -11,9 +11,6 @@ import {
   HttpRouter,
 } from "../utils/Router.ts";
 
-import { pTimeout } from "./timeout.decorator.ts";
-import { pConcurrency } from "./concurrency.decorator.ts";
-
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
 
@@ -59,15 +56,14 @@ export class HttpServer {
     };
   }
 
-  static Wrapper(
-    hook: (
-      promise: () => Promise<HttpResponse>,
-    ) => Promise<HttpResponse>,
-    order = 0,
+  static Decorate(
+    decorators: Array<
+      (target: any, property: string, descriptor: PropertyDescriptor) => any
+    >,
   ) {
     return function (target: any, property: string) {
       const action = HttpServer.router.createAction({ target, property });
-      action.wrappers.push({ hook, order });
+      action.decorators = action.decorators.concat(decorators);
     };
   }
 
@@ -79,7 +75,7 @@ export class HttpServer {
     return HttpServer.Hook(hook, HttpServerHookType.After);
   }
 
-  static Timeout(timeout: number) {
+  /*static Timeout(timeout: number) {
     return HttpServer.Wrapper((promiseFn) =>
       pTimeout({
         promise: promiseFn(),
@@ -87,19 +83,7 @@ export class HttpServer {
         onTimeout: () => HttpServer.Status(408)(),
       })
     );
-  }
-
-  static Concurrency(limit: number) {
-    return function (target: any, property: string) {
-      HttpServer.Wrapper((promiseFn) =>
-        pConcurrency({
-          promise: promiseFn(),
-          limit,
-          resolver: () => property,
-        })
-      )(target, property);
-    };
-  }
+  }*/
 
   static Status(status: number) {
     return () => Promise.resolve({ init: { status } });
@@ -124,16 +108,19 @@ export class HttpServer {
       }
     }
     for (const action of HttpServer.router.actions) {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        action.target,
+        action.property,
+      );
+      if (descriptor) { // apply decorators
+        action.decorators.forEach((decorator) => {
+          decorator(action.target, action.property, descriptor);
+        });
+        Object.defineProperty(action.target, action.property, descriptor);
+      }
       const name = action.target.constructor.name;
       if (objects.has(name)) action.target = objects.get(name);
-      let fn = action.target[action.property].bind(action.target); // bind to instance
-      action.wrappers.sort((a, b) => (a.order - b.order)).map( // ordered wrapping
-        (item) => {
-          const prevFn = fn;
-          const wrapper = () => item.hook(prevFn); // apply wrappers
-          fn = wrapper;
-        },
-      );
+      const fn = action.target[action.property].bind(action.target); // bind to instance
       action.promise = (request: HttpRequest) => {
         return [
           ...action.before, // pre-hooks
