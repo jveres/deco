@@ -75,16 +75,6 @@ export class HttpServer {
     return HttpServer.Hook(hook, HttpServerHookType.After);
   }
 
-  /*static Timeout(timeout: number) {
-    return HttpServer.Wrapper((promiseFn) =>
-      pTimeout({
-        promise: promiseFn(),
-        timeout,
-        onTimeout: () => HttpServer.Status(408)(),
-      })
-    );
-  }*/
-
   static Status(status: number) {
     return () => Promise.resolve({ init: { status } });
   }

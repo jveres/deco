@@ -64,7 +64,10 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Decorate([Timeout(6000), Concurrency({ limit: 1 })])
+  @HttpServer.Decorate([
+    Timeout({ timeout: 1000, onTimeout: HttpServer.Status(408) }),
+    Concurrency({ limit: 1 }),
+  ])
   async concurrency() {
     await sleep(5000);
     return { body: this.#priv };

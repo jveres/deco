@@ -4,11 +4,10 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-export const DEFAULT_TIMEOUT_MS = 10000;
 export class TimeoutError extends Error {}
 
 export const Timeout = (
-  timeout: number = DEFAULT_TIMEOUT_MS,
+  { timeout, onTimeout }: { timeout: number; onTimeout?: () => any },
 ) =>
   (
     _target: any,
@@ -22,7 +21,7 @@ export const Timeout = (
         args: any[],
         timeout: number,
       ) => {
-        let id: number;
+        let id: number | undefined = undefined;
         const abortController = new AbortController();
         return Promise.race([
           new Promise((_, reject) => {
@@ -33,8 +32,12 @@ export const Timeout = (
             }, timeout);
           }),
           fn.apply(this, args.concat([{ abortController }])),
-        ]).finally(() => {
-          clearTimeout(id);
+        ]).catch((e: unknown) => {
+          if (e instanceof TimeoutError && onTimeout) return onTimeout();
+          else throw e;
+        })
+        .finally(() => {
+          if (id !== undefined) clearTimeout(id);
         });
       };
       return timeoutFn.apply(this, [fn, args, timeout]);
