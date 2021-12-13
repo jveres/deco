@@ -26,23 +26,6 @@ class TestServer {
     return { body: `${JSON.stringify(r.params)}` };
   }
 
-  @HttpServer.Get()
-  /*@HttpServer.Wrapper((promise: any) => {
-    const unwrap = promise();
-    console.log("unwrap =", unwrap);
-    unwrap.body += " 2";
-    return unwrap;
-  }, 0)
-  @HttpServer.Wrapper((promise: any) => {
-    const unwrap = promise();
-    console.log("unwrap =", unwrap);
-    unwrap.body += " 1";
-    return unwrap;
-  }, 1)*/
-  wrapped() {
-    return { body: "Hello from Deco!" };
-  }
-
   #priv = "Hello from Deco!";
 
   @HttpServer.Get()
@@ -57,7 +40,9 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  //@HttpServer.Timeout(1000)
+  @HttpServer.Decorate([
+    Timeout({ timeout: 1000, onTimeout: HttpServer.Status(408) }),
+  ])
   async timeout() {
     await sleep(2000);
     return { body: this.#priv };
@@ -65,7 +50,7 @@ class TestServer {
 
   @HttpServer.Get()
   @HttpServer.Decorate([
-    Timeout({ timeout: 1000, onTimeout: HttpServer.Status(408) }),
+    Timeout({ timeout: 6000, onTimeout: HttpServer.Status(408) }),
     Concurrency({ limit: 1 }),
   ])
   async concurrency() {
