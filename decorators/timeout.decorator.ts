@@ -16,30 +16,23 @@ export const Timeout = (
   ) => {
     const fn = descriptor.value;
     descriptor.value = function (...args: any[]) {
-      const timeoutFn = (
-        fn: (...args: any[]) => any,
-        args: any[],
-        timeout: number,
-      ) => {
-        let id: number | undefined = undefined;
-        const abortController = new AbortController();
-        return Promise.race([
-          new Promise((_, reject) => {
-            id = setTimeout(() => {
-              clearTimeout(id);
-              abortController.abort();
-              reject(new TimeoutError("Timed out"));
-            }, timeout);
-          }),
-          fn.apply(this, args.concat([{ abortController }])),
-        ]).catch((e: unknown) => {
-          if (e instanceof TimeoutError && onTimeout) return onTimeout();
-          else throw e;
-        })
-        .finally(() => {
-          if (id !== undefined) clearTimeout(id);
-        });
-      };
-      return timeoutFn.apply(this, [fn, args, timeout]);
+      let id: number | undefined;
+      const abortController = new AbortController();
+      return Promise.race([
+        new Promise((_, reject) => {
+          id = setTimeout(() => {
+            clearTimeout(id);
+            abortController.abort();
+            reject(new TimeoutError("Timed out"));
+          }, timeout);
+        }),
+        fn.apply(this, args.concat([{ abortController }])),
+      ]).catch((e: unknown) => {
+        if (e instanceof TimeoutError && onTimeout) return onTimeout();
+        else throw e;
+      })
+      .finally(() => {
+        if (id !== undefined) clearTimeout(id);
+      });
     };
   };

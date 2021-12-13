@@ -40,12 +40,12 @@ class TestServer {
   }
 
   @HttpServer.Decorate([
-    Timeout({ timeout: 5000, onTimeout: HttpServer.Status(408) }),
+    Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
   ])
   @HttpServer.Get()
   async timeout() {
-    const max = 7000;
-    const min = 1000;
+    const max = 1000;
+    const min = 4000;
     const wait = Math.floor(Math.random() * (max - min + 1)) + min;
     await sleep(wait);
     return { body: `took: ${wait}ms, ${this.#priv}` };
