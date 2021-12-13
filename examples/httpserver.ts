@@ -55,9 +55,11 @@ class TestServer {
   @HttpServer.Decorate([
     Concurrency({ limit: 1 }),
   ])
-  async concurrency() {
-    await sleep(5000);
-    return { body: this.#priv };
+  async concurrency({ searchParams }: { searchParams: string }) {
+    const params = new URLSearchParams(searchParams);
+    const delay = params.get("delay") || "5";
+    await sleep(Number(delay) * 1000);
+    return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 }
 

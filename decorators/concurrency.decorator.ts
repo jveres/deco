@@ -4,11 +4,6 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-interface ConcurrencyPoolItem {
-  key: string;
-  value: Promise<any>;
-}
-
 export const Concurrency = ({ limit = 1, resolver }: {
   limit?: number;
   resolver?: (...args: any[]) => string;
@@ -18,23 +13,19 @@ export const Concurrency = ({ limit = 1, resolver }: {
     property: string,
     descriptor: PropertyDescriptor,
   ) {
-    const concurrencyPool: ConcurrencyPoolItem[] = [];
-    const removeFromPool = (key: string) => {
-      const index = concurrencyPool.findIndex((item) => item.key === key);
-      if (index > -1) concurrencyPool.splice(index, 1);
-    };
+    const concurrencyPool = new Map<string, Promise<any>[]>();
     const fn = descriptor.value;
     descriptor.value = function (...args: any[]) {
       const key = resolver ? resolver.apply(this, args) : property;
-      const count = concurrencyPool.filter((e) => e.key === key).length;
+      const count = concurrencyPool.get(key)?.length || 0;
       if (count < limit) {
-        const res = Promise.resolve(fn.apply(this, args));
-        concurrencyPool.push({ key, value: res });
-        res.then(() => removeFromPool(key));
+        const res = fn.apply(this, args);
+        if (!concurrencyPool.has(key)) concurrencyPool.set(key, [res]);
+        else concurrencyPool.get(key)!.push(res);
+        res.then(() => concurrencyPool.delete(key));
         return res;
       } else {
-        const index = concurrencyPool.map((e) => e.key).lastIndexOf(key);
-        return concurrencyPool[index].value;
+        return Promise.any(concurrencyPool.get(key)!);
       }
     };
   };

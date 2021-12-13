@@ -130,12 +130,12 @@ export class HttpServer {
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
-          const [path] = http.request.url.split(":" + port)[1].split("?");
+          const [path, searchParams] = http.request.url.split(":" + port)[1].split("?");
           const { promise, params } = HttpServer.router.find(
             http.request.method,
             path,
           ) || ACTION_404;
-          promise({ request: http, params }).then((response: any) =>
+          promise({ request: http, params, searchParams }).then((response: any) =>
             http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // catch Http errors
           );
