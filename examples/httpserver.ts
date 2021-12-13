@@ -39,18 +39,20 @@ class TestServer {
     return { body: this.#priv };
   }
 
-  @HttpServer.Get()
   @HttpServer.Decorate([
-    Timeout({ timeout: 1000, onTimeout: HttpServer.Status(408) }),
+    Timeout({ timeout: 5000, onTimeout: HttpServer.Status(408) }),
   ])
+  @HttpServer.Get()
   async timeout() {
-    await sleep(2000);
-    return { body: this.#priv };
+    const max = 7000;
+    const min = 1000;
+    const wait = Math.floor(Math.random() * (max - min + 1)) + min;
+    await sleep(wait);
+    return { body: `took: ${wait}ms, ${this.#priv}` };
   }
 
   @HttpServer.Get()
   @HttpServer.Decorate([
-    Timeout({ timeout: 6000, onTimeout: HttpServer.Status(408) }),
     Concurrency({ limit: 1 }),
   ])
   async concurrency() {
