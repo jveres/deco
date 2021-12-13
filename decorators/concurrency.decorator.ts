@@ -24,10 +24,8 @@ export const Concurrency = ({ limit = 1, resolver }: {
       if (index > -1) concurrencyPool.splice(index, 1);
     };
     const fn = descriptor.value;
-    console.log(property);
     descriptor.value = function (...args: any[]) {
       const key = resolver ? resolver.apply(this, args) : property;
-      console.log("decor")
       const count = concurrencyPool.filter((e) => e.key === key).length;
       if (count < limit) {
         const res = Promise.resolve(fn.apply(this, args));
