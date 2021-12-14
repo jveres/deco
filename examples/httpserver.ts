@@ -6,6 +6,7 @@ import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
+import { Trace } from "../decorators/trace.decorator.ts";
 
 class TestServer {
   @HttpServer.Get()
@@ -48,6 +49,7 @@ class TestServer {
     response.body += ", Hello from Deco!";
     return Promise.resolve(response);
   })
+  @Trace()
   hooks({ start }: { start: number }) {
     const time = Math.floor(performance.now() - start);
     return { body: `took: ${time}ms` };
@@ -66,6 +68,7 @@ class TestServer {
   @HttpServer.Get()
   @Concurrency({ limit: 1 })
   @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
+  @Trace({ stack: true })
   async concurrency({ urlParams }: { urlParams: string }) {
     const params = new URLSearchParams(urlParams);
     const delay = params.get("delay") || "5";
