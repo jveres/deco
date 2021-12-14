@@ -19,11 +19,11 @@ export const Concurrency = ({ limit = 1, resolver }: {
       const key = resolver ? resolver.apply(this, args) : property;
       const count = concurrencyPool.get(key)?.length || 0;
       if (count < limit) {
-        const res = fn.apply(this, args);
-        if (!concurrencyPool.has(key)) concurrencyPool.set(key, [res]);
-        else concurrencyPool.get(key)!.push(res);
-        res.then(() => concurrencyPool.delete(key));
-        return res;
+        const promise = Promise.resolve(fn.apply(this, args));
+        if (!concurrencyPool.has(key)) concurrencyPool.set(key, [promise]);
+        else concurrencyPool.get(key)!.push(promise);
+        promise.then(() => concurrencyPool.delete(key));
+        return promise;
       } else {
         return Promise.any(concurrencyPool.get(key)!);
       }
