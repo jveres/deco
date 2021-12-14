@@ -39,6 +39,15 @@ class TestServer {
     return { body: this.#priv };
   }
 
+  @HttpServer.Get()
+  @HttpServer.Before((requestEvent) => {
+    console.log(requestEvent);
+    return Promise.resolve(requestEvent);
+  })
+  before() {
+    return { body: "Hello from Deco!" };
+  }
+
   @HttpServer.Decorate([
     Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
   ])
@@ -55,8 +64,8 @@ class TestServer {
   @HttpServer.Decorate([
     Concurrency({ limit: 1 }),
   ])
-  async concurrency({ searchParams }: { searchParams: string }) {
-    const params = new URLSearchParams(searchParams);
+  async concurrency({ urlParams }: { urlParams: string }) {
+    const params = new URLSearchParams(urlParams);
     const delay = params.get("delay") || "5";
     await sleep(Number(delay) * 1000);
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };

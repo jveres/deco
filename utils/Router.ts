@@ -8,17 +8,21 @@ import { createRouter } from "https://cdn.skypack.dev/pin/radix3@v0.1.0-sqwTbihQ
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 
-export type HttpRequest = { request: Deno.RequestEvent };
+export type HttpRequest = {
+  requestEvent: Deno.RequestEvent;
+  pathParams: string;
+  urlParams: string;
+};
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 
 export type HttpAction = {
   target: { [key: string]: any };
   property: string;
-  before: Array<() => Promise<HttpRequest>>;
+  before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
   decorators: Array<
-    (target: any, property: string, descriptor: PropertyDescriptor) => any
+    (target: any, property: string, descriptor: PropertyDescriptor) => void
   >;
-  after: Array<() => Promise<HttpResponse>>;
+  after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
   promise: (request: HttpRequest) => Promise<HttpResponse>;
 };
 

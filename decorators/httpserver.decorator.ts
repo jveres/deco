@@ -58,7 +58,7 @@ export class HttpServer {
 
   static Decorate(
     decorators: Array<
-      (target: any, property: string, descriptor: PropertyDescriptor) => any
+      (target: any, property: string, descriptor: PropertyDescriptor) => void
     >,
   ) {
     return function (target: any, property: string) {
@@ -67,7 +67,7 @@ export class HttpServer {
     };
   }
 
-  static Before(hook: (request: HttpRequest) => Promise<HttpRequest>) {
+  static Before(hook: (ctx: HttpRequest) => Promise<HttpRequest>) {
     return HttpServer.Hook(hook, HttpServerHookType.Before);
   }
 
@@ -130,12 +130,16 @@ export class HttpServer {
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
-          const [path, searchParams] = http.request.url.split(":" + port)[1].split("?");
-          const { promise, params } = HttpServer.router.find(
+          const [path, urlParams] = http.request.url.split(":" + port)[1].split(
+            "?",
+          );
+          const { promise, params: pathParams } = HttpServer.router.find(
             http.request.method,
             path,
           ) || ACTION_404;
-          promise({ request: http, params, searchParams }).then((response: any) =>
+          promise({ requestEvent: http, pathParams, urlParams }).then((
+            response: HttpResponse,
+          ) =>
             http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // catch Http errors
           );
