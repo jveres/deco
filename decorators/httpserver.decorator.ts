@@ -56,6 +56,14 @@ export class HttpServer {
     };
   }
 
+  static Before(hook: (request: HttpRequest) => Promise<HttpRequest>) {
+    return HttpServer.Hook(hook, HttpServerHookType.Before);
+  }
+
+  static After(hook: (response: HttpResponse) => Promise<HttpResponse>) {
+    return HttpServer.Hook(hook, HttpServerHookType.After);
+  }
+
   static Decorate(
     decorators: Array<
       (target: any, property: string, descriptor: PropertyDescriptor) => void
@@ -65,14 +73,6 @@ export class HttpServer {
       const action = HttpServer.router.createAction({ target, property });
       action.decorators = action.decorators.concat(decorators);
     };
-  }
-
-  static Before(hook: (ctx: HttpRequest) => Promise<HttpRequest>) {
-    return HttpServer.Hook(hook, HttpServerHookType.Before);
-  }
-
-  static After(hook: (response: HttpResponse) => Promise<HttpResponse>) {
-    return HttpServer.Hook(hook, HttpServerHookType.After);
   }
 
   static Status(status: number) {

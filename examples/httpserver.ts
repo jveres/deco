@@ -40,18 +40,21 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Before((requestEvent) => {
-    console.log(requestEvent);
-    return Promise.resolve(requestEvent);
+  @HttpServer.Before((request) => {
+    Object.assign(request, { start: performance.now() });
+    return Promise.resolve(request);
   })
-  before() {
-    return { body: "Hello from Deco!" };
+  @HttpServer.After((response) => {
+    response.body += ", Hello from Deco!";
+    return Promise.resolve(response);
+  })
+  hooks({ start }: { start: number }) {
+    const time = Math.floor(performance.now() - start);
+    return { body: `took: ${time}ms` };
   }
 
-  @HttpServer.Decorate([
-    Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
-  ])
   @HttpServer.Get()
+  @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
   async timeout() {
     const max = 1000;
     const min = 4000;
@@ -61,9 +64,8 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Decorate([
-    Concurrency({ limit: 1 }),
-  ])
+  @Concurrency({ limit: 1 })
+  @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
   async concurrency({ urlParams }: { urlParams: string }) {
     const params = new URLSearchParams(urlParams);
     const delay = params.get("delay") || "5";
