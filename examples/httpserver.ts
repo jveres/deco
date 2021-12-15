@@ -68,8 +68,13 @@ class TestServer {
   @HttpServer.Get()
   @Concurrency({ limit: 1 })
   @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
-  @Trace({ stack: true })
-  async concurrency({ urlParams }: { urlParams: string }) {
+  @Trace()
+  async concurrency(
+    { urlParams, signal }: { urlParams: string; signal: AbortSignal },
+  ) {
+    signal.addEventListener("abort", () => {
+      console.log("aborted");
+    });
     const params = new URLSearchParams(urlParams);
     const delay = params.get("delay") || "5";
     await sleep(Number(delay) * 1000);

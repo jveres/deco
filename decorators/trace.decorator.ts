@@ -15,7 +15,9 @@ export const Trace = (
     const fn = descriptor.value;
     const logDurationSince = (time: number) => {
       console.info(
-        `${property}() ...finished, took: ${(performance.now() - time).toFixed()}ms`,
+        `${property}() ...ended, took: ${
+          (performance.now() - time).toFixed()
+        }ms`,
       );
     };
     let lastFrom: string | undefined;
@@ -27,12 +29,15 @@ export const Trace = (
         : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
       const start = performance.now();
       console.info(
-        `${property}() started... ${(stack && (from || lastFrom)) ? "(" + (from || lastFrom || "n/a") + "\n)" : ""}`,
+        `${property}() started... ${
+          (stack && (from || lastFrom))
+            ? "(" + (from || lastFrom || "n/a") + "\n)"
+            : ""
+        }`,
       );
       if (from) lastFrom = from;
-      return Promise.resolve(fn.apply(this, args)).then((result: any) => {
+      return fn.apply(this, args).finally(() => {
         logDurationSince(start);
-        return result;
       });
     };
   };

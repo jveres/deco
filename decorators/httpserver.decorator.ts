@@ -143,7 +143,6 @@ export class HttpServer {
             http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // catch Http errors
           );
-          //).catch(() => {}); // catch app errors
         }
       })().catch(() => {}); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
     }
