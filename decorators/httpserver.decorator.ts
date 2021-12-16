@@ -11,7 +11,7 @@ import {
   HttpRouter,
 } from "../utils/Router.ts";
 
-export type { HttpRequest };
+export type { HttpMethod, HttpRequest, HttpResponse };
 
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
