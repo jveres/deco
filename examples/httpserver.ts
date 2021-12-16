@@ -71,19 +71,22 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @Concurrency({ limit: 1 })
-  @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
-  @Trace()
-  async concurrency(
+  @HttpServer.Decorate([
+    Trace(),
+    Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
+    Concurrency({ limit: 1 }),
+  ])
+  concurrency(
     { urlParams, signal }: { urlParams: string; signal: AbortSignal },
   ) {
-    signal.addEventListener("abort", () => {
-      console.log("aborted");
+    return new Promise((resolve, reject) => {
+      signal.addEventListener("abort", reject);
+      const params = new URLSearchParams(urlParams);
+      const delay = Number.parseInt(params.get("delay") || "5");
+      sleep(Number(delay) * 1000).then(() => {
+        resolve({ body: `delay: ${delay}s, resp: ${this.#priv}` });
+      });
     });
-    const params = new URLSearchParams(urlParams);
-    const delay = params.get("delay") || "5";
-    await sleep(Number(delay) * 1000);
-    return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 }
 
