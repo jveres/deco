@@ -36,7 +36,7 @@ export const Trace = (
         }`,
       );
       if (from) lastFrom = from;
-      return fn.apply(this, args).finally(() => {
+      return Promise.resolve(fn.apply(this, args)).finally(() => {
         logDurationSince(start);
       });
     };

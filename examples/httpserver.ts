@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpServer } from "../decorators/httpserver.decorator.ts";
+import { HttpRequest, HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
@@ -22,12 +22,17 @@ class TestServer {
     return { body: "Hello from Deco!" };
   }
 
+  @HttpServer.Get()
+  redirect({ http }: { http: Deno.RequestEvent }) {
+    http.respondWith(Response.redirect("http://localhost:8080/priv"));
+  }
+
   @HttpServer.Get("/test/:id")
   dynamic(r: Record<string, unknown>) {
     return { body: `${JSON.stringify(r.params)}` };
   }
 
-  #priv = "Hello from Deco!";
+  #priv = "Hello from Deco ! (#priv)";
 
   @HttpServer.Get()
   priv() {

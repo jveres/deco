@@ -9,7 +9,8 @@ import { createRouter } from "https://cdn.skypack.dev/pin/radix3@v0.1.0-sqwTbihQ
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 
 export type HttpRequest = {
-  requestEvent: Deno.RequestEvent;
+  conn: Deno.Conn;
+  http: Deno.RequestEvent;
   pathParams: string;
   urlParams: string;
 };

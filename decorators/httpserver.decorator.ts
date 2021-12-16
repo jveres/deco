@@ -11,6 +11,8 @@ import {
   HttpRouter,
 } from "../utils/Router.ts";
 
+export type { HttpRequest };
+
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
 
@@ -137,7 +139,7 @@ export class HttpServer {
             http.request.method,
             path,
           ) || ACTION_404;
-          promise({ requestEvent: http, pathParams, urlParams }).then((
+          promise({ conn, http, pathParams, urlParams }).then((
             response: HttpResponse,
           ) =>
             http.respondWith(new Response(response?.body, response?.init))
