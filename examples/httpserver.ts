@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpRequest, HttpServer } from "../decorators/httpserver.decorator.ts";
+import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
