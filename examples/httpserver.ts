@@ -98,15 +98,17 @@ class TestServer {
     Concurrency({ limit: 1 }),
   ])
   async concurrency(
-    { urlParams, timeoutSignal }: { urlParams: string; timeoutSignal: AbortSignal },
+    { urlParams, timeoutSignal }: {
+      urlParams: string;
+      timeoutSignal: AbortSignal;
+    },
   ) {
-    timeoutSignal.addEventListener("abort", () => {
+    timeoutSignal.onabort = () => {
       console.log("timeout abort");
-      //throw Error("aborted");
-    });
+    };
     const params = new URLSearchParams(urlParams);
     const delay = Number.parseInt(params.get("delay") || "5");
-    await sleep(Number(delay) * 1000);
+    await sleep(delay * 1000);
     console.log("resolving...");
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
