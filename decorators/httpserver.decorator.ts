@@ -14,6 +14,8 @@ import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
+export class AbortError extends Error {}
+
 const DEFAULT_HTTPSERVER_HOSTNAME = "127.0.0.1";
 const DEFAULT_HTTPSERVER_PORT = 8080;
 
@@ -86,7 +88,7 @@ export class HttpServer {
       const token = request.http.request.headers.get(headerKey);
       if (token === null) {
         request.http.respondWith(new Response(null, { status: 401 })); // Unauthorized
-        return Promise.reject(request);
+        return Promise.reject(new AbortError());
       }
       try {
         const payload = await verify(token, authKey);
@@ -94,7 +96,7 @@ export class HttpServer {
       } catch (err: unknown) {
         console.error(`@Auth() ${err}`);
         request.http.respondWith(new Response(null, { status: 403 })); // Forbidden
-        return Promise.reject(request);
+        return Promise.reject(new AbortError());
       }
       return Promise.resolve(request);
     });
@@ -149,7 +151,7 @@ export class HttpServer {
         );
       };
     }
-    const ACTION_404 = { promise: HttpServer.Status(404) };
+    const NOT_FOUND = { promise: HttpServer.Status(404) };
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {
@@ -161,13 +163,16 @@ export class HttpServer {
           const { promise, params: pathParams } = HttpServer.router.find(
             http.request.method,
             path,
-          ) || ACTION_404;
+          ) || NOT_FOUND;
           promise({ conn, http, pathParams, urlParams }).then((
             response: HttpResponse,
           ) =>
             http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // catch Http errors
-          ).catch(() => {}); // catch promise chain errors
+          ).catch((e: unknown) => {
+            if (e instanceof AbortError) return;
+            throw e;
+          }); // catch promise chain errors
         }
       })().catch(() => {}); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
     }

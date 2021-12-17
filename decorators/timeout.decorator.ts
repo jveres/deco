@@ -18,7 +18,7 @@ export const Timeout = (
     descriptor.value = function (...args: any[]) {
       let id: number | undefined;
       const abortController = new AbortController();
-      Object.assign(args[0], { signal: abortController.signal });
+      Object.assign(args[0], { timeoutSignal: abortController.signal });
       return Promise.race([
         new Promise((_, reject) => {
           id = setTimeout(() => {

@@ -37,7 +37,12 @@ class TestServer {
 
   @HttpServer.Auth({ authKey })
   @HttpServer.Get()
-  redirect({ http, payload }: { http: Deno.RequestEvent, payload: Record<string, unknown> }) {
+  redirect(
+    { http, payload }: {
+      http: Deno.RequestEvent;
+      payload: Record<string, unknown>;
+    },
+  ) {
     console.log("Auth payload:", payload);
     http.respondWith(Response.redirect("http://localhost:8080/priv"));
   }
@@ -92,17 +97,18 @@ class TestServer {
     Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
     Concurrency({ limit: 1 }),
   ])
-  concurrency(
-    { urlParams, signal }: { urlParams: string; signal: AbortSignal },
+  async concurrency(
+    { urlParams, timeoutSignal }: { urlParams: string; timeoutSignal: AbortSignal },
   ) {
-    return new Promise((resolve, reject) => {
-      signal.addEventListener("abort", reject);
-      const params = new URLSearchParams(urlParams);
-      const delay = Number.parseInt(params.get("delay") || "5");
-      sleep(Number(delay) * 1000).then(() => {
-        resolve({ body: `delay: ${delay}s, resp: ${this.#priv}` });
-      });
+    timeoutSignal.addEventListener("abort", () => {
+      console.log("timeout abort");
+      //throw Error("aborted");
     });
+    const params = new URLSearchParams(urlParams);
+    const delay = Number.parseInt(params.get("delay") || "5");
+    await sleep(Number(delay) * 1000);
+    console.log("resolving...");
+    return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 }
 
