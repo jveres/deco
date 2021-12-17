@@ -28,8 +28,8 @@ class TestServer {
   }
 
   @HttpServer.Get("/test/:id")
-  dynamic(r: Record<string, unknown>) {
-    return { body: `${JSON.stringify(r.params)}` };
+  dynamic({ pathParams }: { pathParams: string }) {
+    return { body: `${JSON.stringify(pathParams)}` };
   }
 
   #priv = "Hello from Deco ! (#priv)";
@@ -62,9 +62,10 @@ class TestServer {
 
   @HttpServer.Get()
   @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
+  @Trace()
   async timeout() {
-    const max = 1000;
-    const min = 4000;
+    const max = 3000;
+    const min = 5000;
     const wait = Math.floor(Math.random() * (max - min + 1)) + min;
     await sleep(wait);
     return { body: `took: ${wait}ms, ${this.#priv}` };
