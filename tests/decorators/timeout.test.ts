@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { Timeout, TimeoutError } from "../../decorators/timeout.decorator.ts";
-import { assertRejects } from "https://deno.land/std@0.117.0/testing/asserts.ts";
+import { assertRejects } from "https://deno.land/std@0.118.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
 class SomeClass {

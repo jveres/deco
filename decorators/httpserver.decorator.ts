@@ -10,6 +10,7 @@ import {
   HttpResponse,
   HttpRouter,
 } from "../utils/Router.ts";
+import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -75,6 +76,28 @@ export class HttpServer {
       const action = HttpServer.router.createAction({ target, property });
       action.decorators = action.decorators.concat(decorators);
     };
+  }
+
+  static Auth({ authKey, headerKey = "x-access-token" }: {
+    authKey: CryptoKey;
+    headerKey?: string;
+  }) {
+    return HttpServer.Before(async (request) => {
+      const token = request.http.request.headers.get(headerKey);
+      if (token === null) {
+        request.http.respondWith(new Response(null, { status: 401 })); // Unauthorized
+        return Promise.reject(request);
+      }
+      try {
+        const payload = await verify(token, authKey);
+        Object.assign(request, { payload });
+      } catch (err: unknown) {
+        console.error(`@Auth() ${err}`);
+        request.http.respondWith(new Response(null, { status: 403 })); // Forbidden
+        return Promise.reject(request);
+      }
+      return Promise.resolve(request);
+    });
   }
 
   static Status(status: number) {
@@ -144,7 +167,7 @@ export class HttpServer {
           ) =>
             http.respondWith(new Response(response?.body, response?.init))
               .catch(() => {}) // catch Http errors
-          );
+          ).catch(() => {}); // catch promise chain errors
         }
       })().catch(() => {}); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
     }

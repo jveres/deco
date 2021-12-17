@@ -2,11 +2,24 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
+// curl -v -L -X GET "http://localhost:8080/redirect" -H "x-access-token: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.AbTCrX_2fvEYk3e6IsNwtweMht6JLfma7i_PS-vzDvHZIQB3FldT80SFuIV7hje-GcCkYnQp22JJGHNOLgx4kw"
+
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
+
+const authKey = await crypto.subtle.importKey(
+  "jwk",
+  JSON.parse(Deno.readTextFileSync("./public.key")),
+  {
+    name: "ECDSA",
+    namedCurve: "P-256",
+  },
+  true,
+  ["verify"],
+);
 
 class TestServer {
   @HttpServer.Get()
@@ -22,8 +35,10 @@ class TestServer {
     return { body: "Hello from Deco!" };
   }
 
+  @HttpServer.Auth({ authKey })
   @HttpServer.Get()
-  redirect({ http }: { http: Deno.RequestEvent }) {
+  redirect({ http, payload }: { http: Deno.RequestEvent, payload: Record<string, unknown> }) {
+    console.log("Auth payload:", payload);
     http.respondWith(Response.redirect("http://localhost:8080/priv"));
   }
 
