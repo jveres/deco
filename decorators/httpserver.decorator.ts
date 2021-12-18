@@ -32,7 +32,7 @@ declare global {
   }
 
   namespace Response {
-    export function Status(status: number): Response;
+    function Status(status: number): Response;
   }
 }
 

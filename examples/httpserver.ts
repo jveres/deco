@@ -84,11 +84,11 @@ class TestServer {
   @HttpServer.Get()
   @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
   @Trace()
-  async timeout() {
+  async timeout({ timeoutSignal }: { timeoutSignal: AbortSignal }) {
+    const min = 1000;
     const max = 3000;
-    const min = 5000;
     const wait = Math.floor(Math.random() * (max - min + 1)) + min;
-    await sleep(wait);
+    await sleep(wait, timeoutSignal);
     return { body: `took: ${wait}ms, ${this.#priv}` };
   }
 
