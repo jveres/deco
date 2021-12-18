@@ -82,10 +82,13 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
+  @Timeout({ timeout: 2000, onTimeout: HttpServer.StatusFn(408) })
   @Trace()
   async timeout({ timeoutSignal }: { timeoutSignal: AbortSignal }) {
-    const min = 1000;
+    timeoutSignal?.addEventListener("abort", () => {
+      console.log("timeout event received");
+    });
+    const min = 1800;
     const max = 3000;
     const wait = Math.floor(Math.random() * (max - min + 1)) + min;
     await sleep(wait, timeoutSignal);
@@ -95,7 +98,7 @@ class TestServer {
   @HttpServer.Get()
   @HttpServer.Decorate([
     Trace(),
-    Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
+    Timeout({ timeout: 2000, onTimeout: HttpServer.StatusFn(408) }),
     Concurrency({ limit: 1 }),
   ])
   async concurrency(
@@ -105,9 +108,6 @@ class TestServer {
       timeoutSignal: AbortSignal;
     },
   ) {
-    timeoutSignal?.addEventListener("abort", () => {
-      console.log("timeout abort");
-    });
     const params = new URLSearchParams(urlParams);
     const delay = Number.parseFloat(params.get("delay") || "5");
     await sleep(delay * 1000, timeoutSignal);

@@ -134,7 +134,7 @@ export class HttpServer {
     });
   }
 
-  static Status(status: number) {
+  static StatusFn(status: number) {
     return () => Promise.resolve({ init: { status } });
   }
 
@@ -188,7 +188,7 @@ export class HttpServer {
       };
     }
     onStarted?.();
-    const NOT_FOUND = { promise: HttpServer.Status(404) };
+    const NOT_FOUND = { promise: HttpServer.StatusFn(404) };
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {

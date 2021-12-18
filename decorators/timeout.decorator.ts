@@ -24,7 +24,7 @@ export const Timeout = (
           id = setTimeout(() => {
             clearTimeout(id);
             abortController.abort();
-            reject(new TimeoutError("Timed out"));
+            reject(new TimeoutError());
           }, timeout);
         }),
         fn.apply(this, args),
