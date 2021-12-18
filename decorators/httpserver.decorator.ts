@@ -27,10 +27,18 @@ enum HttpServerHookType {
 declare global {
   namespace Deno {
     interface RequestEvent {
-      abortWith(r?: Response | Promise<Response>): Promise<void>;
+      abortWith(r?: Response | Promise<Response>): any;
     }
   }
+
+  namespace Response {
+    export function Status(status: number): Response;
+  }
 }
+
+Response.Status = function (status: number) {
+  return new Response(null, { status });
+};
 
 export class HttpServer {
   static router = new HttpRouter();
@@ -113,14 +121,14 @@ export class HttpServer {
     return HttpServer.Before(async (request) => {
       const token = request.http.request.headers.get(headerKey);
       if (token === null) {
-        request.http.abortWith(new Response(null, { status: 401 })); // Unauthorized
+        return request.http.abortWith(Response.Status(401)); // Unauthorized
       }
       try {
-        const payload = await verify(token!, authKey);
+        const payload = await verify(token, authKey);
         Object.assign(request, { payload });
       } catch (err: unknown) {
         console.error(`@Auth() ${err}`);
-        request.http.abortWith(new Response(null, { status: 403 })); // Forbidden
+        return request.http.abortWith(Response.Status(403)); // Forbidden
       }
       return Promise.resolve(request);
     });
