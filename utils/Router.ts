@@ -19,12 +19,12 @@ export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export type HttpAction = {
   target: { [key: string]: any };
   property: string;
-  before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
+  before: Array<(request: HttpRequest) => Promise<HttpRequest | Error>>;
   decorators: Array<
     (target: any, property: string, descriptor: PropertyDescriptor) => void
   >;
   after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
-  promise: (request: HttpRequest) => Promise<HttpResponse>;
+  promise: (request: HttpRequest) => Promise<HttpResponse | Error>;
 };
 
 export interface HttpRoute {

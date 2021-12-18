@@ -2,8 +2,14 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-export function sleep(wait: number) {
-  return new Promise((resolve) => setTimeout(resolve, wait));
+export function sleep(wait: number, signal?: AbortSignal) {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, wait);
+    signal?.addEventListener("abort", () => {
+      if (id) clearTimeout(id);
+      reject();
+    });
+  });
 }
 
 export const DEFAULT_MAX_LRUCACHE_ENTRIES = 500;

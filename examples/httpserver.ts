@@ -103,12 +103,12 @@ class TestServer {
       timeoutSignal: AbortSignal;
     },
   ) {
-    timeoutSignal.onabort = () => {
+    timeoutSignal?.addEventListener("abort", () => {
       console.log("timeout abort");
-    };
+    });
     const params = new URLSearchParams(urlParams);
-    const delay = Number.parseInt(params.get("delay") || "5");
-    await sleep(delay * 1000);
+    const delay = Number.parseFloat(params.get("delay") || "5");
+    await sleep(delay * 1000, timeoutSignal);
     console.log("Resolve");
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
