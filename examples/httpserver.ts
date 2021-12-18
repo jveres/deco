@@ -109,7 +109,7 @@ class TestServer {
     const params = new URLSearchParams(urlParams);
     const delay = Number.parseInt(params.get("delay") || "5");
     await sleep(delay * 1000);
-    console.log("resolving...");
+    console.log("Resolve");
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 }
