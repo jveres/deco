@@ -9,6 +9,7 @@ import { sleep } from "../utils/utils.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
+import { DECO_VERSION } from "../mod.ts";
 
 const authKey = await crypto.subtle.importKey(
   "jwk",
@@ -43,8 +44,8 @@ class TestServer {
       payload: Record<string, unknown>;
     },
   ) {
-    console.log("Auth payload:", payload);
-    http.respondWith(Response.redirect("http://localhost:8080/priv"));
+    console.log("payload:", payload);
+    http.abortWith(Response.redirect("http://localhost:8080/priv"));
   }
 
   @HttpServer.Get("/test/:id")
@@ -99,6 +100,7 @@ class TestServer {
   ])
   async concurrency(
     { urlParams, timeoutSignal }: {
+      http: Deno.RequestEvent;
       urlParams: string;
       timeoutSignal: AbortSignal;
     },
@@ -114,5 +116,8 @@ class TestServer {
   }
 }
 
-console.log("HttpServer() started...");
-HttpServer.serve({ controllers: [TestServer] });
+HttpServer.serve({
+  controllers: [TestServer],
+  onStarted: () => console.log(`HttpServer(v:${DECO_VERSION}) started...`),
+  onError: (e: unknown) => console.log(e),
+});

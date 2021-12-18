@@ -24,6 +24,14 @@ enum HttpServerHookType {
   After,
 }
 
+declare global {
+  namespace Deno {
+    interface RequestEvent {
+      abortWith(r?: Response | Promise<Response>): Promise<void>;
+    }
+  }
+}
+
 export class HttpServer {
   static router = new HttpRouter();
 
@@ -47,10 +55,28 @@ export class HttpServer {
     return HttpServer.Route({ path });
   }
 
+  static Put(
+    path?: string,
+  ) {
+    return HttpServer.Route({ method: "PUT", path });
+  }
+
   static Post(
     path?: string,
   ) {
     return HttpServer.Route({ method: "POST", path });
+  }
+
+  static Delete(
+    path?: string,
+  ) {
+    return HttpServer.Route({ method: "DELETE", path });
+  }
+
+  static Options(
+    path?: string,
+  ) {
+    return HttpServer.Route({ method: "OPTIONS", path });
   }
 
   static Hook(hook: any, type: HttpServerHookType) {
@@ -87,16 +113,14 @@ export class HttpServer {
     return HttpServer.Before(async (request) => {
       const token = request.http.request.headers.get(headerKey);
       if (token === null) {
-        request.http.respondWith(new Response(null, { status: 401 })); // Unauthorized
-        return Promise.reject(new AbortError());
+        request.http.abortWith(new Response(null, { status: 401 })); // Unauthorized
       }
       try {
-        const payload = await verify(token, authKey);
+        const payload = await verify(token!, authKey);
         Object.assign(request, { payload });
       } catch (err: unknown) {
         console.error(`@Auth() ${err}`);
-        request.http.respondWith(new Response(null, { status: 403 })); // Forbidden
-        return Promise.reject(new AbortError());
+        request.http.abortWith(new Response(null, { status: 403 })); // Forbidden
       }
       return Promise.resolve(request);
     });
@@ -111,10 +135,14 @@ export class HttpServer {
       hostname = DEFAULT_HTTPSERVER_HOSTNAME,
       port = DEFAULT_HTTPSERVER_PORT,
       controllers = [],
+      onStarted,
+      onError = () => {},
     }: {
       hostname?: string;
       port?: number;
       controllers: Function[];
+      onStarted?: () => void;
+      onError?: (e: unknown) => void;
     },
   ) {
     const objects = new Map<string, any>();
@@ -151,12 +179,17 @@ export class HttpServer {
         );
       };
     }
+    onStarted?.();
     const NOT_FOUND = { promise: HttpServer.Status(404) };
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
+          http.abortWith = (r?: Response | Promise<Response>) => { // helper for aborting the response chain
+            http.respondWith(r ?? new Response());
+            throw new AbortError();
+          };
           const [path, urlParams] = http.request.url.split(":" + port)[1].split(
             "?",
           );
@@ -168,13 +201,13 @@ export class HttpServer {
             response: HttpResponse,
           ) =>
             http.respondWith(new Response(response?.body, response?.init))
-              .catch(() => {}) // catch Http errors
+              .catch(onError) // catch Http errors
           ).catch((e: unknown) => {
             if (e instanceof AbortError) return;
             throw e;
           }); // catch promise chain errors
         }
-      })().catch(() => {}); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
+      })().catch(onError); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
     }
   }
 }
