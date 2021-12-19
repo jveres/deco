@@ -47,45 +47,45 @@ export class LruCache<T> {
 // Save original console log functions as globals
 const { "log": _log, "info": _info, "warn": _warn, "error": _error } = console;
 
-export interface ConsoleLogHookOptions {
-  logPrefix?: string;
-  infoPrefix?: string;
-  warnPrefix?: string;
-  errorPrefix?: string;
-}
-
-export function consoleLogHook(options: ConsoleLogHookOptions) {
-  if (options.logPrefix) {
+export function consoleLogHook(
+  { logPrefix, infoPrefix, warnPrefix, errorPrefix }: {
+    logPrefix?: string;
+    infoPrefix?: string;
+    warnPrefix?: string;
+    errorPrefix?: string;
+  },
+) {
+  if (logPrefix) {
     console.log = function () {
       _log.apply(console, [
-        options.logPrefix,
+        logPrefix,
         ...arguments,
       ]);
     };
   }
 
-  if (options.infoPrefix) {
+  if (infoPrefix) {
     console.info = function () {
       _info.apply(console, [
-        options.infoPrefix,
+        infoPrefix,
         ...arguments,
       ]);
     };
   }
 
-  if (options.warnPrefix) {
+  if (warnPrefix) {
     console.warn = function () {
       _warn.apply(console, [
-        options.warnPrefix,
+        warnPrefix,
         ...arguments,
       ]);
     };
   }
 
-  if (options.errorPrefix) {
+  if (errorPrefix) {
     console.error = function () {
       _error.apply(console, [
-        options.errorPrefix,
+        errorPrefix,
         ...arguments,
       ]);
     };

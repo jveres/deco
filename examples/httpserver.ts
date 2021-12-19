@@ -44,7 +44,7 @@ class TestServer {
       payload: Record<string, unknown>;
     },
   ) {
-    console.log("payload:", payload);
+    console.info("payload:", payload);
     http.abortWith(Response.redirect("http://localhost:8080/priv"));
   }
 
@@ -86,7 +86,7 @@ class TestServer {
   @Trace()
   async timeout({ timeoutSignal }: { timeoutSignal: AbortSignal }) {
     timeoutSignal?.addEventListener("abort", () => {
-      console.log("timeout event received");
+      console.info("timeout event received");
     });
     const min = 1800;
     const max = 3000;
@@ -111,7 +111,7 @@ class TestServer {
     const params = new URLSearchParams(urlParams);
     const delay = Number.parseFloat(params.get("delay") || "5");
     await sleep(delay * 1000, timeoutSignal);
-    console.log("Resolve");
+    console.info("resolving...");
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 }

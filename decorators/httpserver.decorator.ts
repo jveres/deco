@@ -10,7 +10,9 @@ import {
   HttpResponse,
   HttpRouter,
 } from "../utils/Router.ts";
+import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
+import * as Colors from "https://deno.land/std@0.118.0/fmt/colors.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -39,6 +41,13 @@ declare global {
 Response.Status = function (status: number) {
   return new Response(null, { status });
 };
+
+consoleLogHook({
+  logPrefix: Colors.green("[*]"),
+  warnPrefix: Colors.yellow("[W]"),
+  errorPrefix: Colors.red("[E]"),
+  infoPrefix: Colors.white("[I]"),
+});
 
 export class HttpServer {
   static router = new HttpRouter();
