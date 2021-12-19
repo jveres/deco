@@ -43,10 +43,10 @@ Response.Status = function (status: number) {
 };
 
 consoleLogHook({
-  logPrefix: Colors.green("[*]"),
-  warnPrefix: Colors.yellow("[W]"),
-  errorPrefix: Colors.red("[E]"),
-  infoPrefix: Colors.white("[I]"),
+  logPrefix: Colors.green("[l]"),
+  warnPrefix: Colors.yellow("[w]"),
+  errorPrefix: Colors.red("[e]"),
+  infoPrefix: Colors.rgb24("[i]", 0xbada55),
 });
 
 export class HttpServer {

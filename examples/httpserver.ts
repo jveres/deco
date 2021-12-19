@@ -118,6 +118,6 @@ class TestServer {
 
 HttpServer.serve({
   controllers: [TestServer],
-  onStarted: () => console.info(`HttpServer(v:${DECO_VERSION}) started...`),
+  onStarted: () => console.info(`Deco (v:${DECO_VERSION}) http server started...`),
   onError: (e: unknown) => console.error(e),
 });
