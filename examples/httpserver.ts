@@ -82,7 +82,7 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @Timeout({ timeout: 2000, onTimeout: HttpServer.StatusFn(408) })
+  @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
   @Trace()
   async timeout({ timeoutSignal }: { timeoutSignal: AbortSignal }) {
     timeoutSignal?.addEventListener("abort", () => {
@@ -98,7 +98,7 @@ class TestServer {
   @HttpServer.Get()
   @HttpServer.Decorate([
     Trace(),
-    Timeout({ timeout: 2000, onTimeout: HttpServer.StatusFn(408) }),
+    Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
     Concurrency({ limit: 1 }),
   ])
   async concurrency(

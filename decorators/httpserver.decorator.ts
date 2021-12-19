@@ -134,7 +134,7 @@ export class HttpServer {
     });
   }
 
-  static StatusFn(status: number) {
+  static Status(status: number) {
     return () => Promise.resolve({ init: { status } });
   }
 
@@ -188,7 +188,7 @@ export class HttpServer {
       };
     }
     onStarted?.();
-    const NOT_FOUND = { promise: HttpServer.StatusFn(404) };
+    const NOT_FOUND = { promise: HttpServer.Status(404) };
     for await (
       const conn of Deno.listen({ port, hostname })
     ) {
@@ -212,7 +212,8 @@ export class HttpServer {
               .catch(onError) // catch Http errors
           ).catch((e: unknown) => {
             if (e instanceof AbortError) return;
-            throw e;
+            if (onError) return onError(e);
+            else throw e;
           }); // catch promise chain errors
         }
       })().catch(onError); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
