@@ -22,7 +22,7 @@ class SomeClass {
 }
 
 Deno.test({
-  name: "@Timeout(1000)",
+  name: "@Timeout({timeout: 1000})",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(): Promise<void> {
