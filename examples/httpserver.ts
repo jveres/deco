@@ -14,7 +14,7 @@ import { DECO_VERSION } from "../mod.ts";
 
 const authKey = await crypto.subtle.importKey(
   "jwk",
-  JSON.parse(Deno.readTextFileSync("./public.key")),
+  JSON.parse(Deno.readTextFileSync("./test.public.key")),
   {
     name: "ECDSA",
     namedCurve: "P-256",
