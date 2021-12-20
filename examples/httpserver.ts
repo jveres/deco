@@ -9,6 +9,7 @@ import { sleep } from "../utils/utils.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
+import { RateLimit } from "../decorators/ratelimit.decorator.ts";
 import { DECO_VERSION } from "../mod.ts";
 
 const authKey = await crypto.subtle.importKey(
@@ -96,6 +97,12 @@ class TestServer {
   }
 
   @HttpServer.Get()
+  @RateLimit({ rate: 1000, limit: 1, onRateLimited: HttpServer.Status(429) })
+  ratelimit() {
+    return { body: this.#priv };
+  }
+
+  @HttpServer.Get()
   @HttpServer.Decorate([
     Trace(),
     Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
@@ -118,6 +125,7 @@ class TestServer {
 
 HttpServer.serve({
   controllers: [TestServer],
-  onStarted: () => console.info(`Deco (v:${DECO_VERSION}) http server started...`),
+  onStarted: () =>
+    console.info(`Deco (v:${DECO_VERSION}) http server started...`),
   onError: (e: unknown) => console.error(e),
 });
