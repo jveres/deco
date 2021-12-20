@@ -43,9 +43,9 @@ Response.Status = function (status: number) {
 };
 
 consoleLogHook({
-  logPrefix: Colors.green("[l]"),
+  logPrefix: Colors.green("[i]"),
   warnPrefix: Colors.yellow("[w]"),
-  errorPrefix: Colors.red("[e]"),
+  errorPrefix: Colors.red("[E]"),
   infoPrefix: Colors.rgb24("[i]", 0xbada55),
 });
 
