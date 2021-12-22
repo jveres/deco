@@ -7,7 +7,7 @@ export function sleep(wait: number, signal?: AbortSignal) {
     const id = setTimeout(resolve, wait);
     signal?.addEventListener("abort", () => {
       if (id) clearTimeout(id);
-      reject();
+      reject(new DOMException("Aborted", "AbortError"));
     });
   });
 }

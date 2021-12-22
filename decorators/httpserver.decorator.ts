@@ -9,7 +9,7 @@ import {
   HttpRequest,
   HttpResponse,
   HttpRouter,
-} from "../utils/Router.ts";
+} from "../utils/HttpRouter.ts";
 import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import * as Colors from "https://deno.land/std@0.118.0/fmt/colors.ts";
@@ -151,15 +151,19 @@ export class HttpServer {
     {
       hostname = DEFAULT_HTTPSERVER_HOSTNAME,
       port = DEFAULT_HTTPSERVER_PORT,
+      abortSignal,
       controllers = [],
       onStarted,
-      onError = () => {},
+      onError,
+      onClosed,
     }: {
       hostname?: string;
       port?: number;
+      abortSignal?: AbortSignal;
       controllers: Function[];
       onStarted?: () => void;
       onError?: (e: unknown) => void;
+      onClosed?: () => void;
     },
   ) {
     const objects = new Map<string, any>();
@@ -198,9 +202,12 @@ export class HttpServer {
     }
     onStarted?.();
     const NOT_FOUND = { promise: HttpServer.Status(404) };
-    for await (
-      const conn of Deno.listen({ port, hostname })
-    ) {
+    const server = Deno.listen({ port, hostname });
+    abortSignal?.addEventListener("abort", () => {
+      server.close();
+      onClosed?.();
+    });
+    for await (const conn of server) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           http.abortWith = (r?: Response | Promise<Response>) => { // helper for aborting the response chain

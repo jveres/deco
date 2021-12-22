@@ -3,10 +3,40 @@
 // license that can be found in the LICENSE file.
 
 import {
+  assert,
   assertEquals,
   assertNotEquals,
-} from "https://deno.land/std@0.118.0/testing/asserts.ts";
-import { consoleLogHook, LruCache } from "../utils/utils.ts";
+  assertRejects,
+} from "https://deno.land/std@0.119.0/testing/asserts.ts";
+import { consoleLogHook, LruCache, sleep } from "../utils/utils.ts";
+
+Deno.test({
+  name: "sleep()",
+  async fn() {
+    const t = performance.now();
+    await sleep(500);
+    assert(performance.now() - t > 500);
+  },
+});
+
+Deno.test({
+  name: "sleep() with signal",
+  async fn() {
+    const c = new AbortController();
+    const s = c.signal;
+    await assertRejects(
+      async () => {
+        await Promise.all([
+          sleep(1000, s),
+          Promise.resolve(c.abort()),
+        ]);
+      },
+      DOMException,
+      "Aborted",
+    );
+    assertEquals(s.aborted, true);
+  },
+});
 
 Deno.test({
   name: "LruCache<T> with 501 numbers",

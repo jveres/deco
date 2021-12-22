@@ -128,4 +128,5 @@ HttpServer.serve({
   onStarted: () =>
     console.info(`Deco (v:${DECO_VERSION}) http server started...`),
   onError: (e: unknown) => console.error(e),
+  onClosed: () => console.info(`...server closed.`),
 });
