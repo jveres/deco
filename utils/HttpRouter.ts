@@ -34,7 +34,7 @@ export interface HttpRoute {
 }
 
 export class HttpRouter {
-  readonly routes: { [/* method */ key: string]: any } = {};
+  readonly routes = new Map</* method */ string, any>();
   readonly actions = new Array<HttpAction>();
 
   createAction(
@@ -68,11 +68,19 @@ export class HttpRouter {
     target: { [key: string]: any };
     property: string;
   }) {
-    if (!this.routes[method]) this.routes[method] = createRouter();
-    this.routes[method].insert(path, this.createAction({ target, property }));
+    if (!this.routes.has(method)) this.routes.set(method, createRouter());
+    this.routes.get(method).insert(
+      path,
+      this.createAction({ target, property }),
+    );
   }
 
   find(method: string, path: string) {
-    return this.routes[method]?.lookup(path);
+    return this.routes.get(method)?.lookup(path);
+  }
+
+  clear() {
+    this.actions.length = 0;
+    this.routes.clear();
   }
 }

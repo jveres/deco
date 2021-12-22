@@ -205,6 +205,7 @@ export class HttpServer {
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
       server.close();
+      HttpServer.router.clear();
       onClosed?.();
     });
     for await (const conn of server) {
