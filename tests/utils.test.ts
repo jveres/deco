@@ -6,10 +6,7 @@ import {
   assertEquals,
   assertNotEquals,
 } from "https://deno.land/std@0.118.0/testing/asserts.ts";
-import {
-  consoleLogHook,
-  LruCache,
-} from "../utils/utils.ts";
+import { consoleLogHook, LruCache } from "../utils/utils.ts";
 
 Deno.test({
   name: "LruCache<T> with 501 numbers",

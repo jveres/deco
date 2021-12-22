@@ -7,7 +7,7 @@ import { assertRejects } from "https://deno.land/std@0.118.0/testing/asserts.ts"
 import { sleep } from "../../utils/utils.ts";
 
 class SomeClass {
-  @Timeout({timeout: 1000})
+  @Timeout({ timeout: 1000 })
   async doSomething() {
     await sleep(2000);
     return "result";

@@ -44,7 +44,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@Concurrency() with resolver, unique keys",
+  name: "@Concurrency({ limit: 1 }) with resolver, unique keys",
   async fn() {
     const promises = [];
     for (let i = 1; i <= 5; i++) {
@@ -56,7 +56,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@Concurrency() with resolver, common keys",
+  name: "@Concurrency({ limit: 1 }) with resolver, reused keys",
   async fn() {
     const promises: Promise<any>[] = [];
     const nums = [1, 2, 2, 1, 3, 1, 1, 3, 4];

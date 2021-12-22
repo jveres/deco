@@ -24,9 +24,8 @@ export const Trace = (
     descriptor.value = function (...args: any[]) {
       const e = new Error();
       Error.captureStackTrace(e, stack ? undefined : descriptor.value);
-      const from = stack
-        ? "\n" + e.stack?.split("\n").slice(1).join("\n")
-        : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
+      const from = stack ? "\n" + e.stack?.split("\n").slice(1).join("\n")
+      : e.stack?.split("\n").slice(1)[0]?.replace("at", "").trim();
       const start = performance.now();
       console.info(
         `${property}() started... ${
