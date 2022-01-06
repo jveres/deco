@@ -20,7 +20,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "sleep() with signal",
+  name: "sleep() with abort signal",
   async fn() {
     const c = new AbortController();
     const s = c.signal;
@@ -39,7 +39,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "LruCache<T> with 501 numbers",
+  name: "LruCache<number> with default size",
   fn() {
     const c = new LruCache<number>();
     for (let i = 1; i < 501; i++) {
@@ -50,6 +50,21 @@ Deno.test({
     assertEquals(c.get("1"), 1);
     assertEquals(c.get("2"), undefined);
     assertEquals(c.has("501"), true);
+  },
+});
+
+Deno.test({
+  name: "LruCache<number> with size = 10",
+  fn() {
+    const c = new LruCache<number>(10);
+    for (let i = 1; i < 11; i++) {
+      c.put(`${i}`, i);
+    }
+    assertEquals(c.get("1"), 1);
+    c.put("11", 11);
+    assertEquals(c.get("1"), 1);
+    assertEquals(c.get("2"), undefined);
+    assertEquals(c.has("11"), true);
   },
 });
 

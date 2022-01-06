@@ -200,14 +200,13 @@ export class HttpServer {
         );
       };
     }
-    onStarted?.();
     const NOT_FOUND = { promise: HttpServer.Status(404) };
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
       server.close();
       HttpServer.router.clear();
-      onClosed?.();
     });
+    onStarted?.();
     for await (const conn of server) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
@@ -215,9 +214,10 @@ export class HttpServer {
             http.respondWith(r ?? new Response());
             throw new AbortError();
           };
-          const [path, urlParams] = http.request.url.split(":" + port)[1].split(
-            "?",
-          );
+          const [path, urlParams] = http.request.url.split(":" + port)[1]
+            .split(
+              "?",
+            );
           const { promise, params: pathParams } = HttpServer.router.find(
             http.request.method,
             path,
@@ -233,7 +233,8 @@ export class HttpServer {
             else throw e;
           }); // catch promise chain errors
         }
-      })().catch(onError); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped "
+      })().catch(onError); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped " -> invalid Http version parsed
     }
+    onClosed?.();
   }
 }

@@ -12,14 +12,12 @@ export function sleep(wait: number, signal?: AbortSignal) {
   });
 }
 
-export const DEFAULT_MAX_LRUCACHE_ENTRIES = 500;
+export const DEFAULT_LRUCACHE_SIZE = 500;
 
 export class LruCache<T> {
   private values: Map<string, T> = new Map<string, T>();
-  private maxEntries: number;
 
-  constructor(maxEntries: number = DEFAULT_MAX_LRUCACHE_ENTRIES) {
-    this.maxEntries = maxEntries;
+  constructor(private readonly size: number = DEFAULT_LRUCACHE_SIZE) {
   }
 
   public get(key: string): T | undefined {
@@ -36,7 +34,7 @@ export class LruCache<T> {
   }
 
   public put(key: string, value: T) {
-    if (this.values.size >= this.maxEntries) {
+    if (this.values.size >= this.size) {
       const keyToDelete = this.values.keys().next().value;
       this.values.delete(keyToDelete);
     }
