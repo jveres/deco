@@ -34,11 +34,12 @@ Deno.test({
   },
 });
 
-/*Deno.test({
+Deno.test({
   name: "@HttpServer.serve(): bad request",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
+    let e: any = undefined;
     class ServerController {
       @HttpServer.Get()
       home() {
@@ -51,16 +52,20 @@ Deno.test({
       abortSignal: controller.signal,
       controllers: [ServerController],
       onError: (err: unknown) => {
-        console.log(err);
-        //return HttpServer.Status(401);
+        e = err;
+        return HttpServer.Status(401);
+      },
+      onStarted: () => {
+        Deno.run({ cmd: ["curl", `http://localhost:${port}/bad `] });
       },
     });
-    let resp = await fetch(`http://localhost:${port}/home?`);
-    assertEquals(resp.status, 200);
+    await sleep(100);
+    console.log(e);
+    assertEquals(e?.message, "invalid HTTP version parsed");
     controller.abort();
     await sleep(100);
   },
-});*/
+});
 
 Deno.test({
   name: "@HttpServer methods",
@@ -327,6 +332,50 @@ Deno.test({
     });
     assertEquals(resp.status, 200);
     assertEquals(await resp.text(), body);
+    controller.abort();
+    await sleep(100);
+  },
+});
+
+Deno.test({
+  name: "Request.abortWith(): aborting request chain",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn(t) {
+    class ServerController {
+      @HttpServer.Get()
+      @HttpServer.Before((request) => {
+        return request.http.abortWith(); // No error status
+      })
+      test1() {
+        return { body: "This is never returned" };
+      }
+
+      @HttpServer.Get()
+      @HttpServer.Before((request) => {
+        return request.http.abortWith(Response.Status(403)); // Forbidden
+      })
+      test2() {
+        return { body: "This is never returned" };
+      }
+    }
+    const controller = new AbortController();
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+    });
+    let resp;
+    await t.step("abort without error status (200)", async () => {
+      resp = await fetch(`http://localhost:${port}/test1`);
+      assertEquals(resp.status, 200);
+      assertEquals(await resp.text(), "");
+    });
+    await t.step("abort with error status (403)", async () => {
+      resp = await fetch(`http://localhost:${port}/test2`);
+      assertEquals(resp.status, 403);
+      assertEquals(await resp.text(), "");
+    });
     controller.abort();
     await sleep(100);
   },
