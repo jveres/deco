@@ -55,8 +55,11 @@ Deno.test({
         e = err;
         return HttpServer.Status(401);
       },
-      onStarted: () => {
-        Deno.run({ cmd: ["curl", `http://localhost:${port}/bad `] });
+      onStarted: async () => {
+        const curl = Deno.run({
+          cmd: ["curl", `http://localhost:${port}/bad `],
+        });
+        await curl.status();
       },
     });
     await sleep(100);
