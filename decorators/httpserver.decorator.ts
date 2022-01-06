@@ -12,7 +12,7 @@ import {
 } from "../utils/HttpRouter.ts";
 import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
-import * as Colors from "https://deno.land/std@0.118.0/fmt/colors.ts";
+import * as Colors from "https://deno.land/std@0.120.0/fmt/colors.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
