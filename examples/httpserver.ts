@@ -32,6 +32,11 @@ class TestServer {
     return { body: "Hello from Deco!" };
   }
 
+  @HttpServer.Get()
+  bench() {
+    return { body: "Hello, Bench!" };
+  }
+
   @HttpServer.Post("/test")
   test() {
     return { body: "Hello from Deco!" };

@@ -39,7 +39,7 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    let e: any = undefined;
+    let e: any, o: any;
     class ServerController {
       @HttpServer.Get()
       home() {
@@ -53,18 +53,27 @@ Deno.test({
       controllers: [ServerController],
       onError: (err: unknown) => {
         e = err;
-        return HttpServer.Status(401);
       },
       onStarted: async () => {
         const curl = Deno.run({
-          cmd: ["curl", `http://localhost:${port}/bad `],
+          cmd: [
+            "curl",
+            "-s",
+            "-o",
+            "/dev/null",
+            "-w",
+            `"%{http_code}`,
+            `http://localhost:${port}/bad `,
+          ],
+          stdout: "piped",
         });
-        await curl.status();
+        o = await curl.output();
       },
     });
     await sleep(100);
-    console.log(e);
+    const status = new TextDecoder().decode(o);
     assertEquals(e?.message, "invalid HTTP version parsed");
+    assertEquals(status, `"400`);
     controller.abort();
     await sleep(100);
   },
