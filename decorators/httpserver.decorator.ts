@@ -177,7 +177,7 @@ export class HttpServer {
     }
   }
 
-  static EventStream() {
+  static Chunked(contentType = "text/plain") {
     return HttpServer.Decorate([
       (_target: any, _property: string, descriptor: PropertyDescriptor) => {
         const fn = descriptor.value;
@@ -197,7 +197,7 @@ export class HttpServer {
             init: {
               headers: {
                 "cache-control": "no-cache",
-                "content-type": "text/event-stream",
+                "content-type": contentType,
               },
             },
           };

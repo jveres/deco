@@ -16,9 +16,11 @@ import { RateLimit } from "../decorators/ratelimit.decorator.ts";
 import { h, renderSSR } from "https://deno.land/x/nano_jsx@v0.0.27/mod.ts";
 import { DECO_VERSION } from "../mod.ts";
 
+import publicKey from "./public.key.json" assert { type: "json" };
+
 const authKey = await crypto.subtle.importKey(
   "jwk",
-  JSON.parse(Deno.readTextFileSync("./test.public.key")),
+  publicKey,
   {
     name: "ECDSA",
     namedCurve: "P-256",
@@ -164,17 +166,29 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.EventStream()
+  @HttpServer.Chunked()
+  async *chunked() {
+    for (let i = 0; i < 10; ++i) {
+      yield `chunk #${i}`;
+      await sleep(1000);
+    }
+  }
+
+  @HttpServer.Get()
+  @HttpServer.Chunked("text/event-stream")
   async *stream() {
     yield HttpServer.SSE({ comment: "Hello from stream" });
     while (true) {
       await sleep(1000);
-      yield HttpServer.SSE({ event: "tick", data: new Date().toISOString() });
+      yield HttpServer.SSE({ event: "tick", data: new Date().toString() });
     }
   }
 }
 
 const shutdown = new AbortController();
+Deno.addSignalListener("SIGINT", () => {
+  shutdown.abort();
+});
 
 HttpServer.serve({
   abortSignal: shutdown.signal,
@@ -186,8 +200,4 @@ HttpServer.serve({
     console.info(`...server closed.`);
     Deno.exit();
   },
-});
-
-Deno.addSignalListener("SIGINT", () => {
-  shutdown.abort();
 });
