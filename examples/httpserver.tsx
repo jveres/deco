@@ -1,3 +1,5 @@
+/** @jsx h */
+
 // Copyright 2020 Janos Veres. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
@@ -11,6 +13,7 @@ import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
+import { h, renderSSR } from "https://deno.land/x/nano_jsx@v0.0.27/mod.ts";
 import { DECO_VERSION } from "../mod.ts";
 
 const authKey = await crypto.subtle.importKey(
@@ -134,6 +137,25 @@ class TestServer {
     await sleep(delay * 1000, timeoutSignal);
     console.info("resolving...");
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
+  }
+
+  @HttpServer.Get()
+  html() {
+    const App = () => {
+      return (
+        <html>
+          <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+            <title>Hello from Deco</title>
+          </head>
+          <body>
+            <h1>Hello from Deco! 😎</h1>
+          </body>
+        </html>
+      );
+    };
+    const html = renderSSR(<App />);
+    return { body: html, init: { headers: { "content-type": "text/html" } } };
   }
 }
 
