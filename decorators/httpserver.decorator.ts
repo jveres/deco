@@ -143,6 +143,16 @@ export class HttpServer {
     });
   }
 
+  static Html() {
+    return HttpServer.After((html) => {
+      const response = {
+        body: html as string,
+        init: { headers: { "content-type": "text/html" } },
+      };
+      return Promise.resolve(response);
+    });
+  }
+
   static Status(status: number) {
     return () => Promise.resolve({ init: { status } });
   }

@@ -140,12 +140,16 @@ class TestServer {
   }
 
   @HttpServer.Get()
+  @HttpServer.Html()
   html() {
     const App = () => {
       return (
         <html>
           <head>
-            <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+            <meta
+              http-equiv="Content-Type"
+              content="text/html; charset=utf-8"
+            />
             <title>Hello from Deco</title>
           </head>
           <body>
@@ -154,8 +158,7 @@ class TestServer {
         </html>
       );
     };
-    const html = renderSSR(<App />);
-    return { body: html, init: { headers: { "content-type": "text/html" } } };
+    return renderSSR(<App />);
   }
 }
 

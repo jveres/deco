@@ -211,9 +211,9 @@ Deno.test({
       }
 
       @HttpServer.Get()
-      @HttpServer.After((request) => {
-        request.body += " after";
-        return Promise.resolve(request);
+      @HttpServer.After((resp) => {
+        resp.body += " after";
+        return Promise.resolve(resp);
       })
       after() {
         return { body: "test" };
