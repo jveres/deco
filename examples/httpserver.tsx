@@ -139,6 +139,7 @@ class TestServer {
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 
+  @Cache()
   @HttpServer.Get()
   @HttpServer.Html()
   html() {
@@ -158,6 +159,7 @@ class TestServer {
         </html>
       );
     };
+    console.log("Rendering...");
     return renderSSR(<App />);
   }
 }
