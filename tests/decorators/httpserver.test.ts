@@ -35,6 +35,41 @@ Deno.test({
 });
 
 Deno.test({
+  name: "@HttpServer.serve(): response body & header",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const body = "Hello from private property!";
+    class ServerController {
+      #priv = body;
+
+      @HttpServer.Get()
+      home() {
+        return {
+          body: this.#priv,
+          init: {
+            headers: { "content-type": "text/plain", "x-header": this.#priv },
+          },
+        };
+      }
+    }
+    const controller = new AbortController();
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+    });
+    const resp = await fetch(`http://localhost:${port}/home`);
+    assertEquals(resp.status, 200);
+    assertEquals(await resp.text(), body);
+    assertEquals(resp.headers.get("content-type"), "text/plain");
+    assertEquals(resp.headers.get("x-header"), body);
+    controller.abort();
+    await sleep(100);
+  },
+});
+
+Deno.test({
   name: "@HttpServer.serve(): bad request",
   sanitizeResources: false,
   sanitizeOps: false,
