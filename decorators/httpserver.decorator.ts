@@ -184,12 +184,16 @@ export class HttpServer {
         descriptor.value = function (...args: any[]) {
           const stream = new ReadableStream({
             async start(controller) {
-              for await (
-                const event of fn.apply(this, args)
-              ) {
-                controller.enqueue(`${event}\n\n`);
+              try {
+                for await (
+                  const event of fn.apply(this, args)
+                ) {
+                  controller.enqueue(`${event}\n\n`);
+                }
+                controller.close();
+              } catch (e: unknown) {
+                controller.error(e);
               }
-              controller.close();
             },
           });
           return {
