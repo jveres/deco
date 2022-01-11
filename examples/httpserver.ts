@@ -6,6 +6,7 @@
 
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
 import { sleep } from "../utils/utils.ts";
+import { Cache } from "../decorators/cache.decorator.ts";
 import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
@@ -35,6 +36,14 @@ class TestServer {
   @HttpServer.Get()
   bench() {
     return { body: "Hello, Bench!" };
+  }
+
+  #counter = 0;
+
+  @HttpServer.Get()
+  @Cache({ ttl: 1000 })
+  cached() {
+    return { body: `counter=${++this.#counter}` };
   }
 
   @HttpServer.Post("/test")
