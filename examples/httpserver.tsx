@@ -162,6 +162,16 @@ class TestServer {
     console.log("Rendering...");
     return renderSSR(<App />);
   }
+
+  @HttpServer.Get()
+  @HttpServer.EventStream()
+  async *stream() {
+    yield HttpServer.SSE({ comment: "Hello from stream" });
+    while (true) {
+      await sleep(1000);
+      yield HttpServer.SSE({ event: "tick", data: new Date().toISOString() });
+    }
+  }
 }
 
 const shutdown = new AbortController();
@@ -172,7 +182,12 @@ HttpServer.serve({
   onStarted: () =>
     console.info(`Deco (v:${DECO_VERSION}) http server started...`),
   onError: (e: unknown) => console.error(e),
-  onClosed: () => console.info(`...server closed.`),
+  onClosed: () => {
+    console.info(`...server closed.`);
+    Deno.exit();
+  },
 });
 
-Deno.addSignalListener("SIGINT", () => shutdown.abort());
+Deno.addSignalListener("SIGINT", () => {
+  shutdown.abort();
+});

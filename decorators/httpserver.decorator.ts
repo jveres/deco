@@ -26,6 +26,17 @@ enum HttpServerHookType {
   After,
 }
 
+interface EventStreamEventFormat {
+  event?: string;
+  data: string | string[];
+  id?: string;
+  retry?: number;
+}
+
+interface EventStreamCommentFormat {
+  comment: string;
+}
+
 declare global {
   namespace Deno {
     interface RequestEvent {
@@ -151,6 +162,48 @@ export class HttpServer {
       };
       return Promise.resolve(response);
     });
+  }
+
+  static SSE(event: EventStreamEventFormat | EventStreamCommentFormat): string {
+    if ("comment" in event) {
+      return `: ${event.comment}`;
+    } else {
+      let res = event.event ? `event: ${event.event}\n` : "";
+      if (typeof event.data === "string") res += `data: ${event.data}\n`;
+      else event.data.map((data) => res += `data: ${data}\n`);
+      if (event.id) res += `id: ${event.id}\n`;
+      if (event.retry) res += `retry: ${event.retry}\n`;
+      return res;
+    }
+  }
+
+  static EventStream() {
+    return HttpServer.Decorate([
+      (_target: any, _property: string, descriptor: PropertyDescriptor) => {
+        const fn = descriptor.value;
+        descriptor.value = function (...args: any[]) {
+          const stream = new ReadableStream({
+            async start(controller) {
+              for await (
+                const event of fn.apply(this, args)
+              ) {
+                controller.enqueue(`${event}\n\n`);
+              }
+              controller.close();
+            },
+          });
+          return {
+            body: stream.pipeThrough(new TextEncoderStream()),
+            init: {
+              headers: {
+                "cache-control": "no-cache",
+                "content-type": "text/event-stream",
+              },
+            },
+          };
+        };
+      },
+    ]);
   }
 
   static Status(status: number) {
