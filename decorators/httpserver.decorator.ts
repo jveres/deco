@@ -233,7 +233,7 @@ export class HttpServer {
             else throw e;
           }); // catch promise chain errors
         }
-      })().catch(onError); // catch serveHttp errors, e.g. curl -v -X GET "http://localhost:8080/wrapped " -> invalid Http version parsed
+      })().catch(onError); // catch serveHttp errors
     }
     onClosed?.();
   }
