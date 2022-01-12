@@ -5,13 +5,13 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { HttpServer } from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.120.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.121.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
 const port = 8090;
 
 Deno.test({
-  name: "@HttpServer.serve(): default response codes (200, 404)",
+  name: "@HttpServer.Get(): default response codes (200, 404)",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
@@ -64,6 +64,106 @@ Deno.test({
     assertEquals(await resp.text(), body);
     assertEquals(resp.headers.get("content-type"), "text/plain");
     assertEquals(resp.headers.get("x-header"), body);
+    controller.abort();
+    await sleep(100);
+  },
+});
+
+Deno.test({
+  name: "@HttpServer.Html()",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const html = "<div>Hello from Deco!</div>";
+    class ServerController {
+      @HttpServer.Get()
+      @HttpServer.Html()
+      html() {
+        return html;
+      }
+    }
+    const controller = new AbortController();
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+    });
+    const resp = await fetch(`http://localhost:${port}/html`);
+    assertEquals(resp.status, 200);
+    const text = await resp.text();
+    assertEquals(text, html);
+    assertEquals(resp.headers.get("content-type"), "text/html");
+    controller.abort();
+    await sleep(100);
+  },
+});
+
+Deno.test({
+  name: "@HttpServer.Chunked()",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const body = "Hello from Deco!";
+    class ServerController {
+      @HttpServer.Get()
+      @HttpServer.Chunked()
+      async *chunked() {
+        for (let i = 0; i < 2; ++i) {
+          yield `${body}#${i}`;
+        }
+      }
+    }
+    const controller = new AbortController();
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+    });
+    const resp = await fetch(`http://localhost:${port}/chunked`);
+    assertEquals(resp.status, 200);
+    const text = await resp.text();
+    assertEquals(text, `${body}#0\n\n${body}#1\n\n`);
+    assertEquals(resp.headers.get("content-type"), "text/plain");
+    assertEquals(resp.headers.get("transfer-encoding"), "chunked");
+    controller.abort();
+    await sleep(100);
+  },
+});
+
+Deno.test({
+  name: "@HttpServer.Chunked('text/event-stream')",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const comment = "Comment";
+    const event = "welcome";
+    const data = "Hello from Deco!";
+    class ServerController {
+      @HttpServer.Get()
+      @HttpServer.Chunked("text/event-stream")
+      async *stream() {
+        yield HttpServer.SSE({ comment });
+        yield HttpServer.SSE({ event, data });
+        yield HttpServer.SSE({ event, data: [data] });
+      }
+    }
+    const controller = new AbortController();
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+    });
+    const resp = await fetch(`http://localhost:${port}/stream`);
+    assertEquals(resp.status, 200);
+    const text = await resp.text();
+    assertEquals(
+      text,
+      `${HttpServer.SSE({ comment })}\n\n${
+        HttpServer.SSE({ event, data })
+      }\n\n${HttpServer.SSE({ event, data: [data] })}\n\n`,
+    );
+    assertEquals(resp.headers.get("content-type"), "text/event-stream");
+    assertEquals(resp.headers.get("transfer-encoding"), "chunked");
     controller.abort();
     await sleep(100);
   },

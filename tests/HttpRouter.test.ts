@@ -5,7 +5,7 @@
 import {
   assertEquals,
   assertNotEquals,
-} from "https://deno.land/std@0.120.0/testing/asserts.ts";
+} from "https://deno.land/std@0.121.0/testing/asserts.ts";
 import { HttpRouter } from "../utils/HttpRouter.ts";
 
 Deno.test({

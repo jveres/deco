@@ -7,7 +7,7 @@ import {
   assertEquals,
   assertNotEquals,
   assertRejects,
-} from "https://deno.land/std@0.120.0/testing/asserts.ts";
+} from "https://deno.land/std@0.121.0/testing/asserts.ts";
 import { consoleLogHook, LruCache, sleep } from "../utils/utils.ts";
 
 Deno.test({
