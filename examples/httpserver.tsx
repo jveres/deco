@@ -35,7 +35,7 @@ class TestServer {
 
   @HttpServer.Get("/test")
   static() {
-    return { body: "Hello from Deco!" };
+    return { body: "Hello from Deco! 😎" };
   }
 
   @HttpServer.Get()
