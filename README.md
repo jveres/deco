@@ -15,7 +15,7 @@
 class ServerController {
   @HttpServer.Get()
   hello() {
-    return { body: "Hello from Deco❤️" }
+    return { body: "Hello from Deco! 😎" }
   }
 }
 
