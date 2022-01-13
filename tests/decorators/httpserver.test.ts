@@ -107,8 +107,10 @@ Deno.test({
     class ServerController {
       @HttpServer.Get()
       @HttpServer.Chunked()
-      async *chunked({ http }: { http: Deno.RequestEvent }) {
-        if (new URL(http.request.url).searchParams.get("error")) {
+      async *chunked(
+        { http, urlParams }: { http: Deno.RequestEvent; urlParams: string },
+      ) {
+        if (new URLSearchParams(urlParams).get("error")) {
           http.abortWith(Response.Status(500));
         }
         for (let i = 0; i < 2; ++i) {
