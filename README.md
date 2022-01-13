@@ -12,7 +12,6 @@
 
 ```typescript
 // curl localhost:8080/hello
-@HttpServer.Controller()
 class ServerController {
   @HttpServer.Get()
   hello() {}
@@ -26,7 +25,16 @@ HttpServer.serve({
 ## Running tests
 
 ```sh
-deno test --allow-net
+deno test --unstable --allow-all --coverage=cov_profile
+deno coverage cov_profile
+
+cover cache.decorator.ts ... 100.000% (25/25)
+cover concurrency.decorator.ts ... 100.000% (23/23)
+cover httpserver.decorator.ts ... 97.845% (227/232)
+cover ratelimit.decorator.ts ... 100.000% (26/26)
+cover timeout.decorator.ts ... 100.000% (36/36)
+cover HttpRouter.ts ... 100.000% (41/41)
+cover utils.ts ... 100.000% (70/70)
 ```
 
 ## Http server performance, static route (~125k RPS on MBP/M1)
