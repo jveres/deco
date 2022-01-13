@@ -279,7 +279,7 @@ export class HttpServer {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
           http.abortWith = (r?: Response | Promise<Response>) => { // helper for aborting the response chain
-            http.respondWith(r ?? new Response());
+            http.respondWith(r ?? new Response()).catch(() => {});
             throw new AbortError();
           };
           const [path, urlParams] = http.request.url.split(":" + port)[1]

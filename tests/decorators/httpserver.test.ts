@@ -117,14 +117,10 @@ Deno.test({
       }
     }
     const controller = new AbortController();
-    let e: any;
     HttpServer.serve({
       port,
       abortSignal: controller.signal,
       controllers: [ServerController],
-      onError: (err: unknown) => {
-        e = err;
-      },
     });
     let resp = await fetch(`http://localhost:${port}/chunked`);
     assertEquals(resp.status, 200);
