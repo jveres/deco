@@ -13,7 +13,11 @@ import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
-import { h, renderSSR } from "https://deno.land/x/nano_jsx@v0.0.27/mod.ts";
+import {
+  h,
+  ssr,
+  tw,
+} from "https://gist.githubusercontent.com/jveres/a57234acf54ca32124ab1c8a91f0b430/raw/3bd029ee43b1e75b5363589b6df01c9d9bdc55ab/deco_ssr.ts";
 import { DECO_VERSION } from "../mod.ts";
 
 import publicKey from "./public.key.json" assert { type: "json" };
@@ -141,28 +145,19 @@ class TestServer {
     return { body: `delay: ${delay}s, resp: ${this.#priv}` };
   }
 
-  @Cache()
   @HttpServer.Get()
-  @HttpServer.Html()
-  html() {
-    const App = () => {
-      return (
-        <html>
-          <head>
-            <meta
-              http-equiv="Content-Type"
-              content="text/html; charset=utf-8"
-            />
-            <title>Hello from Deco</title>
-          </head>
-          <body>
-            <h1>Hello from Deco! 😎</h1>
-          </body>
-        </html>
-      );
-    };
+  @HttpServer.Decorate([Cache()])
+  html({ urlParams }: { urlParams: string }) {
+    const Hello = (props: Record<string, unknown>) => (
+      <div class={tw`bg-white flex h-screen`}>
+        <h1 class={tw`text-5xl text-gray-600 m-auto mt-20`}>
+          Hello {props.name}! 😎
+        </h1>
+      </div>
+    );
     console.log("Rendering...");
-    return renderSSR(<App />);
+    const name = new URLSearchParams(urlParams).get("name") ?? "world";
+    return ssr(() => <Hello name={name} />);
   }
 
   @HttpServer.Get()
