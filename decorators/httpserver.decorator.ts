@@ -67,7 +67,7 @@ export class HttpServer {
     { method = "GET", path }: { method?: HttpMethod; path?: string },
   ) {
     return function (target: any, property: string) {
-      path ||= "/" + property;
+      path ||= property.startsWith("/") ? property : "/" + property;
       HttpServer.router.add({
         method,
         path,
@@ -282,7 +282,6 @@ export class HttpServer {
             http.respondWith(r ?? new Response()).catch(() => {});
             throw new AbortError();
           };
-          console.log(http);
           const [path, urlParams] = http.request.url.split(
             http.request.headers.get("host")!,
             2,
@@ -290,12 +289,10 @@ export class HttpServer {
             .split(
               "?",
             );
-          console.log(path, urlParams);
           const { promise, params: pathParams } = HttpServer.router.find(
             http.request.method,
             path,
           ) || NOT_FOUND;
-          console.log(promise, pathParams);
           promise({ conn, http, pathParams, urlParams }).then((
             response: HttpResponse,
           ) =>
