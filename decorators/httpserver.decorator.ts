@@ -295,6 +295,7 @@ export class HttpServer {
             http.request.method,
             path,
           ) || NOT_FOUND;
+          console.log(promise, pathParams);
           promise({ conn, http, pathParams, urlParams }).then((
             response: HttpResponse,
           ) =>
