@@ -107,24 +107,31 @@ Deno.test({
     class ServerController {
       @HttpServer.Get()
       @HttpServer.Chunked()
-      async *chunked() {
+      async *chunked({http}: {http: Deno.RequestEvent}) {
+        if (new URL(http.request.url).searchParams.get("error")) http.abortWith(Response.Status(500));
         for (let i = 0; i < 2; ++i) {
           yield `${body}#${i}`;
         }
       }
     }
     const controller = new AbortController();
+    let e: any;
     HttpServer.serve({
       port,
       abortSignal: controller.signal,
       controllers: [ServerController],
+      onError: (err: unknown) => {
+        e = err;
+      },
     });
-    const resp = await fetch(`http://localhost:${port}/chunked`);
+    let resp = await fetch(`http://localhost:${port}/chunked`);
     assertEquals(resp.status, 200);
     const text = await resp.text();
     assertEquals(text, `${body}#0\n\n${body}#1\n\n`);
     assertEquals(resp.headers.get("content-type"), "text/plain");
     assertEquals(resp.headers.get("transfer-encoding"), "chunked");
+    resp = await fetch(`http://localhost:${port}/chunked?error=1`);
+    assertEquals(resp.status, 500);
     controller.abort();
     await sleep(100);
   },
@@ -143,6 +150,7 @@ Deno.test({
       @HttpServer.Chunked("text/event-stream")
       async *stream() {
         yield HttpServer.SSE({ comment });
+        yield HttpServer.SSE({ data });
         yield HttpServer.SSE({ event, data });
         yield HttpServer.SSE({ event, data: [data] });
       }
@@ -158,9 +166,7 @@ Deno.test({
     const text = await resp.text();
     assertEquals(
       text,
-      `${HttpServer.SSE({ comment })}\n\n${
-        HttpServer.SSE({ event, data })
-      }\n\n${HttpServer.SSE({ event, data: [data] })}\n\n`,
+      `${HttpServer.SSE({ comment })}\n\n${HttpServer.SSE({ data })}\n\n${HttpServer.SSE({ event, data })}\n\n${HttpServer.SSE({ event, data: [data] })}\n\n`,
     );
     assertEquals(resp.headers.get("content-type"), "text/event-stream");
     assertEquals(resp.headers.get("transfer-encoding"), "chunked");

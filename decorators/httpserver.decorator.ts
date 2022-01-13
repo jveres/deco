@@ -190,9 +190,10 @@ export class HttpServer {
                 ) {
                   controller.enqueue(`${event}\n\n`);
                 }
-                controller.close();
               } catch (e: unknown) {
                 controller.error(e);
+              } finally {
+                controller.close();
               }
             },
           });
