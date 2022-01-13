@@ -282,7 +282,10 @@ export class HttpServer {
             http.respondWith(r ?? new Response()).catch(() => {});
             throw new AbortError();
           };
-          const [path, urlParams] = http.request.url.split(":" + port)[1]
+          const [path, urlParams] = http.request.url.split(
+            http.request.headers.get("host")!,
+            2,
+          )[1]
             .split(
               "?",
             );
