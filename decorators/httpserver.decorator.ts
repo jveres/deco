@@ -9,7 +9,7 @@ import {
   HttpRequest,
   HttpResponse,
   HttpRouter,
-} from "../utils/HttpRouter.ts";
+} from "../utils/router.ts";
 import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import * as Colors from "https://deno.land/std@0.121.0/fmt/colors.ts";
