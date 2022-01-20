@@ -13,7 +13,7 @@ import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
-import { h, ssr } from "./ssr.ts";
+import { h, ssr, tw } from "./ssr.js";
 import { DECO_VERSION } from "../mod.ts";
 
 import publicKey from "./public.key.json" assert { type: "json" };
@@ -145,37 +145,10 @@ class TestServer {
   @HttpServer.Decorate([Cache()])
   html({ urlParams }: { urlParams: string }) {
     const Hello = (props: Record<string, unknown>) => (
-      <div class="bg-white flex h-screen">
-        <h1 class="text-5xl text-gray-600 m-auto mt-20">
-          Hello {props.name}! 😎<br></br>
-          <button class="inline-block px-4 py-3 text-sm font-semibold text-center text-white uppercase transition duration-200 ease-in-out bg-indigo-500 rounded-md cursor-pointer hover:bg-indigo-600">
-            Tailwind Button
-          </button>
+      <div class={tw`bg-white flex h-screen`}>
+        <h1 class={tw`text-5xl text-gray-600 m-auto mt-20`}>
+          Hello {props.name}! 😎
         </h1>
-        <div
-          class="flex items-center w-50 px-4 py-10 bg-cover card rounded"
-          style="background-image: url(&quot;https://picsum.photos/id/314/1000/300&quot;);"
-        >
-          <div class="card glass lg:card-side text-neutral-content">
-            <figure class="p-6">
-              <img
-                src="https://picsum.photos/id/1005/300/200"
-                
-              />
-            </figure>
-            <div class="max-w-md card-body">
-              <h2 class="card-title">Glass</h2>
-              <p>
-                Rerum reiciendis beatae tenetur excepturi aut pariatur est eos.
-                Sit sit necessitatibus veritatis sed molestiae voluptates
-                incidunt iure sapiente.
-              </p>
-              <div class="card-actions">
-                <button class="btn glass">Get Started</button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     );
     console.log("Rendering...");
