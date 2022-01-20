@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { HttpServer } from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.121.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.122.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
 const port = 8090;
