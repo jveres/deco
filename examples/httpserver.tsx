@@ -145,15 +145,31 @@ class TestServer {
   @HttpServer.Decorate([Cache()])
   html({ urlParams }: { urlParams: string }) {
     const Hello = (props: Record<string, unknown>) => (
-      <div class={tw`bg-white flex h-screen`}>
-        <h1 class={tw`text-5xl text-gray-600 m-auto mt-20`}>
+      <div class={tw`bg-hotpink flex h-screen`}>
+        <h1
+          class={tw`text-5xl text-white m-auto mt-20 transition-transform
+          hover:(
+            rotate-5
+            scale-150
+            cursor-pointer
+          )`}
+        >
           Hello {props.name}! 😎
         </h1>
       </div>
     );
     console.log("Rendering...");
     const name = new URLSearchParams(urlParams).get("name") ?? "world";
-    return ssr(() => <Hello name={name} />);
+    return ssr(() => <Hello name={name} />, {
+      tw: {
+        theme: {
+          extend: {
+            colors: { hotpink: "#FF00FF" },
+            rotate: { 5: "5deg" },
+          },
+        },
+      },
+    });
   }
 
   @HttpServer.Get()
