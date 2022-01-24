@@ -11,8 +11,8 @@ import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
-import { html } from "./ssr.tsx";
 import { DECO_VERSION } from "../mod.ts";
+import { html } from "./ssr.tsx";
 
 import publicKey from "./public.key.json" assert { type: "json" };
 
@@ -142,9 +142,8 @@ class TestServer {
   @HttpServer.Get()
   @HttpServer.Decorate([Cache()])
   @HttpServer.Html()
-  html({ urlParams }: { urlParams: string }) {
+  html() {
     console.log("Rendering...");
-    //const name = new URLSearchParams(urlParams).get("name") ?? "world";
     return html;
   }
 
