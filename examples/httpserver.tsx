@@ -1,5 +1,3 @@
-/** @jsx h */
-
 // Copyright 2020 Janos Veres. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
@@ -13,7 +11,7 @@ import { Concurrency } from "../decorators/concurrency.decorator.ts";
 import { Timeout } from "../decorators/timeout.decorator.ts";
 import { Trace } from "../decorators/trace.decorator.ts";
 import { RateLimit } from "../decorators/ratelimit.decorator.ts";
-import { h, ssr, tw } from "./ssr.js";
+import { html } from "./ssr.tsx";
 import { DECO_VERSION } from "../mod.ts";
 
 import publicKey from "./public.key.json" assert { type: "json" };
@@ -143,33 +141,11 @@ class TestServer {
 
   @HttpServer.Get()
   @HttpServer.Decorate([Cache()])
+  @HttpServer.Html()
   html({ urlParams }: { urlParams: string }) {
-    const Hello = (props: Record<string, unknown>) => (
-      <div class={tw`bg-hotpink flex h-screen`}>
-        <h1
-          class={tw`text-5xl text-white m-auto mt-20 transition-transform
-          hover:(
-            rotate-5
-            scale-150
-            cursor-pointer
-          )`}
-        >
-          Hello {props.name}! 😎
-        </h1>
-      </div>
-    );
     console.log("Rendering...");
-    const name = new URLSearchParams(urlParams).get("name") ?? "world";
-    return ssr(() => <Hello name={name} />, {
-      tw: {
-        theme: {
-          extend: {
-            colors: { hotpink: "#FF00FF" },
-            rotate: { 5: "5deg" },
-          },
-        },
-      },
-    });
+    //const name = new URLSearchParams(urlParams).get("name") ?? "world";
+    return html;
   }
 
   @HttpServer.Get()
