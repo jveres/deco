@@ -158,8 +158,7 @@ class TestServer {
     }
   }
 
-  @HttpServer.Get()
-  @HttpServer.Decorate([Cache()])
+  @HttpServer.Decorate([HttpServer.Get(), Cache()])
   @HttpServer.HtmlResponse()
   html() {
     console.log("Rendering...");
