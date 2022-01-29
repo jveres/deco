@@ -166,8 +166,11 @@ class TestServer {
     return html;
   }
 
+  @Cache()
   @HttpServer.StaticFile("index.html")
-  index() {}
+  index() {
+    console.log("Rendering...");
+  }
 }
 
 const shutdown = new AbortController();
