@@ -11,7 +11,7 @@ const App = () => (
         content="Server Side Rendered Nano JSX Application"
       />
     </Helmet>
-    <h1>Hello from Deco! 😎</h1>
+    <h1>Hello from Deco! 😎 (server side rendered)</h1>
   </div>
 );
 

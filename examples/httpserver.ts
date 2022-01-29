@@ -140,14 +140,6 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Decorate([Cache()])
-  @HttpServer.Html()
-  html() {
-    console.log("Rendering...");
-    return html;
-  }
-
-  @HttpServer.Get()
   @HttpServer.Chunked()
   async *chunked() {
     for (let i = 0; i < 10; ++i) {
@@ -165,6 +157,17 @@ class TestServer {
       yield HttpServer.SSE({ event: "tick", data: new Date().toString() });
     }
   }
+
+  @HttpServer.Get()
+  @HttpServer.Decorate([Cache()])
+  @HttpServer.HtmlResponse()
+  html() {
+    console.log("Rendering...");
+    return html;
+  }
+
+  @HttpServer.StaticFile("index.html")
+  index() {}
 }
 
 const shutdown = new AbortController();

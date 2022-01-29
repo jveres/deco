@@ -154,7 +154,7 @@ export class HttpServer {
     });
   }
 
-  static Html() {
+  static HtmlResponse() {
     return HttpServer.After((html) => {
       const response = {
         body: html as string,
@@ -162,6 +162,20 @@ export class HttpServer {
       };
       return Promise.resolve(response);
     });
+  }
+
+  static StaticFile(path: string) {
+    const html = Deno.readTextFileSync(path);
+    return HttpServer.Decorate([
+      HttpServer.Get(),
+      HttpServer.After(() => {
+        const response = {
+          body: html,
+          init: { headers: { "content-type": "text/html" } },
+        };
+        return Promise.resolve(response);
+      }),
+    ]);
   }
 
   static SSE(event: EventStreamEventFormat | EventStreamCommentFormat): string {
