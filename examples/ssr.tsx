@@ -1,10 +1,6 @@
 /** @jsx h */
 
-import {
-  h,
-  Helmet,
-  renderSSR,
-} from "./nano.ts";
+import { h, Helmet, renderSSR } from "./nano.ts";
 
 const App = () => (
   <div>
