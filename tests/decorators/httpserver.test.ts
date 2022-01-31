@@ -566,7 +566,7 @@ Deno.test({
 });
 
 // Deno fails to run this test as part of a sequence in "deno test --unstable -A", it passes however by running: deno test --unstable -A --filter "@HttpServer: error handling"
-// Possible reason: weird object ref counting during anonymous async function
+// Possible reason: weird object ref counting during anonymous async function in tests. Works fine as standalone routine.
 /*Deno.test({
   name: "@HttpServer: error handling",
   sanitizeResources: false,
