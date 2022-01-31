@@ -67,7 +67,7 @@ export class HttpServer {
     { method = "GET", path }: { method?: HttpMethod; path?: string },
   ) {
     return function (target: any, property: string) {
-      path ||= property.startsWith("/") ? property : "/" + property;
+      path ||= "/" + property;
       HttpServer.router.add({
         method,
         path,
@@ -154,7 +154,7 @@ export class HttpServer {
     });
   }
 
-  static HtmlResponse() {
+  static Html() {
     return HttpServer.After((html) => {
       const response = {
         body: html as string,
@@ -164,14 +164,16 @@ export class HttpServer {
     });
   }
 
-  static StaticFile(path: string) {
+  static Static(
+    { path, contentType = "text/html" }: { path: string; contentType?: string },
+  ) {
     const html = Deno.readTextFileSync(path);
     return HttpServer.Decorate([
       HttpServer.Get(),
       HttpServer.After(() => {
         const response = {
           body: html,
-          init: { headers: { "content-type": "text/html" } },
+          init: { headers: { "content-type": contentType } },
         };
         return Promise.resolve(response);
       }),
@@ -292,8 +294,8 @@ export class HttpServer {
     for await (const conn of server) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
-          http.abortWith = (r?: Response | Promise<Response>) => { // helper for aborting the response chain
-            http.respondWith(r ?? new Response()).catch(() => {});
+          http.abortWith = (r = new Response()) => { // helper for aborting the response chain
+            http.respondWith(r).catch(() => {});
             throw new AbortError();
           };
           const [path, urlParams] = http.request.url.split(
@@ -307,16 +309,23 @@ export class HttpServer {
             http.request.method,
             path,
           ) || NOT_FOUND;
-          promise({ conn, http, pathParams, urlParams }).then((
-            response: HttpResponse,
-          ) =>
-            http.respondWith(new Response(response?.body, response?.init))
-              .catch(onError) // catch Http errors
-          ).catch((e: unknown) => {
-            if (e instanceof AbortError) return;
-            if (onError) return onError(e);
-            else throw e;
-          }); // catch promise chain errors
+          promise({ conn, http, pathParams, urlParams })
+            .then((
+              response: HttpResponse,
+            ) =>
+              http.respondWith(new Response(response?.body, response?.init))
+                .catch(onError) // catch Http errors
+            )
+            .catch((e: unknown) => { // catch promise chain errors
+              if (!(e instanceof AbortError)) {
+                if (onError) {
+                  http.respondWith(
+                    new Response("Internal Server Error", { status: 500 }),
+                  ).catch(() => {}); // swallow Http errors
+                  onError(e);
+                } else throw e;
+              } // swallow AbortError
+            });
         }
       })().catch(onError); // catch serveHttp errors
     }

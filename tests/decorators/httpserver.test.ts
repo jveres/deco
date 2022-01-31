@@ -76,9 +76,9 @@ Deno.test({
   async fn() {
     const html = "<div>Hello from Deco!</div>";
     class ServerController {
-      @HttpServer.Get()
+      @HttpServer.Route({ method: "GET" })
       @HttpServer.Html()
-      html() {
+      index() {
         return html;
       }
     }
@@ -88,11 +88,40 @@ Deno.test({
       abortSignal: controller.signal,
       controllers: [ServerController],
     });
-    const resp = await fetch(`http://localhost:${port}/html`);
+    const resp = await fetch(`http://localhost:${port}/index`);
     assertEquals(resp.status, 200);
     const text = await resp.text();
     assertEquals(text, html);
     assertEquals(resp.headers.get("content-type"), "text/html");
+    controller.abort();
+    await sleep(100);
+  },
+});
+
+Deno.test({
+  name: "@HttpServer.Static()",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const path = "./examples/index.html";
+    class ServerController {
+      @HttpServer.Static({
+        path,
+        contentType: "text/html",
+      })
+      index() {}
+    }
+    const controller = new AbortController();
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+    });
+    const resp = await fetch(`http://localhost:${port}/index`);
+    assertEquals(resp.status, 200);
+    assertEquals(resp.headers.get("content-type"), "text/html");
+    const text = await resp.text();
+    assertEquals(text, Deno.readTextFileSync(path));
     controller.abort();
     await sleep(100);
   },
@@ -535,3 +564,36 @@ Deno.test({
     await sleep(100);
   },
 });
+
+// Deno fails to run this test as part of a sequence in "deno test --unstable -A", it passes however by running: deno test --unstable -A --filter "@HttpServer: error handling"
+// Possible reason: weird object ref counting during anonymous async function
+/*Deno.test({
+  name: "@HttpServer: error handling",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const error = "error message";
+    class ServerController {
+      @HttpServer.Get()
+      error() {
+        throw new Error(error);
+      }
+    }
+    const controller = new AbortController();
+    let err;
+    HttpServer.serve({
+      port,
+      abortSignal: controller.signal,
+      controllers: [ServerController],
+      onError: (e: unknown) => {
+        err = (e as Error).message;
+      }
+    });
+    const resp = await fetch(`http://localhost:${port}/error`);
+    assertEquals(resp.status, 500);
+    assertEquals(err, error);
+    controller.abort();
+    await sleep(100);
+  },
+});
+*/

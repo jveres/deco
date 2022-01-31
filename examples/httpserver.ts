@@ -41,6 +41,11 @@ class TestServer {
     return { body: "Hello, Bench!" };
   }
 
+  @HttpServer.Get()
+  error() {
+    throw Error("error thrown");
+  }
+
   #counter = 0;
 
   @HttpServer.Get()
@@ -159,14 +164,14 @@ class TestServer {
   }
 
   @HttpServer.Decorate([HttpServer.Get(), Cache()])
-  @HttpServer.HtmlResponse()
+  @HttpServer.Html()
   html() {
     console.log("Rendering...");
     return html;
   }
 
   @Cache()
-  @HttpServer.StaticFile("index.html")
+  @HttpServer.Static({ path: "index.html" })
   index() {
     console.log("Rendering...");
   }
