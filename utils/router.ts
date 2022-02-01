@@ -22,7 +22,7 @@ export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
 export type HttpAction = {
   target: { [key: string]: any };
   property: string;
-  before: Array<(request: HttpRequest) => Promise<HttpRequest | Error>>;
+  before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
   decorators: Array<
     (target: any, property: string, descriptor: PropertyDescriptor) => void
   >;
@@ -31,19 +31,20 @@ export type HttpAction = {
 };
 
 export class HttpRouter {
-  readonly routes = new Map</* method */ string, RadixRouter<HttpAction>>();
-  readonly actions = new Array<HttpAction>();
+  readonly routes = new Array<
+    { method: HttpMethod; path: string; action: HttpAction }
+  >();
 
   createAction(
     { target, property }: {
-      target: any;
+      target: { [key: string]: any };
       property: string;
     },
   ) {
-    const action = this.actions.find((action) =>
-      action.target === target && action.property === property
+    const route = this.routes.find((route) =>
+      route.action.target === target && route.action.property === property
     );
-    if (action === undefined) {
+    if (!route) {
       const action: HttpAction = {
         target,
         property,
@@ -52,10 +53,12 @@ export class HttpRouter {
         after: [],
         promise: undefined!,
       };
-      this.actions.push(action);
-      return action;
+      return this
+        .routes[
+          this.routes.push({ method: undefined!, path: undefined!, action }) - 1
+        ];
     } else {
-      return action;
+      return route;
     }
   }
 
@@ -65,26 +68,34 @@ export class HttpRouter {
     target: { [key: string]: any };
     property: string;
   }) {
-    if (!this.routes.has(method)) this.routes.set(method, createRouter());
-    this.routes.get(method)!.insert(
-      path,
-      this.createAction({ target, property }),
-    );
+    const route = this.createAction({ target, property });
+    route.method = method;
+    route.path = path;
   }
 
-  slice(target: string) {
-    const res = new Map</* method */ string, any>();
-    for (const [method, router] of this.routes) {
-      if (!res.has(method)) res.set(method, createRouter());
+  getRouter(targets: string[]) {
+    const router = new Map</* method */ string, RadixRouter<HttpAction>>();
+    for (const route of this.routes) {
+      if (targets.indexOf(route.action.target.constructor.name) > -1) {
+        if (!router.has(route.method)) router.set(route.method, createRouter());
+        router.get(route.method)!.insert(
+          route.path,
+          route.action,
+        );
+      }
     }
+    return router;
   }
 
-  find(method: string, path: string) {
-    return this.routes.get(method)?.lookup(path);
+  find(
+    router: Map<string, RadixRouter<HttpAction>>,
+    method: string,
+    path: string,
+  ) {
+    return router.get(method)?.lookup(path);
   }
 
-  clear() {
-    this.actions.length = 0;
-    this.routes.clear();
+  clearAll() {
+    this.routes.length = 0;
   }
 }

@@ -109,9 +109,9 @@ export class HttpServer {
 
   static Hook(hook: any, type: HttpServerHookType) {
     return function (target: any, property: string) {
-      const action = HttpServer.router.createAction({ target, property });
-      if (type === HttpServerHookType.Before) action.before.push(hook);
-      else action.after.push(hook);
+      const route = HttpServer.router.createAction({ target, property });
+      if (type === HttpServerHookType.Before) route.action.before.push(hook);
+      else route.action.after.push(hook);
     };
   }
 
@@ -129,8 +129,8 @@ export class HttpServer {
     >,
   ) {
     return function (target: any, property: string) {
-      const action = HttpServer.router.createAction({ target, property });
-      action.decorators = action.decorators.concat(decorators);
+      const route = HttpServer.router.createAction({ target, property });
+      route.action.decorators = route.action.decorators.concat(decorators);
     };
   }
 
@@ -260,10 +260,11 @@ export class HttpServer {
     // routing setup
     const targets = Array.from(objects.keys());
     for (
-      const action of HttpServer.router.actions.filter((a) =>
-        targets.includes(a.target.constructor.name)
+      const route of HttpServer.router.routes.filter((route) =>
+        targets.includes(route.action.target.constructor.name)
       )
     ) {
+      const action = route.action;
       const descriptor = Object.getOwnPropertyDescriptor(
         action.target,
         action.property,
@@ -290,11 +291,13 @@ export class HttpServer {
         );
       };
     }
+    //console.log(HttpServer.router)
+    const router = HttpServer.router.getRouter(targets);
     const NOT_FOUND = { promise: HttpServer.Status(404), params: undefined };
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
       server.close();
-      HttpServer.router.clear();
+      HttpServer.router.clearAll();
     });
     onStarted?.();
     for await (const conn of server) {
@@ -311,10 +314,9 @@ export class HttpServer {
             .split(
               "?",
             );
-          const { promise, params: pathParams } = HttpServer.router.find(
-            http.request.method,
-            path,
-          ) || NOT_FOUND;
+          const { promise, params: pathParams } =
+            HttpServer.router.find(router, http.request.method, path) ||
+            NOT_FOUND;
           promise({ conn, http, pathParams, urlParams })
             .then((
               response: HttpResponse,
