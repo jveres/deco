@@ -291,13 +291,17 @@ export class HttpServer {
         );
       };
     }
-    //console.log(HttpServer.router)
     const router = HttpServer.router.getRouter(targets);
     const NOT_FOUND = { promise: HttpServer.Status(404), params: undefined };
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
-      //Deno.shutdown(server.rid).catch(() => {});
       server.close();
+      /*for (const res of Object.entries(Deno.resources())) {
+        console.log(res);
+        if (res[1] === "httpConn") {
+          Deno.shutdown(parseInt(res[0]) - 1).catch(() => {});
+        }
+      }*/
       HttpServer.router.clearAll();
     });
     onStarted?.();
@@ -336,7 +340,8 @@ export class HttpServer {
               } // swallow AbortError
             });
         }
-      })().catch(onError); // catch serveHttp errors
+      })()
+        .catch(onError); // catch serveHttp errors
     }
     onClosed?.();
   }

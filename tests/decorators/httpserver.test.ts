@@ -9,6 +9,12 @@ import { assertEquals } from "https://deno.land/std@0.123.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
 const port = 8090;
+const _fetch = globalThis.fetch;
+const fetch = (url: string, init: RequestInit = {}) => {
+  if (!init.headers) init.headers = {"connection": "close"};
+  else Object.assign(init.headers, {"connection": "close"});
+  return _fetch(url, init);
+};
 
 Deno.test({
   name: "@HttpServer.Get(): default response codes (200, 404)",
