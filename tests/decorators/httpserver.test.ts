@@ -44,7 +44,7 @@ Deno.test({
       #priv = body;
 
       @HttpServer.Get()
-      home() {
+      index() {
         return {
           body: this.#priv,
           init: {
@@ -59,7 +59,7 @@ Deno.test({
       abortSignal: controller.signal,
       controllers: [ServerController],
     });
-    const resp = await fetch(`http://localhost:${port}/home`);
+    const resp = await fetch(`http://localhost:${port}/index`);
     assertEquals(resp.status, 200);
     assertEquals(await resp.text(), body);
     assertEquals(resp.headers.get("content-type"), "text/plain");

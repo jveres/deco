@@ -296,6 +296,7 @@ export class HttpServer {
     const NOT_FOUND = { promise: HttpServer.Status(404), params: undefined };
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
+      //Deno.shutdown(server.rid).catch(() => {});
       server.close();
       HttpServer.router.clearAll();
     });

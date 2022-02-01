@@ -69,15 +69,27 @@ export class HttpRouter {
     property: string;
   }) {
     const route = this.createAction({ target, property });
-    route.method = method;
-    route.path = path;
+    if (route.method && route.path) {
+      if (route.method !== method || route.path !== path) {
+        this.routes.push({ method, path, action: route.action });
+      } else {
+        console.error(
+          `HttpRouter.add(): route already added ${route.method} ${route.path}`,
+        );
+      }
+    } else {
+      route.method = method;
+      route.path = path;
+    }
   }
 
   getRouter(targets: string[]) {
     const router = new Map</* method */ string, RadixRouter<HttpAction>>();
     for (const route of this.routes) {
       const target = route.action.target;
-      const name = typeof target === "function" ? target.name : target.constructor.name;
+      const name = typeof target === "function"
+        ? target.name
+        : target.constructor.name;
       if (targets.indexOf(name) > -1) {
         if (!router.has(route.method)) router.set(route.method, createRouter());
         router.get(route.method)!.insert(

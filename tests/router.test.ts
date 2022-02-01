@@ -55,13 +55,13 @@ Deno.test({
       method: "GET",
       path: "/get/:id",
       target: C,
-      property: "get",
+      property: "get1",
     });
     r.add({
       method: "GET",
       path: "/get/else/:id",
       target: C,
-      property: "get",
+      property: "get1",
     });
     const rt = r.getRouter(["C"]);
     let res = r.find(rt, "GET", "/get/1");
