@@ -196,6 +196,7 @@ HttpServer.serve({
   },
   onClosed() {
     console.info(`...server at :8080 closed.`);
+    Deno.exit(0);
   },
 });
 
