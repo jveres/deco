@@ -4,14 +4,17 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { createRouter } from "https://cdn.skypack.dev/pin/radix3@v0.1.0-sqwTbihQDBcApBBbSzEH/mode=imports,min/optimized/radix3.js";
+import {
+  createRouter,
+  RadixRouter,
+} from "https://cdn.skypack.dev/radix3@0.1.0?dts";
 
 export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 
 export type HttpRequest = {
   conn: Deno.Conn;
   http: Deno.RequestEvent;
-  pathParams: string;
+  pathParams: { [key: string]: unknown } | undefined;
   urlParams: string;
 };
 export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
@@ -24,17 +27,11 @@ export type HttpAction = {
     (target: any, property: string, descriptor: PropertyDescriptor) => void
   >;
   after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
-  promise: (request: HttpRequest) => Promise<HttpResponse | Error>;
+  promise: (request: HttpRequest) => Promise<HttpResponse>;
 };
 
-export interface HttpRoute {
-  action: HttpAction;
-  pattern: string | URLPattern;
-  test(path: string): boolean;
-}
-
 export class HttpRouter {
-  readonly routes = new Map</* method */ string, any>();
+  readonly routes = new Map</* method */ string, RadixRouter<HttpAction>>();
   readonly actions = new Array<HttpAction>();
 
   createAction(
@@ -69,10 +66,17 @@ export class HttpRouter {
     property: string;
   }) {
     if (!this.routes.has(method)) this.routes.set(method, createRouter());
-    this.routes.get(method).insert(
+    this.routes.get(method)!.insert(
       path,
       this.createAction({ target, property }),
     );
+  }
+
+  slice(target: string) {
+    const res = new Map</* method */ string, any>();
+    for (const [method, router] of this.routes) {
+      if (!res.has(method)) res.set(method, createRouter());
+    }
   }
 
   find(method: string, path: string) {

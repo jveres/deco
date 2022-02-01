@@ -254,10 +254,16 @@ export class HttpServer {
     for (const controller of controllers) {
       const name = controller.name;
       if (!objects.has(name)) {
-        objects.set(name, Reflect.construct(controller, []));
+        objects.set(name, Reflect.construct(controller, [])); // instantiate controller object
       }
     }
-    for (const action of HttpServer.router.actions) {
+    // routing setup
+    const targets = Array.from(objects.keys());
+    for (
+      const action of HttpServer.router.actions.filter((a) =>
+        targets.includes(a.target.constructor.name)
+      )
+    ) {
       const descriptor = Object.getOwnPropertyDescriptor(
         action.target,
         action.property,
@@ -284,7 +290,7 @@ export class HttpServer {
         );
       };
     }
-    const NOT_FOUND = { promise: HttpServer.Status(404) };
+    const NOT_FOUND = { promise: HttpServer.Status(404), params: undefined };
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
       server.close();
@@ -320,7 +326,7 @@ export class HttpServer {
               if (!(e instanceof AbortError)) {
                 if (onError) {
                   http.respondWith(
-                    new Response("Internal Server Error", { status: 500 }),
+                    Response.Status(500),
                   ).catch(() => {}); // swallow Http errors
                   onError(e);
                 } else throw e;

@@ -27,7 +27,7 @@ const authKey = await crypto.subtle.importKey(
   ["verify"],
 );
 
-class TestServer {
+class TestServerAt8080 {
   @HttpServer.Get()
   dummy() {}
 
@@ -72,7 +72,7 @@ class TestServer {
   }
 
   @HttpServer.Get("/test/:id")
-  dynamic({ pathParams }: { pathParams: string }) {
+  dynamic({ pathParams }: { pathParams: Record<string, unknown> }) {
     return { body: `${JSON.stringify(pathParams)}` };
   }
 
@@ -162,7 +162,9 @@ class TestServer {
       yield HttpServer.SSE({ event: "tick", data: new Date().toString() });
     }
   }
+}
 
+class TestServerAt8082 {
   @HttpServer.Decorate([HttpServer.Get(), Cache()])
   @HttpServer.Html()
   html() {
@@ -184,12 +186,30 @@ Deno.addSignalListener("SIGINT", () => {
 
 HttpServer.serve({
   abortSignal: shutdown.signal,
-  controllers: [TestServer],
-  onStarted: () =>
-    console.info(`Deco (v:${DECO_VERSION}) http server started...`),
-  onError: (e: unknown) => console.error(e),
-  onClosed: () => {
-    console.info(`...server closed.`);
-    Deno.exit();
+  controllers: [TestServerAt8080],
+  port: 8080,
+  onStarted() {
+    console.info(`Deco (v:${DECO_VERSION}) Http server started at :8080`);
+  },
+  onError(e: unknown) {
+    console.error(e);
+  },
+  onClosed() {
+    console.info(`...server at :8080 closed.`);
+  },
+});
+
+HttpServer.serve({
+  abortSignal: shutdown.signal,
+  controllers: [TestServerAt8082],
+  port: 8082,
+  onStarted() {
+    console.info(`Deco (v:${DECO_VERSION}) Http server started at :8082`);
+  },
+  onError(e: unknown) {
+    console.error(e);
+  },
+  onClosed() {
+    console.info(`...server at :8082 closed.`);
   },
 });
