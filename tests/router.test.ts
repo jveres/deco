@@ -27,6 +27,31 @@ Deno.test({
 });
 
 Deno.test({
+  name: "HttpRouter route deduplication",
+  fn() {
+    const r = new HttpRouter();
+    class T {}
+    r.add({
+      method: "GET",
+      path: "/get",
+      target: T,
+      property: undefined!,
+    });
+    r.add({
+      method: "GET",
+      path: "/get",
+      target: T,
+      property: undefined!,
+    });
+    const res = r.find(r.getRouter(["T"]), "GET", "/get");
+    assertEquals(r.routes.length, 1);
+    assertNotEquals(res, null);
+    assertNotEquals(res, undefined);
+    assertEquals(res?.target, T);
+  },
+});
+
+Deno.test({
   name: "HttpRouter with dynamic path",
   fn() {
     const r = new HttpRouter();

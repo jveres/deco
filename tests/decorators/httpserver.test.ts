@@ -11,8 +11,9 @@ import { sleep } from "../../utils/utils.ts";
 const port = 8090;
 const _fetch = globalThis.fetch;
 const fetch = (url: string, init: RequestInit = {}) => {
-  if (!init.headers) init.headers = {"connection": "close"};
-  else Object.assign(init.headers, {"connection": "close"});
+  const conn = { connection: "close" };
+  if (!init.headers) init.headers = conn;
+  else Object.assign(init.headers, conn);
   return _fetch(url, init);
 };
 
@@ -571,9 +572,7 @@ Deno.test({
   },
 });
 
-// Deno fails to run this test as part of a sequence in "deno test --unstable -A", it passes however by running: deno test --unstable -A --filter "@HttpServer: error handling"
-// Possible reason: weird object ref counting during anonymous async function in tests. Works fine as standalone routine.
-/*Deno.test({
+Deno.test({
   name: "@HttpServer: error handling",
   sanitizeResources: false,
   sanitizeOps: false,
@@ -593,7 +592,7 @@ Deno.test({
       controllers: [ServerController],
       onError: (e: unknown) => {
         err = (e as Error).message;
-      }
+      },
     });
     const resp = await fetch(`http://localhost:${port}/error`);
     assertEquals(resp.status, 500);
@@ -602,4 +601,3 @@ Deno.test({
     await sleep(100);
   },
 });
-*/

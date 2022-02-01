@@ -296,12 +296,6 @@ export class HttpServer {
     const server = Deno.listen({ port, hostname });
     abortSignal?.addEventListener("abort", () => {
       server.close();
-      /*for (const res of Object.entries(Deno.resources())) {
-        console.log(res);
-        if (res[1] === "httpConn") {
-          Deno.shutdown(parseInt(res[0]) - 1).catch(() => {});
-        }
-      }*/
       HttpServer.router.clearAll();
     });
     onStarted?.();

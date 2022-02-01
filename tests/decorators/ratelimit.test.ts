@@ -8,11 +8,27 @@ import { RateLimit } from "../../decorators/ratelimit.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.123.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
 
+let rlc: number;
+
 class SomeClass {
   public count = 0;
 
-  @RateLimit({ limit: 1, rate: 1000 })
+  @RateLimit({
+    limit: 1,
+    rate: 1000,
+  })
   methodTest1() {
+    this.count++;
+  }
+
+  @RateLimit({
+    limit: 1,
+    rate: 1000,
+    onRateLimited() {
+      rlc++;
+    },
+  })
+  methodTest11() {
     this.count++;
   }
 
@@ -34,6 +50,21 @@ Deno.test({
         await sleep(100);
       } catch {}
     }
+    assertEquals(c.count, 1);
+  },
+});
+
+Deno.test({
+  name: "@RateLimit({ limit: 1, rate: 1000, onRateLimited() {...} })",
+  sanitizeOps: false,
+  async fn() {
+    rlc = 0;
+    const c = new SomeClass();
+    for (let i = 0; i < 10; ++i) {
+      c.methodTest11();
+      await sleep(100);
+    }
+    assertEquals(rlc, 9);
     assertEquals(c.count, 1);
   },
 });
