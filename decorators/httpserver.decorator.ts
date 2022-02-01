@@ -13,6 +13,7 @@ import {
 import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import * as Colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
+import { basename } from "https://deno.land/std@0.123.0/path/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -165,19 +166,37 @@ export class HttpServer {
   }
 
   static Static(
-    { filename, path, contentType = "text/html" }: { filename: string; path?: string; contentType?: string },
+    { assets, path }: {
+      assets: Array<{ fileName: string; path?: string; contentType: string }>;
+      path: string;
+    },
   ) {
-    const html = Deno.readTextFileSync(filename);
-    return HttpServer.Decorate([
-      HttpServer.Get(path),
-      HttpServer.After(() => {
-        const response = {
-          body: html,
-          init: { headers: { "content-type": contentType } },
-        };
-        return Promise.resolve(response);
-      }),
-    ]);
+    return function (
+      target: any,
+      property: string,
+      descriptor: PropertyDescriptor,
+    ) {
+      const map = new Map<string, any>();
+      for (const asset of assets) {
+        const urlPath = asset.path ?? `${path}/${basename(asset.fileName)}`;
+        map.set(urlPath, {
+          body: Deno.readFileSync(asset.fileName),
+          init: { headers: { "content-type": asset.contentType } },
+        });
+        HttpServer.router.add({
+          method: "GET",
+          path: urlPath,
+          target,
+          property,
+        });
+      }
+      const origFn = descriptor.value;
+      descriptor.value = function (...args: any[]) {
+        origFn.apply(this, args);
+        const { path } = args[0];
+        return map.get(path);
+      };
+    };
   }
 
   static SSE(event: EventStreamEventFormat | EventStreamCommentFormat): string {
@@ -316,7 +335,7 @@ export class HttpServer {
           const { promise, params: pathParams } =
             HttpServer.router.find(router, http.request.method, path) ||
             NOT_FOUND;
-          promise({ conn, http, pathParams, urlParams })
+          promise({ conn, http, path, pathParams, urlParams })
             .then((
               response: HttpResponse,
             ) =>

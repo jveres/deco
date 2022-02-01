@@ -14,6 +14,7 @@ export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
 export type HttpRequest = {
   conn: Deno.Conn;
   http: Deno.RequestEvent;
+  path: string;
   pathParams: { [key: string]: unknown } | undefined;
   urlParams: string;
 };
@@ -81,6 +82,7 @@ export class HttpRouter {
       route.method = method;
       route.path = path;
     }
+    return route;
   }
 
   getRouter(targets: string[]) {

@@ -173,9 +173,15 @@ class TestServerAt8082 {
   }
 
   @Cache()
-  @HttpServer.Static({ filename: "./index.html", path: "/index.html" })
-  index() {
-    console.log("Rendering...");
+  @HttpServer.Static({
+    assets: [
+      { fileName: "index.html", contentType: "text/html" },
+      { fileName: "favicon.ico", contentType: "image/x-icon" },
+    ],
+    path: "/assets",
+  })
+  assets({ path }: { path: string }) {
+    console.log(path);
   }
 }
 
