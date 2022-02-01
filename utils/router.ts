@@ -76,7 +76,9 @@ export class HttpRouter {
   getRouter(targets: string[]) {
     const router = new Map</* method */ string, RadixRouter<HttpAction>>();
     for (const route of this.routes) {
-      if (targets.indexOf(route.action.target.constructor.name) > -1) {
+      const target = route.action.target;
+      const name = typeof target === "function" ? target.name : target.constructor.name;
+      if (targets.indexOf(name) > -1) {
         if (!router.has(route.method)) router.set(route.method, createRouter());
         router.get(route.method)!.insert(
           route.path,

@@ -12,14 +12,17 @@ Deno.test({
   name: "HttpRouter with static path",
   fn() {
     const r = new HttpRouter();
+    class T {}
     r.add({
       method: "GET",
       path: "/get",
-      target: undefined!,
+      target: T,
       property: undefined!,
     });
-    const res = r.find("GET", "/get");
+    const res = r.find(r.getRouter(["T"]), "GET", "/get");
     assertNotEquals(res, null);
+    assertNotEquals(res, undefined);
+    assertEquals(res?.target, T);
   },
 });
 
@@ -36,8 +39,8 @@ Deno.test({
       target: C,
       property: "test",
     });
-    const res = r.find("GET", "/get/1");
-    assertEquals(res.params, { id: "1" });
+    const res = r.find(r.getRouter(["C"]), "GET", "/get/1");
+    assertEquals(res?.params, { id: "1" });
   },
 });
 
@@ -60,9 +63,10 @@ Deno.test({
       target: C,
       property: "get",
     });
-    let res = r.find("GET", "/get/1");
-    assertEquals(res.params, { id: "1" });
-    res = r.find("GET", "/get/else/1");
-    assertEquals(res.params, { id: "1" });
+    const rt = r.getRouter(["C"]);
+    let res = r.find(rt, "GET", "/get/1");
+    assertEquals(res?.params, { id: "1" });
+    res = r.find(rt, "GET", "/get/else/1");
+    assertEquals(res?.params, { id: "1" });
   },
 });
