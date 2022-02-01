@@ -165,11 +165,11 @@ export class HttpServer {
   }
 
   static Static(
-    { path, contentType = "text/html" }: { path: string; contentType?: string },
+    { filename, path, contentType = "text/html" }: { filename: string; path?: string; contentType?: string },
   ) {
-    const html = Deno.readTextFileSync(path);
+    const html = Deno.readTextFileSync(filename);
     return HttpServer.Decorate([
-      HttpServer.Get(),
+      HttpServer.Get(path),
       HttpServer.After(() => {
         const response = {
           body: html,

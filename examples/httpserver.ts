@@ -173,7 +173,7 @@ class TestServerAt8082 {
   }
 
   @Cache()
-  @HttpServer.Static({ path: "index.html" })
+  @HttpServer.Static({ filename: "./index.html", path: "/index.html" })
   index() {
     console.log("Rendering...");
   }
