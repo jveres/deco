@@ -174,7 +174,7 @@ class TestServerAt8082 {
     return html;
   }
 
-  @Cache()
+  @Cache({ ttl: CACHE_EXPIRATION_MS })
   @HttpServer.Headers({
     headers: {
       "cache-control": `public, max-age=${CACHE_EXPIRATION_MS / 1000}`,
