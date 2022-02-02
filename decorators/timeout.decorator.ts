@@ -18,11 +18,12 @@ export const Timeout = (
     descriptor.value = function (...args: any[]) {
       let id: number | undefined;
       const abortController = new AbortController();
-      if (typeof args[0] === "object") {
+      /*if (typeof args[0] === "object") {
         Object.assign(args[0], {
           timeoutSignal: abortController.signal,
         });
-      }
+      }*/
+      args.push({ timeoutSignal: abortController.signal });
       return Promise.race([
         new Promise((_, reject) => {
           id = setTimeout(() => {
