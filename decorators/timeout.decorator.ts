@@ -14,7 +14,7 @@ export const Timeout = (
     _property: string,
     descriptor: PropertyDescriptor,
   ) => {
-    const fn = descriptor.value;
+    const origFn = descriptor.value;
     descriptor.value = function (...args: any[]) {
       let id: number | undefined;
       const abortController = new AbortController();
@@ -31,7 +31,7 @@ export const Timeout = (
             reject(new TimeoutError());
           }, timeout);
         }),
-        fn.apply(this, args),
+        origFn.apply(this, args),
       ]).catch((e: unknown) => {
         if (e instanceof TimeoutError && onTimeout) return onTimeout();
         else throw e;
