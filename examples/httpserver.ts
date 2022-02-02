@@ -188,7 +188,7 @@ class TestServerAt8082 {
     path: "/",
   })
   assets({ path }: { path: string }) {
-    console.log(path);
+    console.log(`Rendering: ${path}`);
   }
 }
 

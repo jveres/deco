@@ -268,6 +268,7 @@ export class HttpServer {
       onStarted,
       onError,
       onClosed,
+      log = true,
     }: {
       hostname?: string;
       port?: number;
@@ -276,6 +277,7 @@ export class HttpServer {
       onStarted?: () => void;
       onError?: (e: unknown) => void;
       onClosed?: () => void;
+      log?: boolean;
     },
   ) {
     const objects = new Map<string, any>();
@@ -330,6 +332,11 @@ export class HttpServer {
     for await (const conn of server) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
+          if (log) { // request logging
+            console.log(
+              `${Colors.cyan(http.request.method)} ${http.request.url}`,
+            );
+          }
           http.abortWith = (r = new Response()) => { // helper for aborting the response chain
             http.respondWith(r).catch(() => {});
             throw new AbortError();
