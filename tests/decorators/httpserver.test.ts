@@ -7,14 +7,12 @@
 import { HttpServer } from "../../decorators/httpserver.decorator.ts";
 import { assertEquals } from "https://deno.land/std@0.123.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
+import { deepMerge } from "https://deno.land/std@0.123.0/collections/mod.ts";
 
 const port = 8090;
 const _fetch = globalThis.fetch;
-const fetch = (url: string, init: RequestInit = {}) => {
-  const conn = { connection: "close" };
-  if (!init.headers) init.headers = conn;
-  else Object.assign(init.headers, conn);
-  return _fetch(url, init);
+const fetch = (url: string, init = {}) => {
+  return _fetch(url, deepMerge(init, { headers: { connection: "close" } }));
 };
 
 Deno.test({
@@ -110,13 +108,17 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    const path = "./examples/index.html";
+    const fileName = "./examples/index.html";
     class ServerController {
       @HttpServer.Static({
-        path,
-        contentType: "text/html",
+        assets: [{ fileName, contentType: "text/html" }],
       })
       index() {}
+
+      @HttpServer.Static({
+        assets: [{ fileName, path: "/", contentType: "text/html" }],
+      })
+      test() {}
     }
     const controller = new AbortController();
     HttpServer.serve({
@@ -124,11 +126,17 @@ Deno.test({
       abortSignal: controller.signal,
       controllers: [ServerController],
     });
-    const resp = await fetch(`http://localhost:${port}/index`);
+    let resp = await fetch(`http://localhost:${port}/index/index.html`);
     assertEquals(resp.status, 200);
     assertEquals(resp.headers.get("content-type"), "text/html");
-    const text = await resp.text();
-    assertEquals(text, Deno.readTextFileSync(path));
+    let text = await resp.text();
+    assertEquals(text, Deno.readTextFileSync(fileName));
+
+    resp = await fetch(`http://localhost:${port}/`);
+    assertEquals(resp.status, 200);
+    assertEquals(resp.headers.get("content-type"), "text/html");
+    text = await resp.text();
+    assertEquals(text, Deno.readTextFileSync(fileName));
     controller.abort();
     await sleep(100);
   },

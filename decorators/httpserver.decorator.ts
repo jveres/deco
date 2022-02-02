@@ -14,6 +14,7 @@ import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
 import * as Colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
 import { basename } from "https://deno.land/std@0.123.0/path/mod.ts";
+import { deepMerge } from "https://deno.land/std@0.123.0/collections/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -165,10 +166,16 @@ export class HttpServer {
     });
   }
 
+  static Headers(init: RequestInit) {
+    return HttpServer.After((resp) => {
+      return Promise.resolve(deepMerge(resp, { init }));
+    });
+  }
+
   static Static(
     { assets, path }: {
       assets: Array<{ fileName: string; path?: string; contentType: string }>;
-      path: string;
+      path?: string;
     },
   ) {
     return function (
@@ -176,6 +183,8 @@ export class HttpServer {
       property: string,
       descriptor: PropertyDescriptor,
     ) {
+      path ??= "/" + property;
+      if (path.endsWith("/")) path = path.slice(0, path.length - 1); // remove trailing slash
       const map = new Map<string, any>();
       for (const asset of assets) {
         const urlPath = asset.path ?? `${path}/${basename(asset.fileName)}`;

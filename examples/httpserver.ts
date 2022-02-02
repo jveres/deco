@@ -16,6 +16,8 @@ import { html } from "./ssr.tsx";
 
 import publicKey from "./public.key.json" assert { type: "json" };
 
+const CACHE_EXPIRATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+
 const authKey = await crypto.subtle.importKey(
   "jwk",
   publicKey,
@@ -173,12 +175,17 @@ class TestServerAt8082 {
   }
 
   @Cache()
+  @HttpServer.Headers({
+    headers: {
+      "cache-control": `public, max-age=${CACHE_EXPIRATION_MS / 1000}`,
+    },
+  })
   @HttpServer.Static({
     assets: [
-      { fileName: "index.html", contentType: "text/html" },
+      { fileName: "index.html", path: "/", contentType: "text/html" },
       { fileName: "favicon.ico", contentType: "image/x-icon" },
     ],
-    path: "/assets",
+    path: "/",
   })
   assets({ path }: { path: string }) {
     console.log(path);
