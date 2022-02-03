@@ -12,7 +12,7 @@ export const Try = (
 ) =>
   (
     _target: any,
-    _propertyKey: string,
+    property: string,
     descriptor: PropertyDescriptor,
   ): void => {
     const origFn = descriptor.value;
@@ -27,6 +27,7 @@ export const Try = (
       }
       if (log) {
         console.error(
+          `${property}():`,
           typeof err === "string" ? err : (err as Error).toString(),
         );
       }

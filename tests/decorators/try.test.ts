@@ -65,7 +65,7 @@ Deno.test({
       term.push(args.join(" "));
     };
     c.doSomething1();
-    assertEquals(term[0], "error");
+    assertEquals(term[0], "doSomething1(): error");
     console.error = error;
   },
 });
@@ -80,7 +80,7 @@ Deno.test({
       term.push(args.join(" "));
     };
     c.doSomething2();
-    assertEquals(term[0], "TypeError: type error");
+    assertEquals(term[0], "doSomething2(): TypeError: type error");
     console.error = error;
   },
 });
