@@ -57,7 +57,7 @@ Response.Status = function (status: number) {
 
 consoleLogHook({
   logPrefix: Colors.green("[i]"),
-  warnPrefix: Colors.yellow("[w]"),
+  warnPrefix: Colors.rgb24("[w]", 0xff8080),
   errorPrefix: Colors.red("[E]"),
   infoPrefix: Colors.rgb24("[i]", 0xbada55),
 });
