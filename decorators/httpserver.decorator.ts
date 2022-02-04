@@ -332,11 +332,6 @@ export class HttpServer {
     for await (const conn of server) {
       (async () => {
         for await (const http of Deno.serveHttp(conn)) {
-          if (log) { // request logging
-            console.log(
-              `${Colors.cyan(http.request.method)} ${http.request.url}`,
-            );
-          }
           http.abortWith = (r = new Response()) => { // helper for aborting the response chain
             http.respondWith(r).catch(() => {});
             throw new AbortError();
@@ -349,8 +344,17 @@ export class HttpServer {
               "?",
             );
           const { promise, params: pathParams } =
-            HttpServer.router.find(router, http.request.method, path) ||
-            NOT_FOUND;
+            HttpServer.router.find(router, http.request.method, path) ??
+              NOT_FOUND;
+          if (log) { // request logging
+            console.log(
+              `${
+                promise === NOT_FOUND.promise
+                  ? Colors.brightRed(http.request.method)
+                  : Colors.brightGreen(http.request.method)
+              } ${http.request.url}`,
+            );
+          }
           promise({ conn, http, path, pathParams, urlParams })
             .then((
               response: HttpResponse,
