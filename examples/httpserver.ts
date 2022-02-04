@@ -175,7 +175,7 @@ class TestServerAt8082 {
   }
 
   @Cache({ ttl: CACHE_EXPIRATION_MS })
-  @HttpServer.Headers({
+  @HttpServer.ResponseInit({
     headers: {
       "cache-control": `public, max-age=${CACHE_EXPIRATION_MS / 1000}`,
     },
@@ -201,6 +201,7 @@ HttpServer.serve({
   abortSignal: shutdown.signal,
   controllers: [TestServerAt8080],
   port: 8080,
+  log: false,
   onStarted() {
     console.info(`Deco (v:${DECO_VERSION}) Http server started at :8080`);
   },
@@ -217,6 +218,7 @@ HttpServer.serve({
   abortSignal: shutdown.signal,
   controllers: [TestServerAt8082],
   port: 8082,
+  log: true,
   onStarted() {
     console.info(`Deco (v:${DECO_VERSION}) Http server started at :8082`);
   },
