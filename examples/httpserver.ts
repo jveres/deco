@@ -92,14 +92,8 @@ class TestServerAt8080 {
   }
 
   @HttpServer.Get()
-  @HttpServer.Before((request) => {
-    Object.assign(request, { start: performance.now() });
-    return Promise.resolve(request);
-  })
-  @HttpServer.After((response) => {
-    response.body += ", Hello from Deco!";
-    return Promise.resolve(response);
-  })
+  @HttpServer.RequestInit(() => ({ start: performance.now() }))
+  @HttpServer.ResponseInit((resp) => ({ body: `${resp.body} + Hello from Deco!` }))
   @Trace()
   hooks({ start }: { start: number }) {
     const time = Math.floor(performance.now() - start);
@@ -175,11 +169,13 @@ class TestServerAt8082 {
   }
 
   @Cache({ ttl: CACHE_EXPIRATION_MS })
-  @HttpServer.ResponseInit({
-    headers: {
-      "cache-control": `public, max-age=${CACHE_EXPIRATION_MS / 1000}`,
+  @HttpServer.ResponseInit(() => ({
+    init: {
+      headers: {
+        "cache-control": `public, max-age=${CACHE_EXPIRATION_MS / 1000}`,
+      },
     },
-  })
+  }))
   @HttpServer.Static({
     assets: [
       { fileName: "index.html", path: "/", contentType: "text/html" },

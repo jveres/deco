@@ -56,7 +56,7 @@ Response.Status = function (status: number) {
 };
 
 consoleLogHook({
-  logPrefix: Colors.green("[i]"),
+  logPrefix: Colors.green("[l]"),
   warnPrefix: Colors.rgb24("[w]", 0xff8080),
   errorPrefix: Colors.red("[E]"),
   infoPrefix: Colors.rgb24("[i]", 0xbada55),
@@ -166,9 +166,17 @@ export class HttpServer {
     });
   }
 
-  static ResponseInit(init: ResponseInit) {
+  static RequestInit(init: (request: HttpRequest) => Record<string, unknown>) {
+    return HttpServer.Before((req) => {
+      return Promise.resolve(deepMerge(req, init(req)) as HttpRequest);
+    });
+  }
+
+  static ResponseInit(
+    init: (response: HttpResponse) => Record<string, unknown>,
+  ) {
     return HttpServer.After((resp) => {
-      return Promise.resolve(deepMerge(resp, { init }));
+      return Promise.resolve(deepMerge(resp, init(resp)) as HttpResponse);
     });
   }
 
