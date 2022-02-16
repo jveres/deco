@@ -27,7 +27,7 @@ export const Timeout = (
             reject(new TimeoutError());
           }, timeout);
         }),
-        origFn.apply(this, args),
+        origFn.apply(this, [args]),
       ]).catch((e: unknown) => {
         if (e instanceof TimeoutError && onTimeout) return onTimeout();
         else throw e;
