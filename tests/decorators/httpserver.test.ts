@@ -12,7 +12,7 @@ import { deepMerge } from "https://deno.land/std@0.126.0/collections/mod.ts";
 const port = 8090;
 const _fetch = globalThis.fetch;
 const fetch = (url: string, init = {}) => {
-  return _fetch(url, deepMerge(init, { headers: { connection: "close" } }));
+  return _fetch(url, deepMerge(init, { headers: { connection: "close" } })); // disable connection pooling
 };
 
 Deno.test({
@@ -348,10 +348,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "@HttpServer.Before(), @HttpServer.After()",
+  name:
+    "@HttpServer.Before(), @HttpServer.After(), @HttpServer.RequestInit(), @HttpServer.ResponseInit()",
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(t) {
+    const hello = "Hello from Deco!";
     class ServerController {
       @HttpServer.Get()
       @HttpServer.Before((request) => {
@@ -369,6 +371,14 @@ Deno.test({
       })
       after() {
         return { body: "test" };
+      }
+
+      @HttpServer.Get()
+      @HttpServer.RequestInit(() => ({ start: performance.now() }))
+      @HttpServer.ResponseInit((resp) => ({ body: `${resp.body} + ${hello}` }))
+      hooked({ start }: { start: number }) {
+        const time = Math.floor(performance.now() - start);
+        return { body: `took: ${time}ms` };
       }
     }
     const controller = new AbortController();
@@ -388,7 +398,14 @@ Deno.test({
       assertEquals(resp.status, 200);
       assertEquals(await resp.text(), "test after");
     });
+    await t.step("RequestInit, ResponseInit", async () => {
+      resp = await fetch(`http://localhost:${port}/hooked`);
+      assertEquals(resp.status, 200);
+      const text = await resp.text();
+      assertEquals(text.endsWith(hello), true);
+    });
     controller.abort();
+
     await sleep(100);
   },
 });
