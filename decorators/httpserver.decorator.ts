@@ -12,9 +12,9 @@ import {
 } from "../utils/router.ts";
 import { consoleLogHook } from "../utils/utils.ts";
 import { verify } from "https://deno.land/x/djwt@v2.4/mod.ts";
-import * as Colors from "https://deno.land/std@0.125.0/fmt/colors.ts";
-import { basename } from "https://deno.land/std@0.125.0/path/mod.ts";
-import { deepMerge } from "https://deno.land/std@0.125.0/collections/mod.ts";
+import * as Colors from "https://deno.land/std@0.126.0/fmt/colors.ts";
+import { basename } from "https://deno.land/std@0.126.0/path/mod.ts";
+import { deepMerge } from "https://deno.land/std@0.126.0/collections/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 

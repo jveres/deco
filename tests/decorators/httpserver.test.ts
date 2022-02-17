@@ -5,9 +5,9 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { HttpServer } from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.125.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.126.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
-import { deepMerge } from "https://deno.land/std@0.125.0/collections/mod.ts";
+import { deepMerge } from "https://deno.land/std@0.126.0/collections/mod.ts";
 
 const port = 8090;
 const _fetch = globalThis.fetch;
