@@ -5,6 +5,7 @@
 // deno-lint-ignore-file require-await
 
 import {
+  BackOffPolicy,
   DEFAULT_MAX_ATTEMPTS,
   Retry,
 } from "../../decorators/retry.decorator.ts";
@@ -30,6 +31,34 @@ class SomeClass {
     backOff: 1000,
   })
   async retryWithBackOff() {
+    ++this.i;
+    throw new Error(`tried ${this.i} times`);
+  }
+
+  @Retry({
+    maxAttempts: 4,
+    backOffPolicy: BackOffPolicy.ExponentialBackOffPolicy,
+    backOff: 1000,
+    exponentialOption: {
+      maxInterval: 5000,
+      multiplier: 1.2,
+    },
+    doRetry(_err: unknown) {
+      console.log("retrying...");
+      return true;
+    },
+  })
+  async retryWithExponentialBackOff() {
+    ++this.i;
+    throw new Error(`tried ${this.i} times`);
+  }
+
+  @Retry({
+    doRetry() {
+      return false;
+    },
+  })
+  async retrywithHandler() {
     ++this.i;
     throw new Error(`tried ${this.i} times`);
   }
@@ -70,5 +99,37 @@ Deno.test({
     }
     assertEquals(c.i, 3);
     assertEquals<boolean>(performance.now() - t >= 2000, true);
+  },
+});
+
+Deno.test({
+  name:
+    "@Retry() with ExponentialBackOff: maxAttempts=4, backOff=1000, maxInterval=1000, multiplier=2",
+  sanitizeOps: false,
+  async fn(): Promise<void> {
+    const c = new SomeClass();
+    const t = performance.now();
+    assertEquals(c.i, 0);
+    try {
+      await c.retryWithExponentialBackOff();
+    } catch (err) {
+      if (err instanceof Error) console.error(`@Retry(): ${err.message}`);
+      else console.error(err);
+    }
+    assertEquals(c.i, 5);
+    assertEquals<boolean>(
+      performance.now() - t >= 1000 + 1200 + 1440 + 1728,
+      true,
+    );
+  },
+});
+
+Deno.test({
+  name: "@Retry() with doRetry(...) handler",
+  async fn(): Promise<void> {
+    const c = new SomeClass();
+    assertEquals(c.i, 0);
+    await c.retrywithHandler().catch(() => {});
+    assertEquals(c.i, 1);
   },
 });
