@@ -35,8 +35,8 @@ class SomeClass {
   @Try({
     errors: ["Error"],
   })
-  async doSomething3() {
-    throw TypeError("fake type error");
+  async doSomething3(err: Error | string) {
+    throw err;
   }
 }
 
@@ -86,13 +86,22 @@ Deno.test({
 });
 
 Deno.test({
-  name: '@Try({ errors: ["TypeError"] })',
+  name: '@Try({ errors: ["Error"] }) is throwing',
   async fn() {
     const c = new SomeClass();
     await assertRejects(
-      c.doSomething3,
+      () => c.doSomething3(new TypeError("fake type error")),
       TypeError,
       "fake type error",
     );
   },
-});
+}); 
+
+Deno.test({
+  name: '@Try({ errors: ["Error"] } is not throwing)',
+  async fn() {
+    const c = new SomeClass();
+    c.doSomething3(new Error("Error"));
+    c.doSomething3("Error");
+  },
+}); 

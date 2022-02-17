@@ -27,8 +27,7 @@ export const Try = (
       }
       if (log) {
         console.error(
-          `${property}():`,
-          typeof err === "string" ? err : (err as Error).toString(),
+          `${property}(): ${err}`,
         );
       }
     };
