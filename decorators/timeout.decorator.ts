@@ -18,7 +18,6 @@ export const Timeout = (
     descriptor.value = function (...args: any[]) {
       let id: number | undefined;
       const abortController = new AbortController();
-      args.push({ timeoutSignal: abortController.signal });
       return Promise.race([
         new Promise((_, reject) => {
           id = setTimeout(() => {
@@ -27,7 +26,10 @@ export const Timeout = (
             reject(new TimeoutError());
           }, timeout);
         }),
-        origFn.apply(this, [args]),
+        origFn.apply(this, [
+          { timeoutSignal: abortController.signal },
+          ...args,
+        ]),
       ]).catch((e: unknown) => {
         if (e instanceof TimeoutError && onTimeout) return onTimeout();
         else throw e;

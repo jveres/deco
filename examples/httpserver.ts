@@ -93,7 +93,9 @@ class TestServerAt8080 {
 
   @HttpServer.Get()
   @HttpServer.RequestInit(() => ({ start: performance.now() }))
-  @HttpServer.ResponseInit((resp) => ({ body: `${resp.body} + Hello from Deco!` }))
+  @HttpServer.ResponseInit((resp) => ({
+    body: `${resp.body} + Hello from Deco!`,
+  }))
   @Trace()
   hooks({ start }: { start: number }) {
     const time = Math.floor(performance.now() - start);
