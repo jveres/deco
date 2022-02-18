@@ -31,9 +31,9 @@ export const Try = (
         );
       }
     };
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function () {
       try {
-        await origFn.apply(this, args);
+        await origFn.apply(this, [...arguments]);
       } catch (err: unknown) {
         handler(err);
       }

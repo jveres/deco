@@ -21,7 +21,7 @@ export const Trace = (
       );
     };
     let lastFrom: string | undefined;
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function () {
       const e = new Error();
       Error.captureStackTrace(e, stack ? undefined : descriptor.value);
       const from = stack ? "\n" + e.stack?.split("\n").slice(1).join("\n")
@@ -35,7 +35,7 @@ export const Trace = (
         }`,
       );
       if (from) lastFrom = from;
-      return Promise.resolve(fn.apply(this, args)).finally(() => {
+      return Promise.resolve(fn.apply(this, [...arguments])).finally(() => {
         logDurationSince(start);
       });
     };

@@ -49,7 +49,7 @@ export const Retry = (
         ...exponentialOption,
       };
     }
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function () {
       const retryAsync = async (
         fn: (...args: any[]) => any,
         args: any[],
@@ -58,7 +58,7 @@ export const Retry = (
         doRetry?: (e: any) => boolean,
       ): Promise<any> => {
         try {
-          return await fn.apply(this, args);
+          return await fn.apply(this, [...arguments]);
         } catch (err: unknown) {
           if (--attempts < 0) {
             throw new RetryError(
@@ -95,7 +95,7 @@ export const Retry = (
         this,
         [
           origFn,
-          args,
+          [...arguments],
           maxAttempts,
           backOff,
           doRetry,

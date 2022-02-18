@@ -27,7 +27,7 @@ HttpServer.serve({
 ## Running tests
 
 ```sh
-deno test --unstable --allow-all
+deno test -A --coverage=cov_profile && deno coverage cov_profile
 ```
 
 ## Http server performance, static route (~125k RPS on MBP/M1)

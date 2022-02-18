@@ -15,11 +15,11 @@ export const Concurrency = ({ limit = 1, resolver }: {
   ) {
     const concurrencyPool = new Map<string, Promise<any>[]>();
     const fn = descriptor.value;
-    descriptor.value = function (...args: any[]) {
-      const key = resolver ? resolver.apply(this, args) : property;
+    descriptor.value = function () {
+      const key = resolver ? resolver.apply(this, [...arguments]) : property;
       const count = concurrencyPool.get(key)?.length || 0;
       if (count < limit) {
-        const promise = Promise.resolve(fn.apply(this, args));
+        const promise = Promise.resolve(fn.apply(this, [...arguments]));
         if (!concurrencyPool.has(key)) concurrencyPool.set(key, [promise]);
         else concurrencyPool.get(key)!.push(promise);
         promise.finally(() => concurrencyPool.delete(key));

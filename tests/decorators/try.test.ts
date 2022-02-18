@@ -95,7 +95,7 @@ Deno.test({
       "fake type error",
     );
   },
-}); 
+});
 
 Deno.test({
   name: '@Try({ errors: ["Error"] } is not throwing)',
@@ -104,4 +104,4 @@ Deno.test({
     c.doSomething3(new Error("Error"));
     c.doSomething3("Error");
   },
-}); 
+});

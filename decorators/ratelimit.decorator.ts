@@ -24,13 +24,13 @@ export const RateLimit = (
       while (queue[0] && (Date.now() - queue[0] > rate)) queue.shift();
       return queue.length;
     };
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function () {
       const rate = getCurrentRate();
       if (rate >= limit) {
         if (onRateLimited) return onRateLimited();
         else throw new RateLimitError();
       }
       queue.push(Date.now());
-      return fn.apply(this, [{ currentRate: rate }, ...args]);
+      return fn.apply(this, [...arguments, { currentRate: rate }]);
     };
   };
