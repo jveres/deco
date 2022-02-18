@@ -31,6 +31,6 @@ export const RateLimit = (
         else throw new RateLimitError();
       }
       queue.push(Date.now());
-      return fn.apply(this, args);
+      return fn.apply(this, [{ currentRate: rate }, ...args]);
     };
   };
