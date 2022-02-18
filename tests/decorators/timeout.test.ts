@@ -65,13 +65,13 @@ Deno.test({
   async fn() {
     class Test {
       @Timeout({ timeout: 1000 })
-      test(args: Record<string, unknown>) {
-        return args;
+      test(...args: any[]) {
+        return args?.[0];
       }
     }
     const t = new Test();
-    const res = await t.test({});
-    assertEquals(typeof res.timeoutSignal, "object");
-    assert(res.timeoutSignal instanceof AbortSignal);
+    const { timeoutSignal } = await t.test();
+    assertEquals(typeof timeoutSignal, "object");
+    assert(timeoutSignal instanceof AbortSignal);
   },
 });
