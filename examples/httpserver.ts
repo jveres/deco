@@ -151,10 +151,12 @@ class TestServerAt8080 {
     }
   }
 
+  #comment = "Hello from stream";
+
   @HttpServer.Get()
   @HttpServer.Chunked("text/event-stream")
   async *stream() {
-    yield HttpServer.SSE({ comment: "Hello from stream" });
+    yield HttpServer.SSE({ comment: this.#comment });
     while (true) {
       await sleep(1000);
       yield HttpServer.SSE({ event: "tick", data: new Date().toString() });

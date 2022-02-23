@@ -233,12 +233,14 @@ export class HttpServer {
     return HttpServer.Decorate([
       (_target: any, _property: string, descriptor: PropertyDescriptor) => {
         const fn = descriptor.value;
-        descriptor.value = function (...args: any[]) {
+        descriptor.value = function (this: unknown, ...args: any[]) {
+          // deno-lint-ignore no-this-alias
+          const self = this;
           const stream = new ReadableStream({
             async start(controller) {
               try {
                 for await (
-                  const event of fn.apply(this, args)
+                  const event of fn.apply(self, args)
                 ) {
                   controller.enqueue(`${event}\n\n`);
                 }
