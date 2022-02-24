@@ -146,7 +146,7 @@ class TestServerAt8080 {
   @HttpServer.Chunked()
   async *chunked() {
     for (let i = 0; i < 10; ++i) {
-      yield `chunk #${i}`;
+      yield `chunk #${i}\n\n`;
       await sleep(1000);
     }
   }

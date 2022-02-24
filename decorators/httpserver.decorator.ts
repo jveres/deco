@@ -217,17 +217,16 @@ export class HttpServer {
   }
 
   static SSE(event: EventStreamEventFormat | EventStreamCommentFormat): string {
-    let res = "";
     if ("comment" in event) {
-      res = `: ${event.comment}\n`;
+      return `: ${event.comment}\n\n`;
     } else {
       let res = event.event ? `event: ${event.event}\n` : "";
       if (typeof event.data === "string") res += `data: ${event.data}\n`;
       else event.data.map((data) => res += `data: ${data}\n`);
       if (event.id) res += `id: ${event.id}\n`;
       if (event.retry) res += `retry: ${event.retry}\n`;
+      return `${res}\n`;
     }
-    return `${res}\n`;
   }
 
   static Chunked(contentType = "text/plain") {
@@ -243,7 +242,7 @@ export class HttpServer {
                 for await (
                   const event of fn.apply(self, args)
                 ) {
-                  controller.enqueue(`${event}\n\n`);
+                  controller.enqueue(`${event}`);
                 }
               } catch (e: unknown) {
                 controller.error(e);
