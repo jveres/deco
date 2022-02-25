@@ -255,7 +255,7 @@ export class HttpServer {
             body: stream.pipeThrough(new TextEncoderStream()),
             init: {
               headers: {
-                "cache-control": "no-cache",
+                "cache-control": "no-store",
                 "content-type": contentType,
               },
             },
