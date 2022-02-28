@@ -11,4 +11,8 @@ export * from "./decorators/timeout.decorator.ts";
 export * from "./decorators/trace.decorator.ts";
 export * from "./decorators/try.decorator.ts";
 export * from "./utils/utils.ts";
+export * from "./utils/queue.ts";
+export * from "./utils/channel.ts";
+export * from "./utils/lastcast.ts";
+export * from "./utils/multicast.ts";
 export * from "./version.ts";
