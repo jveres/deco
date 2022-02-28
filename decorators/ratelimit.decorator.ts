@@ -4,6 +4,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import { Queue } from "../utils/queue.ts";
+
 export class RateLimitError extends Error {}
 
 export const RateLimit = (
@@ -19,9 +21,9 @@ export const RateLimit = (
     descriptor: PropertyDescriptor,
   ) => {
     const fn = descriptor.value;
-    const queue: number[] = [];
+    const queue = new Queue<number>();
     const getCurrentRate = () => {
-      while (queue[0] && (Date.now() - queue[0] > rate)) queue.shift();
+      while (queue.head !== undefined && (Date.now() - queue.head > rate)) queue.dequeue();
       return queue.length;
     };
     descriptor.value = function () {
@@ -30,7 +32,7 @@ export const RateLimit = (
         if (onRateLimited) return onRateLimited();
         else throw new RateLimitError();
       }
-      queue.push(Date.now());
+      queue.enqueue(Date.now());
       return fn.apply(this, [...arguments, { currentRate: rate }]);
     };
   };

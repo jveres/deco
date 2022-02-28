@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { Concurrency } from "../../decorators/concurrency.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.126.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.127.0/testing/asserts.ts";
 
 class SomeClass {
   @Concurrency()

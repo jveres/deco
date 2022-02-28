@@ -5,9 +5,9 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { HttpServer } from "../../decorators/httpserver.decorator.ts";
-import { assertEquals } from "https://deno.land/std@0.126.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.127.0/testing/asserts.ts";
 import { sleep } from "../../utils/utils.ts";
-import { deepMerge } from "https://deno.land/std@0.126.0/collections/mod.ts";
+import { deepMerge } from "https://deno.land/std@0.127.0/collections/mod.ts";
 
 const port = 8090;
 const _fetch = globalThis.fetch;
@@ -171,7 +171,7 @@ Deno.test({
     let resp = await fetch(`http://localhost:${port}/chunked`);
     assertEquals(resp.status, 200);
     const text = await resp.text();
-    assertEquals(text, `${body}#0\n\n${body}#1\n\n`);
+    assertEquals(text, `${body}#0${body}#1`);
     assertEquals(resp.headers.get("content-type"), "text/plain");
     assertEquals(resp.headers.get("transfer-encoding"), "chunked");
     resp = await fetch(`http://localhost:${port}/chunked?error=1`);
@@ -210,9 +210,9 @@ Deno.test({
     const text = await resp.text();
     assertEquals(
       text,
-      `${HttpServer.SSE({ comment })}\n\n${HttpServer.SSE({ data })}\n\n${
+      `${HttpServer.SSE({ comment })}${HttpServer.SSE({ data })}${
         HttpServer.SSE({ event, data })
-      }\n\n${HttpServer.SSE({ event, data: [data] })}\n\n`,
+      }${HttpServer.SSE({ event, data: [data] })}`,
     );
     assertEquals(resp.headers.get("content-type"), "text/event-stream");
     assertEquals(resp.headers.get("transfer-encoding"), "chunked");
