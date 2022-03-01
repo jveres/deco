@@ -14,6 +14,8 @@ import { Channel, PushAdapter } from "./channel.ts";
 export class Multicast<T> implements AsyncIterable<T> {
   onStart?(): void;
   onStop?(): void;
+  onReceiverAdded?(): void;
+  onReceiverRemoved?(): void;
 
   readonly receivers: Set<PushAdapter<T>> = new Set();
 
@@ -39,8 +41,10 @@ export class Multicast<T> implements AsyncIterable<T> {
     if (this.onStart && receivers.size === 1) {
       this.onStart();
     }
+    if (this.onReceiverAdded) this.onReceiverAdded();
     return producer.wrap(() => {
       receivers.delete(producer);
+      if (this.onReceiverRemoved) this.onReceiverRemoved();
       if (this.onStop && receivers.size === 0) {
         this.onStop();
       }
