@@ -16,9 +16,6 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Before((_) => {
-    console.log("before");
-  })
   test() {
     return new Response("Hello from Deco! 😎");
   }
