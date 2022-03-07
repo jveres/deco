@@ -11,8 +11,8 @@ import {
   HttpRouter,
 } from "../utils/router.ts";
 import { consoleHook } from "../utils/utils.ts";
-import * as Colors from "https://deno.land/std@0.127.0/fmt/colors.ts";
-import { deepMerge } from "https://deno.land/std@0.127.0/collections/mod.ts";
+import * as Colors from "https://deno.land/std@0.128.0/fmt/colors.ts";
+import { deepMerge } from "https://deno.land/std@0.128.0/collections/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
