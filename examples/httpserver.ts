@@ -2,193 +2,133 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-// curl -v -L -X GET "http://localhost:8080/redirect" -H "x-access-token: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.AbTCrX_2fvEYk3e6IsNwtweMht6JLfma7i_PS-vzDvHZIQB3FldT80SFuIV7hje-GcCkYnQp22JJGHNOLgx4kw"
-
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
-import { sleep } from "../utils/utils.ts";
-import { Cache } from "../decorators/cache.decorator.ts";
-import { Concurrency } from "../decorators/concurrency.decorator.ts";
-import { Timeout } from "../decorators/timeout.decorator.ts";
-import { Trace } from "../decorators/trace.decorator.ts";
-import { RateLimit } from "../decorators/ratelimit.decorator.ts";
-import { DECO_VERSION } from "../mod.ts";
-import { html } from "./ssr.tsx";
+import { SSE } from "../utils/utils.ts";
+import { memoize } from "../utils/memoize.ts";
+import { delay } from "https://deno.land/std@0.128.0/async/mod.ts";
+import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
+import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
-import publicKey from "./public.key.json" assert { type: "json" };
-
-const CACHE_EXPIRATION_MS = 12 * 60 * 60 * 1000; // 12 hours
-
-const authKey = await crypto.subtle.importKey(
-  "jwk",
-  publicKey,
-  {
-    name: "ECDSA",
-    namedCurve: "P-256",
-  },
-  true,
-  ["verify"],
-);
-
-class TestServerAt8080 {
+class TestServer {
   @HttpServer.Get()
-  dummy() {}
-
-  @HttpServer.Get("/test")
-  static() {
-    return { body: "Hello from Deco! 😎" };
+  dummy() {
+    return new Response();
   }
 
   @HttpServer.Get()
-  bench() {
-    return { body: "Hello, Bench!" };
+  @HttpServer.Before((_) => {
+    console.log("before");
+  })
+  test() {
+    return new Response("Hello from Deco! 😎");
+  }
+
+  @HttpServer.Get()
+  @HttpServer.Before((_) => {
+    return new Response(null, { status: 406 });
+  })
+  before() {
+    return new Response("Hello from Deco! 😎");
+  }
+
+  @HttpServer.Get()
+  async sleep() {
+    console.time("sleep");
+    await delay(1000);
+    console.timeEnd("sleep");
+    return new Response("Hello from Deco! 😎");
+  }
+
+  @HttpServer.Get()
+  @HttpServer.Wrap((fn) =>
+    deadline(fn(), 100).catch(() => new Response(null, { status: 408 }))
+  )
+  async deadline() {
+    await delay(1000);
+    return new Response("Hello from Deco! 😎");
+  }
+
+  @HttpServer.Get()
+  @HttpServer.Wrap((fn) => {
+    const abortController = new AbortController();
+    setTimeout(() => abortController.abort(), 100);
+    return abortable(fn(), abortController.signal).catch(() =>
+      new Response(null, { status: 500 })
+    );
+  })
+  async abort() {
+    await delay(1000);
+    return new Response("Hello from Deco! 😎");
+  }
+
+  @HttpServer.Get("/cached/:id")
+  @HttpServer.Wrap((fn, { path, urlParams }) => {
+    const params = new URLSearchParams(urlParams);
+    return memoize<Response>(fn, {
+      ttl: (Number(params.get("ttl")) || 5) * 1000,
+      key: () => path,
+      get(response) {
+        return (response as Response).clone();
+      },
+      set(response) {
+        return response.clone();
+      },
+    });
+  })
+  async cached({ pathParams }: { pathParams?: Record<string, unknown> }) {
+    await delay(1000);
+    return new Response(
+      "Hello from Deco! 😎, pathParams=" + JSON.stringify(pathParams),
+    );
+  }
+
+  @HttpServer.Get()
+  redirect() {
+    return Response.redirect("http://127.0.0.1:8080/priv");
   }
 
   @HttpServer.Get()
   error() {
-    throw Error("error thrown");
-  }
-
-  #counter = 0;
-
-  @HttpServer.Get()
-  @Cache({ ttl: 1000 })
-  cached() {
-    return { body: `counter=${++this.#counter}` };
-  }
-
-  @HttpServer.Post("/test")
-  test() {
-    return { body: "Hello from Deco!" };
-  }
-
-  @HttpServer.Auth({ authKey })
-  @HttpServer.Get()
-  redirect(
-    { http, payload }: {
-      http: Deno.RequestEvent;
-      payload: Record<string, unknown>;
-    },
-  ) {
-    console.info("payload:", payload);
-    http.abortWith(Response.redirect("http://localhost:8080/priv"));
-  }
-
-  @HttpServer.Get("/test/:id")
-  dynamic({ pathParams }: { pathParams: Record<string, unknown> }) {
-    return { body: `${JSON.stringify(pathParams)}` };
+    throw Error("error");
+    // deno-lint-ignore no-unreachable
+    return new Response("Never returns! 😎");
   }
 
   #priv = "Hello from Deco ! (#priv)";
 
   @HttpServer.Get()
+  @HttpServer.Wrap((fn) => fn())
   priv() {
-    return { body: this.#priv };
+    return new Response(this.#priv);
   }
 
   @HttpServer.Get()
-  async async() {
-    await sleep(1000);
-    return { body: this.#priv };
-  }
-
-  @HttpServer.Get()
-  @HttpServer.RequestInit(() => ({ start: performance.now() }))
-  @HttpServer.ResponseInit((resp) => ({
-    body: `${resp.body} + Hello from Deco!`,
-  }))
-  @Trace()
-  hooks({ start }: { start: number }) {
-    const time = Math.floor(performance.now() - start);
-    return { body: `took: ${time}ms` };
-  }
-
-  @HttpServer.Get()
-  @Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) })
-  @Trace()
-  async timeout({ timeoutSignal }: { timeoutSignal: AbortSignal }) {
-    timeoutSignal?.addEventListener("abort", () => {
-      console.info("timeout event received");
-    });
-    const min = 1800;
-    const max = 3000;
-    const wait = Math.floor(Math.random() * (max - min + 1)) + min;
-    await sleep(wait, timeoutSignal);
-    return { body: `took: ${wait}ms, ${this.#priv}` };
-  }
-
-  @HttpServer.Get()
-  @RateLimit({ rate: 1000, limit: 1, onRateLimited: HttpServer.Status(429) })
-  ratelimit() {
-    return { body: this.#priv };
-  }
-
-  @HttpServer.Get()
-  @HttpServer.Decorate([
-    Trace(),
-    Timeout({ timeout: 2000, onTimeout: HttpServer.Status(408) }),
-    Concurrency({ limit: 1 }),
-  ])
-  async concurrency(
-    { urlParams, timeoutSignal }: {
-      http: Deno.RequestEvent;
-      urlParams: string;
-      timeoutSignal: AbortSignal;
-    },
-  ) {
+  @HttpServer.Before(({ urlParams }) => {
     const params = new URLSearchParams(urlParams);
-    const delay = Number.parseFloat(params.get("delay") || "5");
-    await sleep(delay * 1000, timeoutSignal);
-    console.info("resolving...");
-    return { body: `delay: ${delay}s, resp: ${this.#priv}` };
-  }
-
-  @HttpServer.Get()
-  @HttpServer.Chunked()
-  async *chunked() {
-    for (let i = 0; i < 10; ++i) {
-      yield `chunk #${i}\n\n`;
-      await sleep(1000);
+    if (!params.get("user")) {
+      return new Response(null, { status: 401 });
     }
-  }
-
-  #comment = "Hello from stream";
-
-  @HttpServer.Get()
-  @HttpServer.Chunked("text/event-stream")
-  async *stream() {
-    yield HttpServer.SSE({ comment: this.#comment });
-    while (true) {
-      await sleep(1000);
-      yield HttpServer.SSE({ event: "tick", data: new Date().toString() });
-    }
-  }
-}
-
-class TestServerAt8082 {
-  @HttpServer.Decorate([HttpServer.Get(), Cache()])
-  @HttpServer.Html()
-  html() {
-    console.log("Rendering...");
-    return html;
-  }
-
-  @Cache({ ttl: CACHE_EXPIRATION_MS })
-  @HttpServer.ResponseInit(() => ({
-    init: {
-      headers: {
-        "cache-control": `public, max-age=${CACHE_EXPIRATION_MS / 1000}`,
-      },
-    },
-  }))
-  @HttpServer.Static({
-    assets: [
-      { fileName: "index.html", path: "/", contentType: "text/html" },
-      { fileName: "favicon.ico", contentType: "image/x-icon" },
-    ],
-    path: "/",
   })
-  assets({ path }: { path: string }) {
-    console.log(`Rendering: ${path}`);
+  async *chunked() {
+    yield this.#priv + "\n\n";
+    for (let i=1; i<=10; i++) {
+      await delay(1000);
+      yield i + "\n\n";
+    }
+  }
+
+  @HttpServer.Get()
+  async *stream() {
+    yield {
+      headers: {
+        "content-type": "text/event-stream",
+      },
+    };
+    yield SSE({ comment: this.#priv });
+    while (true) {
+      await delay(1000);
+      yield SSE({ event: "tick", data: new Date().toString() });
+    }
   }
 }
 
@@ -199,33 +139,16 @@ Deno.addSignalListener("SIGINT", () => {
 
 HttpServer.serve({
   abortSignal: shutdown.signal,
-  controllers: [TestServerAt8080],
+  controllers: [TestServer],
   port: 8080,
   log: false,
   onStarted() {
-    console.info(`Deco (v:${DECO_VERSION}) Http server started at :8080`);
+    console.info(`Deco (v:DEV) Http server started at :8080`);
   },
   onError(e: unknown) {
     console.error(e);
   },
   onClosed() {
     console.info(`...server at :8080 closed.`);
-  },
-});
-
-HttpServer.serve({
-  abortSignal: shutdown.signal,
-  controllers: [TestServerAt8082],
-  port: 8082,
-  log: true,
-  onStarted() {
-    console.info(`Deco (v:${DECO_VERSION}) Http server started at :8082`);
-  },
-  onError(e: unknown) {
-    console.error(e);
-  },
-  onClosed() {
-    console.info(`...server at :8082 closed.`);
-    Deno.exit(0);
   },
 });

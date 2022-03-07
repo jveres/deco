@@ -2,50 +2,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-export function sleep(wait: number, signal?: AbortSignal) {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(resolve, wait);
-    signal?.addEventListener("abort", () => {
-      if (id) clearTimeout(id);
-      reject(new DOMException("Aborted", "AbortError"));
-    });
-  });
-}
-
-export const DEFAULT_LRUCACHE_SIZE = 500;
-
-export class LruCache<T> {
-  private values: Map<string, T> = new Map<string, T>();
-
-  constructor(private readonly size: number = DEFAULT_LRUCACHE_SIZE) {
-  }
-
-  public get(key: string): T | undefined {
-    const entry: T | undefined = this.values.get(key);
-    if (entry !== undefined) {
-      this.values.delete(key);
-      this.values.set(key, entry);
-    }
-    return entry;
-  }
-
-  public has(key: string): boolean {
-    return this.values.has(key);
-  }
-
-  public put(key: string, value: T) {
-    if (this.values.size >= this.size) {
-      const keyToDelete = this.values.keys().next().value;
-      this.values.delete(keyToDelete);
-    }
-    this.values.set(key, value);
-  }
-}
-
-// Save original console log functions as globals
 const { "log": _log, "info": _info, "warn": _warn, "error": _error } = console;
 
-export function consoleLogHook(
+export function consoleHook(
   { logPrefix, infoPrefix, warnPrefix, errorPrefix }: {
     logPrefix?: string;
     infoPrefix?: string;
@@ -87,5 +46,31 @@ export function consoleLogHook(
         ...arguments,
       ]);
     };
+  }
+}
+
+interface EventStreamEventFormat {
+  event?: string;
+  data: string | string[];
+  id?: string;
+  retry?: number;
+}
+
+interface EventStreamCommentFormat {
+  comment: string;
+}
+
+export function SSE(
+  event: EventStreamEventFormat | EventStreamCommentFormat,
+): string {
+  if ("comment" in event) {
+    return `: ${event.comment}\n\n`;
+  } else {
+    let res = event.event ? `event: ${event.event}\n` : "";
+    if (typeof event.data === "string") res += `data: ${event.data}\n`;
+    else event.data.map((data) => res += `data: ${data}\n`);
+    if (event.id) res += `id: ${event.id}\n`;
+    if (event.retry) res += `retry: ${event.retry}\n`;
+    return `${res}\n`;
   }
 }

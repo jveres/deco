@@ -9,32 +9,37 @@ import {
   RadixRouter,
 } from "https://cdn.skypack.dev/radix3@0.1.0?dts";
 
-export type HttpMethod = "GET" | "POST" | "OPTIONS" | "DELETE" | "PUT";
+export type HttpMethod = "GET";
 
 export type HttpRequest = {
   conn: Deno.Conn;
   http: Deno.RequestEvent;
   path: string;
-  pathParams: { [key: string]: unknown } | undefined;
-  urlParams: string;
+  pathParams?: Record<string, unknown>;
+  urlParams?: string;
 };
-export type HttpResponse = { body?: BodyInit | null; init?: ResponseInit };
+
+export type HttpResponse = Response;
 
 export type HttpAction = {
   target: { [key: string]: any };
   property: string;
-  before: Array<(request: HttpRequest) => Promise<HttpRequest>>;
-  decorators: Array<
-    (target: any, property: string, descriptor: PropertyDescriptor) => void
-  >;
-  after: Array<(response: HttpResponse) => Promise<HttpResponse>>;
-  promise: (request: HttpRequest) => Promise<HttpResponse>;
+  fn: (request: HttpRequest) => Promise<HttpResponse>;
+  wrapperFn: (
+    fn: () => Promise<HttpResponse>,
+    ...args: any[]
+  ) => Promise<HttpResponse>;
+  beforeFn: (request: HttpRequest) => void | HttpResponse | Promise<HttpResponse>;
+};
+
+export type HttpRoute = {
+  method: HttpMethod;
+  path: string;
+  action: HttpAction;
 };
 
 export class HttpRouter {
-  readonly routes = new Array<
-    { method: HttpMethod; path: string; action: HttpAction }
-  >();
+  readonly routes = new Array<HttpRoute>();
 
   createAction(
     { target, property }: {
@@ -49,10 +54,9 @@ export class HttpRouter {
       const action: HttpAction = {
         target,
         property,
-        before: [],
-        decorators: [],
-        after: [],
-        promise: undefined!,
+        fn: undefined!,
+        wrapperFn: undefined!,
+        beforeFn: undefined!,
       };
       return this
         .routes[
