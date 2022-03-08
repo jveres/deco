@@ -10,7 +10,7 @@ import {
   HttpResponse,
   HttpRouter,
 } from "../utils/router.ts";
-import { consoleHook } from "../utils/utils.ts";
+import consoleHook from "../utils/consoleHook.ts";
 import * as Colors from "https://deno.land/std@0.128.0/fmt/colors.ts";
 import { deepMerge } from "https://deno.land/std@0.128.0/collections/mod.ts";
 

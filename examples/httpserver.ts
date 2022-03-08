@@ -3,11 +3,31 @@
 // license that can be found in the LICENSE file.
 
 import { HttpServer } from "../decorators/httpserver.decorator.ts";
-import { SSE } from "../utils/utils.ts";
+import { SSE } from "../utils/sse.ts";
+import { Multicast } from "../utils/multicast.ts";
 import { memoize } from "../utils/memoize.ts";
 import { delay } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
+
+class MulticastChannel {
+  static multicast = new Multicast();
+  static ticker = 0;
+  static channels = 0;
+  static {
+    setInterval(() => {
+      console.log("tick");
+      MulticastChannel.multicast.push(
+        `tick: ${MulticastChannel
+          .ticker++}, channels: ${MulticastChannel.multicast.size}`,
+      );
+    }, 2_000);
+  }
+
+  [Symbol.asyncIterator]() {
+    return MulticastChannel.multicast[Symbol.asyncIterator]();
+  }
+}
 
 class TestServer {
   @HttpServer.Get()
@@ -108,7 +128,7 @@ class TestServer {
     }
     Object.assign(req, { payload: { user, role: "admin" } });
   })
-  async *chunked({ payload }: { payload: unknown }) {
+  async *chunked({ payload }: { payload: Record<string, string> }) {
     console.log("payload =", payload);
     yield this.#priv + "\n\n";
     for (let i = 1; i <= 10; i++) {
@@ -125,9 +145,8 @@ class TestServer {
       },
     };
     yield SSE({ comment: this.#priv });
-    while (true) {
-      await delay(1000);
-      yield SSE({ event: "tick", data: new Date().toString() });
+    for await (const tick of new MulticastChannel()) {
+      yield SSE({ event: "tick", data: `${tick}` });
     }
   }
 }
