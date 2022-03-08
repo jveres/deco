@@ -29,7 +29,9 @@ export type HttpAction = {
     fn: () => Promise<HttpResponse>,
     ...args: any[]
   ) => Promise<HttpResponse>;
-  beforeFn: (request: HttpRequest) => void | HttpResponse | Promise<HttpResponse>;
+  beforeFn: (
+    request: HttpRequest,
+  ) => void | HttpResponse | Promise<HttpResponse>;
 };
 
 export type HttpRoute = {

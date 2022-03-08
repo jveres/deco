@@ -48,7 +48,7 @@ class TestServer {
   @HttpServer.Get()
   @HttpServer.Wrap((fn) => {
     const abortController = new AbortController();
-    setTimeout(() => abortController.abort(), 100);
+    setTimeout(() => abortController.abort(), 200);
     return abortable(fn(), abortController.signal).catch(() =>
       new Response(null, { status: 500 })
     );
@@ -100,15 +100,18 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Before(({ urlParams }) => {
-    const params = new URLSearchParams(urlParams);
-    if (!params.get("user")) {
+  @HttpServer.Before((req) => {
+    const params = new URLSearchParams(req.urlParams);
+    const user = params.get("user");
+    if (!user) {
       return new Response(null, { status: 401 });
     }
+    Object.assign(req, { payload: { user, role: "admin" } });
   })
-  async *chunked() {
+  async *chunked({ payload }: { payload: unknown }) {
+    console.log("payload =", payload);
     yield this.#priv + "\n\n";
-    for (let i=1; i<=10; i++) {
+    for (let i = 1; i <= 10; i++) {
       await delay(1000);
       yield i + "\n\n";
     }

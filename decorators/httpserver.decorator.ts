@@ -84,7 +84,7 @@ export class HttpServer {
   ) {
     return function <
       T extends (
-        request: HttpRequest,
+        args: any,
       ) => HttpResponse | Promise<HttpResponse> | AsyncGenerator<string>,
     >(
       target: any,
