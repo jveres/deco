@@ -173,19 +173,24 @@ export class HttpServer {
                 "content-type": "text/plain",
               },
             };
+            let cancelled = false;
             const stream = new ReadableStream({
               async start(controller) {
                 try {
-                  if (!isRequestInit && !done) controller.enqueue(value);
-                  while (!done) {
+                  if (!(cancelled || isRequestInit || done)) controller.enqueue(value);
+                  while (!(done || cancelled)) {
                     ({ value, done } = await it.next());
-                    if (!done) controller.enqueue(value);
+                    if (!(done || cancelled)) controller.enqueue(value);
                   }
                 } catch (e) {
                   controller.error(e);
                 } finally {
+                  it.return();
                   controller.close();
                 }
+              },
+              cancel() {
+                cancelled = true;
               },
             });
             return Promise.resolve(

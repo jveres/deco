@@ -11,23 +11,21 @@ import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
 class MulticastChannel {
-  static multicast = new Multicast();
-  static ticker = 0;
-  static channels = 0;
-  static {
+  constructor(private multicast = new Multicast(), private ticker = 0) {
+    this.multicast.onReceiverRemoved = () => console.log("removed");
     setInterval(() => {
-      console.log("tick");
-      MulticastChannel.multicast.push(
-        `tick: ${MulticastChannel
-          .ticker++}, channels: ${MulticastChannel.multicast.size}`,
-      );
+      const tick = `tick: ${this.ticker++}, channels: ${this.multicast.size}`;
+      console.log(tick);
+      this.multicast.push(tick);
     }, 2_000);
   }
 
   [Symbol.asyncIterator]() {
-    return MulticastChannel.multicast[Symbol.asyncIterator]();
+    return this.multicast[Symbol.asyncIterator]();
   }
 }
+
+const multicast = new MulticastChannel();
 
 class TestServer {
   @HttpServer.Get()
@@ -145,7 +143,7 @@ class TestServer {
       },
     };
     yield SSE({ comment: this.#priv });
-    for await (const tick of new MulticastChannel()) {
+    for await (const tick of multicast) {
       yield SSE({ event: "tick", data: `${tick}` });
     }
   }
