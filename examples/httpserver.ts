@@ -12,7 +12,8 @@ import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
 class MulticastChannel {
   constructor(private multicast = new Multicast(), private ticker = 0) {
-    this.multicast.onReceiverRemoved = () => console.log("removed");
+    this.multicast.onReceiverAdded = () => console.log("Receiver added.");
+    this.multicast.onReceiverRemoved = () => console.log("Receiver removed.");
     setInterval(() => {
       const tick = `tick: ${this.ticker++}, channels: ${this.multicast.size}`;
       console.log(tick);
