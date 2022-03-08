@@ -18,7 +18,7 @@ class MulticastChannel {
       const tick = `tick: ${this.ticker++}, channels: ${this.multicast.size}`;
       console.log(tick);
       this.multicast.push(tick);
-    }, 2_000);
+    }, 5_000);
   }
 
   [Symbol.asyncIterator]() {
@@ -50,7 +50,7 @@ class TestServer {
   @HttpServer.Get()
   async sleep() {
     console.time("sleep");
-    await delay(1000);
+    await delay(1_000);
     console.timeEnd("sleep");
     return new Response("Hello from Deco! 😎");
   }
@@ -60,7 +60,7 @@ class TestServer {
     deadline(fn(), 100).catch(() => new Response(null, { status: 408 }))
   )
   async deadline() {
-    await delay(1000);
+    await delay(1_000);
     return new Response("Hello from Deco! 😎");
   }
 
@@ -73,7 +73,7 @@ class TestServer {
     );
   })
   async abort() {
-    await delay(1000);
+    await delay(1_000);
     return new Response("Hello from Deco! 😎");
   }
 

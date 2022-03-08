@@ -164,7 +164,7 @@ export class HttpServer {
               const res = await action.beforeFn(request);
               if (res instanceof Response) return res;
             }
-            const it = fn(request);
+            const it = fn(request) as AsyncGenerator;
             let { value, done } = await it.next();
             const isRequestInit = (typeof value === "object") && !done;
             const requestInit = {
@@ -173,31 +173,28 @@ export class HttpServer {
                 "content-type": "text/plain",
               },
             };
-            let cancelled = false;
             const stream = new ReadableStream({
-              async start(controller) {
+              async pull(controller) {
+                if (done) return;
                 try {
-                  if (!(cancelled || isRequestInit || done)) controller.enqueue(value);
-                  while (!(done || cancelled)) {
-                    ({ value, done } = await it.next());
-                    if (!(done || cancelled)) controller.enqueue(value);
+                  ({ value, done } = await it.next());
+                  try {
+                    if (!done) controller.enqueue(value);
+                  } catch(_) {
+                    // swallow enqueue errors
                   }
                 } catch (e) {
                   controller.error(e);
-                } finally {
-                  it.return();
-                  controller.close();
+                  onError?.(e);
                 }
               },
               cancel() {
-                cancelled = true;
+                it.return(value);
               },
             });
-            return Promise.resolve(
-              new Response(
-                stream.pipeThrough(new TextEncoderStream()),
-                isRequestInit ? deepMerge(requestInit, value) : requestInit,
-              ),
+            return new Response(
+              stream.pipeThrough(new TextEncoderStream()),
+              isRequestInit ? deepMerge(requestInit, value) : requestInit,
             );
           };
           break;
@@ -239,7 +236,7 @@ export class HttpServer {
             );
           }
           fn({ conn, http, path, pathParams, urlParams })
-            .then((response) => http.respondWith(response).catch(() => {})) // swallow Http errors
+            .then(http.respondWith).catch(() => {}) // swallow Http errors
             .catch((e) => { // catch promise chain errors
               if (onError) {
                 http.respondWith(
