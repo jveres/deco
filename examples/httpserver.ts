@@ -2,7 +2,10 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpServer, HttpResponse } from "../decorators/httpserver.decorator.ts";
+import {
+  HttpResponse,
+  HttpServer,
+} from "../decorators/httpserver.decorator.ts";
 import { SSE } from "../utils/sse.ts";
 import { Multicast } from "../utils/multicast.ts";
 import { memoize } from "../utils/memoize.ts";
@@ -12,13 +15,13 @@ import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
 class MulticastChannel {
   constructor(private multicast = new Multicast(), private ticker = 0) {
-    this.multicast.onReceiverAdded = () => console.log("Receiver added.");
-    this.multicast.onReceiverRemoved = () => console.log("Receiver removed.");
+    this.multicast.onReceiverAdded = () => console.log("receiver added");
+    this.multicast.onReceiverRemoved = () => console.log("receiver removed");
     setInterval(() => {
-      const tick = `tick: ${this.ticker++}, channels: ${this.multicast.size}`;
+      const tick = `tick: ${this.ticker++}, receivers: ${this.multicast.size}`;
       console.log(tick);
       this.multicast.push(tick);
-    }, 5_000);
+    }, 10_000);
   }
 
   [Symbol.asyncIterator]() {

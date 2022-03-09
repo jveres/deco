@@ -17,6 +17,7 @@ export type HttpRequest = {
   path: string;
   pathParams?: Record<string, unknown>;
   urlParams?: string;
+  signal: AbortSignal;
 };
 
 export type HttpResponse = Response;

@@ -13,6 +13,7 @@ import {
 import consoleHook from "../utils/consoleHook.ts";
 import * as Colors from "https://deno.land/std@0.128.0/fmt/colors.ts";
 import { deepMerge } from "https://deno.land/std@0.128.0/collections/mod.ts";
+import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -165,36 +166,41 @@ export class HttpServer {
               if (res instanceof Response) return res;
             }
             const it = fn(request) as AsyncGenerator;
-            let { value, done } = await it.next();
-            const isRequestInit = (typeof value === "object") && !done;
-            const requestInit = {
+            const chunks = abortable(
+              it,
+              request.signal,
+            );
+            const { value, done } = await chunks.next();
+            const requestInit = deepMerge({
               headers: {
                 "cache-control": "no-store",
                 "content-type": "text/plain",
               },
-            };
+            }, (typeof value === "object" && !done) ? value : {});
+            let cancelled = false;
             const stream = new ReadableStream({
-              async pull(controller) {
-                if (done) return;
-                try {
-                  ({ value, done } = await it.next());
-                  try {
-                    if (!done) controller.enqueue(value);
-                  } catch (_) {
-                    // swallow enqueue errors
+              pull(controller) {
+                if (cancelled) return;
+                //console.log("pulling");
+                return chunks.next().then(({ value, done }) => {
+                  //console.log("pulled");
+                  cancelled = !!done;
+                  if (done) return;
+                  controller.enqueue(value);
+                }).catch((e) => {
+                  cancelled = true;
+                  if (!(e instanceof DOMException)) onError?.(e);
+                  else {
+                    //console.log("pulling aborted");
+                    it.return(null);
+                    controller.close();
                   }
-                } catch (e) {
-                  controller.error(e);
-                  onError?.(e);
-                }
-              },
-              cancel() {
-                it.return(value);
+                });
               },
             });
             return new Response(
               stream.pipeThrough(new TextEncoderStream()),
-              isRequestInit ? deepMerge(requestInit, value) : requestInit,
+              requestInit,
             );
           };
           break;
@@ -215,7 +221,15 @@ export class HttpServer {
     onStarted?.();
     for await (const conn of server) {
       (async () => {
-        for await (const http of Deno.serveHttp(conn)) {
+        const req = Deno.serveHttp(conn)[Symbol.asyncIterator]();
+        const abortController = new AbortController();
+        const signal = abortController.signal;
+        while (true) {
+          const { value: http, done } = await req.next();
+          if (done) {
+            abortController.abort();
+            break;
+          }
           const [path, urlParams] = http.request.url.split(
             http.request.headers.get("host")!,
             2,
@@ -235,7 +249,7 @@ export class HttpServer {
               } ${http.request.url}`,
             );
           }
-          fn({ conn, http, path, pathParams, urlParams })
+          fn({ conn, http, path, pathParams, urlParams, signal })
             .then(http.respondWith).catch(() => {}) // swallow Http errors
             .catch((e) => { // catch promise chain errors
               if (onError) {
@@ -246,8 +260,6 @@ export class HttpServer {
               } else throw e;
             });
         }
-        // connection closed
-        console.log("done");
       })()
         .catch(onError); // catch serveHttp errors
     }
