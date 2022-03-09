@@ -180,7 +180,7 @@ export class HttpServer {
                   ({ value, done } = await it.next());
                   try {
                     if (!done) controller.enqueue(value);
-                  } catch(_) {
+                  } catch (_) {
                     // swallow enqueue errors
                   }
                 } catch (e) {
@@ -246,6 +246,8 @@ export class HttpServer {
               } else throw e;
             });
         }
+        // connection closed
+        console.log("done");
       })()
         .catch(onError); // catch serveHttp errors
     }

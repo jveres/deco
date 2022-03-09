@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import { HttpServer } from "../decorators/httpserver.decorator.ts";
+import { HttpServer, HttpResponse } from "../decorators/httpserver.decorator.ts";
 import { SSE } from "../utils/sse.ts";
 import { Multicast } from "../utils/multicast.ts";
 import { memoize } from "../utils/memoize.ts";
@@ -80,11 +80,11 @@ class TestServer {
   @HttpServer.Get("/cached/:id")
   @HttpServer.Wrap((fn, { path, urlParams }) => {
     const params = new URLSearchParams(urlParams);
-    return memoize<Response>(fn, {
+    return memoize<HttpResponse>(fn, {
       ttl: (Number(params.get("ttl")) || 5) * 1000,
       key: () => path,
       get(response) {
-        return (response as Response).clone();
+        return (response as HttpResponse).clone();
       },
       set(response) {
         return response.clone();
