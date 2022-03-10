@@ -147,9 +147,8 @@ class TestServer {
         yield SSE({ event: "tick", data: `${tick}` });
         if (++i > 3) break;
       }
-    } catch (e) {
+    } finally {
       it.return?.();
-      if (!(e instanceof DOMException)) throw e;
     }
   }
 }
