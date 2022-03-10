@@ -144,8 +144,8 @@ class TestServer {
   async *stream({ signal }: { signal: AbortSignal }) {
     yield SSE({ comment: this.#priv });
     let i = 0;
-    //const it = abortableAsyncIterable(multicast, signal);
-    const it = multicast;
+    const it = abortableAsyncIterable(multicast, signal);
+    //const it = multicast;
     for await (const tick of it) {
       yield SSE({ event: "tick", data: `${tick}` });
       if (++i > 3) break;
@@ -166,7 +166,9 @@ async function* abortableAsyncIterable<T>(
 
   const it = p[Symbol.asyncIterator]();
   while (true) {
-    const { done, value } = await Promise.race([waiter, it.next()]);
+    const { done, value } = await Promise.race([waiter, it.next()]).catch((_) =>
+      it.return!()
+    );
     if (done) {
       signal.removeEventListener("abort", abort);
       return;

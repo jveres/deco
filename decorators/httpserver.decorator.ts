@@ -165,11 +165,12 @@ export class HttpServer {
               if (res instanceof Response) return res;
             }
             // TODO: ResponseInit
-            const chunks = fn(request) as AsyncGenerator;
+            const it = fn(request) as AsyncGenerator;
+            const chunks = abortable(it, request.signal);
             const stream = new ReadableStream({
               pull(controller) {
                 if (!request.signal.aborted) {
-                  return abortable(chunks.next(), request.signal)
+                  return chunks.next()
                     .then(({ value, done }) => {
                       if (done === true) {
                         controller.close();
@@ -177,7 +178,7 @@ export class HttpServer {
                       } else controller.enqueue(value);
                     }).catch((e) => {
                       controller.close();
-                      chunks.return(null);
+                      it.return(null);
                       onError?.(e);
                     });
                 }
