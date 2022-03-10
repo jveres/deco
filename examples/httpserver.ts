@@ -13,7 +13,7 @@ import { delay } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
-class MulticastChannel {
+const multicast = new class {
   constructor(private multicast = new Multicast(), private ticker = 0) {
     this.multicast.onReceiverAdded = () => console.log("receiver added");
     this.multicast.onReceiverRemoved = () => console.log("receiver removed");
@@ -27,9 +27,7 @@ class MulticastChannel {
   [Symbol.asyncIterator]() {
     return this.multicast[Symbol.asyncIterator]();
   }
-}
-
-const multicast = new MulticastChannel();
+}();
 
 class TestServer {
   @HttpServer.Get()
