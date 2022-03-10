@@ -246,14 +246,14 @@ export class HttpServer {
             );
           }
           fn({ conn, http, path, pathParams, urlParams, signal })
-            .then(http.respondWith).catch(() => {}) // swallow Http errors
-            .catch((e) => { // catch promise chain errors
+            .then((res) => http.respondWith(res).catch(() => {})) // swallow Http errors)
+            .catch((err) => { // catch errors
               if (onError) {
                 http.respondWith(
                   new Response(null, { status: 500 }),
                 ).catch(() => {}); // swallow Http errors
-                onError(e);
-              } else throw e;
+                onError(err);
+              } else throw err;
             });
         }
       })()
