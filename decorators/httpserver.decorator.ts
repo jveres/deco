@@ -66,10 +66,10 @@ export class HttpServer {
       path?: string;
     },
   ) {
-    return function (
+    return function <T extends (...args: any[]) => void>(
       target: any,
       property: string,
-      descriptor: PropertyDescriptor,
+      descriptor: TypedPropertyDescriptor<(...args: any[]) => void>,
     ) {
       path ??= "/" + property;
       if (path.endsWith("/")) path = path.slice(0, path.length - 1); // remove trailing slash
@@ -87,7 +87,7 @@ export class HttpServer {
           property,
         });
       }
-      const origFn = descriptor.value;
+      const origFn = descriptor.value!;
       descriptor.value = function (...args: any[]) {
         origFn.apply(this, args);
         const { path, init = {} } = args[0];
@@ -104,7 +104,9 @@ export class HttpServer {
     ) => Promise<HttpResponse>,
   ) {
     return function <
-      T extends (request: HttpRequest) => void | HttpResponse | Promise<HttpResponse>,
+      T extends (
+        request: HttpRequest,
+      ) => void | HttpResponse | Promise<HttpResponse>,
     >(
       target: any,
       property: string,

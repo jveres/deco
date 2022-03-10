@@ -127,7 +127,7 @@ class TestServer {
     ],
   })
   @HttpServer.Before(() => ({
-    headers: { "cache-control": `public, max-age=${CACHE_TTL / 1000}` },
+    headers: { "cache-control": `public, max-age=${CACHE_TTL / 1000};` },
   }))
   index() {}
 
