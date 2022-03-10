@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { Queue } from "./queue.ts";
-import { Deferred, deferred } from "https://deno.land/std@0.128.0/async/mod.ts";
+import { Deferred, deferred } from "https://deno.land/std@0.129.0/async/mod.ts";
 
 export interface PushAdapter<T> extends AsyncIterableIterator<T> {
   push(value: T): Promise<IteratorResult<T>>;

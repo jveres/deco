@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import { DoneResult, PushAdapter } from "./channel.ts";
-import { Deferred, deferred } from "https://deno.land/std@0.128.0/async/mod.ts";
+import { Deferred, deferred } from "https://deno.land/std@0.129.0/async/mod.ts";
 
 export class Lastcast<T> implements PushAdapter<T> {
   #buffer: Deferred<IteratorResult<T>> = deferred();

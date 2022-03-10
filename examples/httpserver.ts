@@ -9,9 +9,9 @@ import {
 import { SSE } from "../utils/sse.ts";
 import { Multicast } from "../utils/multicast.ts";
 import { memoize } from "../utils/memoize.ts";
-import { delay } from "https://deno.land/std@0.128.0/async/mod.ts";
-import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
-import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
+import { delay } from "https://deno.land/std@0.129.0/async/mod.ts";
+import { deadline } from "https://deno.land/std@0.129.0/async/mod.ts";
+import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
 
 const multicast = new class {
   constructor(private multicast = new Multicast(), private ticker = 0) {
