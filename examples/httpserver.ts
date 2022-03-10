@@ -12,7 +12,6 @@ import { memoize } from "../utils/memoize.ts";
 import { delay } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
-import { deferred } from "https://deno.land/std@0.128.0/async/mod.ts";
 
 class MulticastChannel {
   constructor(private multicast = new Multicast(), private ticker = 0) {
@@ -144,44 +143,17 @@ class TestServer {
   async *stream({ signal }: { signal: AbortSignal }) {
     yield SSE({ comment: this.#priv });
     let i = 0;
-    const it = abortableAsyncIterable(multicast, signal);
-    //const it = multicast;
-    for await (const tick of it) {
-      yield SSE({ event: "tick", data: `${tick}` });
-      if (++i > 3) break;
+    const it = multicast[Symbol.asyncIterator]();
+    try {
+      for await (const tick of abortable(it, signal)) {
+        yield SSE({ event: "tick", data: `${tick}` });
+        if (++i > 3) break;
+      }
+    } catch (e) {
+      it.return?.();
+      if (!(e instanceof DOMException)) throw e;
     }
   }
-}
-
-async function* abortableAsyncIterable<T>(
-  p: AsyncIterable<T>,
-  signal: AbortSignal,
-): AsyncGenerator<T> {
-  if (signal.aborted) {
-    throw createAbortError(signal.reason);
-  }
-  const waiter = deferred<never>();
-  const abort = () => waiter.reject(createAbortError(signal.reason));
-  signal.addEventListener("abort", abort, { once: true });
-
-  const it = p[Symbol.asyncIterator]();
-  while (true) {
-    const { done, value } = await Promise.race([waiter, it.next()]).catch((_) =>
-      it.return!()
-    );
-    if (done) {
-      signal.removeEventListener("abort", abort);
-      return;
-    }
-    yield value;
-  }
-}
-
-function createAbortError(reason?: any): DOMException {
-  return new DOMException(
-    reason ? `Aborted: ${reason}` : "Aborted",
-    "AbortError",
-  );
 }
 
 const shutdown = new AbortController();

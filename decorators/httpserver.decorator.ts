@@ -179,7 +179,8 @@ export class HttpServer {
                     }).catch((e) => {
                       controller.close();
                       it.return(null);
-                      onError?.(e);
+                      chunks.return(null);
+                      if (!(e instanceof DOMException)) onError?.(e);
                     });
                 }
               },
