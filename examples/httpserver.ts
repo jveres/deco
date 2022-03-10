@@ -13,6 +13,8 @@ import { delay } from "https://deno.land/std@0.129.0/async/mod.ts";
 import { deadline } from "https://deno.land/std@0.129.0/async/mod.ts";
 import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
 
+const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
+
 const multicast = new class {
   constructor(private multicast = new Multicast(), private ticker = 0) {
     this.multicast.onReceiverAdded = () => console.log("receiver added");
@@ -124,6 +126,9 @@ class TestServer {
       { fileName: "index.html", path: "/", contentType: "text/html" },
     ],
   })
+  @HttpServer.Before(() => ({
+    headers: { "cache-control": `public, max-age=${CACHE_TTL / 1000}` },
+  }))
   index() {}
 
   @HttpServer.Get()
