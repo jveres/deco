@@ -119,6 +119,13 @@ class TestServer {
     return new Response(this.#priv);
   }
 
+  @HttpServer.Static({
+    assets: [
+      { fileName: "index.html", path: "/", contentType: "text/html" },
+    ],
+  })
+  index() {}
+
   @HttpServer.Get()
   @HttpServer.Before((req) => {
     const params = new URLSearchParams(req.urlParams);
@@ -142,9 +149,9 @@ class TestServer {
     headers: { "content-type": "text/event-stream" },
   }))
   async *stream({ signal }: { signal: AbortSignal }) {
-    yield SSE({ comment: this.#priv });
     const it = multicast[Symbol.asyncIterator]();
     try {
+      yield SSE({ comment: this.#priv });
       for await (const tick of abortable(it, signal)) {
         yield SSE({ event: "tick", data: `${tick}` });
       }

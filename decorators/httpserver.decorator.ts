@@ -14,6 +14,7 @@ import consoleHook from "../utils/consoleHook.ts";
 import * as Colors from "https://deno.land/std@0.129.0/fmt/colors.ts";
 import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
 import { deepMerge } from "https://deno.land/std@0.129.0/collections/mod.ts";
+import { basename } from "https://deno.land/std@0.129.0/path/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -57,6 +58,43 @@ export class HttpServer {
     path?: string,
   ) {
     return HttpServer.Route({ path });
+  }
+
+  static Static(
+    { assets, path }: {
+      assets: Array<{ fileName: string; path?: string; contentType: string }>;
+      path?: string;
+    },
+  ) {
+    return function (
+      target: any,
+      property: string,
+      descriptor: PropertyDescriptor,
+    ) {
+      path ??= "/" + property;
+      if (path.endsWith("/")) path = path.slice(0, path.length - 1); // remove trailing slash
+      const map = new Map<string, any>();
+      for (const asset of assets) {
+        const urlPath = asset.path ?? `${path}/${basename(asset.fileName)}`;
+        map.set(urlPath, {
+          body: Deno.readFileSync(asset.fileName),
+          init: { headers: { "content-type": asset.contentType } },
+        });
+        HttpServer.router.add({
+          method: "GET",
+          path: urlPath,
+          target,
+          property,
+        });
+      }
+      const origFn = descriptor.value;
+      descriptor.value = function (...args: any[]) {
+        origFn.apply(this, args);
+        const { path } = args[0];
+        const res = map.get(path);
+        return new Response(res.body, res.init);
+      };
+    };
   }
 
   static Wrap(
