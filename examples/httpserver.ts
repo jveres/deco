@@ -140,15 +140,13 @@ class TestServer {
   @HttpServer.Get()
   async *stream({ signal }: { signal: AbortSignal }) {
     yield SSE({ comment: this.#priv });
-    let i = 0;
     const it = multicast[Symbol.asyncIterator]();
     try {
       for await (const tick of abortable(it, signal)) {
         yield SSE({ event: "tick", data: `${tick}` });
-        if (++i > 3) break;
       }
     } finally {
-      it.return?.();
+      it.return!();
     }
   }
 }
