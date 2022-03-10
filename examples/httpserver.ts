@@ -1,4 +1,4 @@
-// Copyright 2020 Janos Veres. All rights reserved.
+// Copyright 2022 Janos Veres. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
@@ -138,9 +138,9 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  @HttpServer.Before(() => {
-    return { headers: { "content-type": "text/event-stream" } };
-  })
+  @HttpServer.Before(() => ({
+    headers: { "content-type": "text/event-stream" },
+  }))
   async *stream({ signal }: { signal: AbortSignal }) {
     yield SSE({ comment: this.#priv });
     const it = multicast[Symbol.asyncIterator]();
@@ -160,7 +160,7 @@ Deno.addSignalListener("SIGINT", () => {
 });
 
 HttpServer.serve({
-  abortSignal: shutdown.signal,
+  signal: shutdown.signal,
   controllers: [TestServer],
   port: 8080,
   log: false,
@@ -172,5 +172,6 @@ HttpServer.serve({
   },
   onClosed() {
     console.info(`...server at :8080 closed.`);
+    Deno.exit();
   },
 });

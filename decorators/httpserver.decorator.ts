@@ -1,4 +1,4 @@
-// Copyright 2021 Janos Veres. All rights reserved.
+// Copyright 2022 Janos Veres. All rights reserved.
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
@@ -106,7 +106,7 @@ export class HttpServer {
     {
       hostname = DEFAULT_HTTPSERVER_HOSTNAME,
       port = DEFAULT_HTTPSERVER_PORT,
-      abortSignal,
+      signal,
       controllers = [],
       onStarted,
       onError,
@@ -115,7 +115,7 @@ export class HttpServer {
     }: {
       hostname?: string;
       port?: number;
-      abortSignal?: AbortSignal;
+      signal?: AbortSignal;
       controllers: Function[];
       onStarted?: () => void;
       onError?: (e: unknown) => void;
@@ -215,7 +215,7 @@ export class HttpServer {
       params: undefined,
     };
     const server = Deno.listen({ port, hostname });
-    abortSignal?.addEventListener("abort", () => {
+    signal?.addEventListener("abort", () => {
       server.close();
       HttpServer.router.clearAll();
     });
