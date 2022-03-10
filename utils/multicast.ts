@@ -48,10 +48,10 @@ export class Multicast<T> implements AsyncIterable<T> {
     if (this.onStart && receivers.size === 1) {
       this.onStart();
     }
-    if (this.onReceiverAdded) this.onReceiverAdded();
+    this.onReceiverAdded?.();
     return producer.wrap(() => {
       receivers.delete(producer);
-      if (this.onReceiverRemoved) this.onReceiverRemoved();
+      this.onReceiverRemoved?.();
       if (this.onStop && receivers.size === 0) {
         this.onStop();
       }

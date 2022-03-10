@@ -137,9 +137,7 @@ export class Channel<T> implements PushAdapter<T> {
       },
       next: () => this.next(),
       return: (value?: T) => {
-        if (onReturn) {
-          onReturn();
-        }
+        onReturn?.();
         return this.return(value);
       },
     };

@@ -12,6 +12,7 @@ import { memoize } from "../utils/memoize.ts";
 import { delay } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { deadline } from "https://deno.land/std@0.128.0/async/mod.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
+import { deferred } from "https://deno.land/std@0.128.0/async/mod.ts";
 
 class MulticastChannel {
   constructor(private multicast = new Multicast(), private ticker = 0) {
@@ -21,7 +22,7 @@ class MulticastChannel {
       const tick = `tick: ${this.ticker++}, receivers: ${this.multicast.size}`;
       console.log(tick);
       this.multicast.push(tick);
-    }, 10_000);
+    }, 3_000);
   }
 
   [Symbol.asyncIterator]() {
@@ -140,17 +141,45 @@ class TestServer {
   }
 
   @HttpServer.Get()
-  async *stream() {
-    yield {
-      headers: {
-        "content-type": "text/event-stream",
-      },
-    };
+  async *stream({ signal }: { signal: AbortSignal }) {
     yield SSE({ comment: this.#priv });
-    for await (const tick of multicast) {
+    let i = 0;
+    //const it = abortableAsyncIterable(multicast, signal);
+    const it = multicast;
+    for await (const tick of it) {
       yield SSE({ event: "tick", data: `${tick}` });
+      if (++i > 3) break;
     }
   }
+}
+
+async function* abortableAsyncIterable<T>(
+  p: AsyncIterable<T>,
+  signal: AbortSignal,
+): AsyncGenerator<T> {
+  if (signal.aborted) {
+    throw createAbortError(signal.reason);
+  }
+  const waiter = deferred<never>();
+  const abort = () => waiter.reject(createAbortError(signal.reason));
+  signal.addEventListener("abort", abort, { once: true });
+
+  const it = p[Symbol.asyncIterator]();
+  while (true) {
+    const { done, value } = await Promise.race([waiter, it.next()]);
+    if (done) {
+      signal.removeEventListener("abort", abort);
+      return;
+    }
+    yield value;
+  }
+}
+
+function createAbortError(reason?: any): DOMException {
+  return new DOMException(
+    reason ? `Aborted: ${reason}` : "Aborted",
+    "AbortError",
+  );
 }
 
 const shutdown = new AbortController();

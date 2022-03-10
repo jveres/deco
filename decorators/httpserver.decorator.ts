@@ -12,7 +12,6 @@ import {
 } from "../utils/router.ts";
 import consoleHook from "../utils/consoleHook.ts";
 import * as Colors from "https://deno.land/std@0.128.0/fmt/colors.ts";
-import { deepMerge } from "https://deno.land/std@0.128.0/collections/mod.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
@@ -165,42 +164,33 @@ export class HttpServer {
               const res = await action.beforeFn(request);
               if (res instanceof Response) return res;
             }
-            const it = fn(request) as AsyncGenerator;
-            const chunks = abortable(
-              it,
-              request.signal,
-            );
-            const { value, done } = await chunks.next();
-            const requestInit = deepMerge({
-              headers: {
-                "cache-control": "no-store",
-                "content-type": "text/plain",
-              },
-            }, (typeof value === "object" && !done) ? value : {});
-            let cancelled = false;
+            // TODO: ResponseInit
+            const chunks = fn(request) as AsyncGenerator;
             const stream = new ReadableStream({
               pull(controller) {
-                if (cancelled) return;
-                //console.log("pulling");
-                return chunks.next().then(({ value, done }) => {
-                  //console.log("pulled");
-                  cancelled = !!done;
-                  if (done) return;
-                  controller.enqueue(value);
-                }).catch((e) => {
-                  cancelled = true;
-                  if (!(e instanceof DOMException)) onError?.(e);
-                  else {
-                    //console.log("pulling aborted");
-                    it.return(null);
-                    controller.close();
-                  }
-                });
+                if (!request.signal.aborted) {
+                  return abortable(chunks.next(), request.signal)
+                    .then(({ value, done }) => {
+                      if (done === true) {
+                        controller.close();
+                        return;
+                      } else controller.enqueue(value);
+                    }).catch((e) => {
+                      controller.close();
+                      chunks.return(null);
+                      onError?.(e);
+                    });
+                }
               },
             });
             return new Response(
               stream.pipeThrough(new TextEncoderStream()),
-              requestInit,
+              {
+                headers: {
+                  "cache-control": "no-store",
+                  "content-type": "text/event-stream",
+                },
+              },
             );
           };
           break;
@@ -230,13 +220,8 @@ export class HttpServer {
             abortController.abort();
             break;
           }
-          const [path, urlParams] = http.request.url.split(
-            http.request.headers.get("host")!,
-            2,
-          )[1]
-            .split(
-              "?",
-            );
+          // deno-fmt-ignore
+          const [path, urlParams] = http.request.url.split(http.request.headers.get("host")!, 2)[1].split("?");
           const { fn, params: pathParams } =
             HttpServer.router.find(router, http.request.method, path) ??
               NOT_FOUND;
