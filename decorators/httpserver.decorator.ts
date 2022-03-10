@@ -90,9 +90,9 @@ export class HttpServer {
       const origFn = descriptor.value;
       descriptor.value = function (...args: any[]) {
         origFn.apply(this, args);
-        const { path } = args[0];
+        const { path, init = {} } = args[0];
         const res = map.get(path);
-        return new Response(res.body, res.init);
+        return new Response(res.body, deepMerge(res.init, init));
       };
     };
   }
