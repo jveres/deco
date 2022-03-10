@@ -21,7 +21,7 @@ const multicast = new class {
       const tick = `tick: ${this.ticker++}, receivers: ${this.multicast.size}`;
       console.log(tick);
       this.multicast.push(tick);
-    }, 3_000);
+    }, 5_000);
   }
 
   [Symbol.asyncIterator]() {
