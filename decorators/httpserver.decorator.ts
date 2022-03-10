@@ -13,6 +13,7 @@ import {
 import consoleHook from "../utils/consoleHook.ts";
 import * as Colors from "https://deno.land/std@0.128.0/fmt/colors.ts";
 import { abortable } from "https://deno.land/std@0.128.0/async/abortable.ts";
+import { deepMerge } from "https://deno.land/std@0.128.0/collections/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
@@ -80,7 +81,9 @@ export class HttpServer {
   }
 
   static Before(
-    fn: (request: HttpRequest) => void | HttpResponse | Promise<HttpResponse>,
+    fn: (
+      request: HttpRequest,
+    ) => void | ResponseInit | HttpResponse | Promise<HttpResponse>,
   ) {
     return function <
       T extends (
@@ -147,6 +150,9 @@ export class HttpServer {
               if (action.beforeFn !== undefined) {
                 const res = await action.beforeFn(request);
                 if (res instanceof Response) return res;
+                else if (typeof res === "object") {
+                  Object.assign(request, { init: res }); // add to the request for subsequent calls
+                }
               }
               return fn(request);
             };
@@ -160,15 +166,23 @@ export class HttpServer {
           break;
         case "AsyncGeneratorFunction":
           action.fn = async (request: HttpRequest) => {
+            let init = {
+              headers: {
+                "cache-control": "no-store",
+                "content-type": "text/plain",
+              },
+            };
             if (action.beforeFn !== undefined) {
               const res = await action.beforeFn(request);
               if (res instanceof Response) return res;
+              else if (typeof res === "object") {
+                init = deepMerge(init, res as object); // use to init the response
+              }
             }
-            // TODO: ResponseInit
-            const it = fn(request) as AsyncGenerator;
+            const it = fn(request) as AsyncIterableIterator<unknown>;
             const chunks = abortable(it, request.signal);
             const stream = new ReadableStream({
-              pull(controller) {
+              pull(controller) { // backpressure control
                 if (!request.signal.aborted) {
                   return chunks.next()
                     .then(({ value, done }) => {
@@ -178,8 +192,8 @@ export class HttpServer {
                       } else controller.enqueue(value);
                     }).catch((e) => {
                       controller.close();
-                      it.return(null);
-                      chunks.return(null);
+                      it.return?.(null);
+                      chunks.return?.(null);
                       if (!(e instanceof DOMException)) onError?.(e);
                     });
                 }
@@ -187,12 +201,7 @@ export class HttpServer {
             });
             return new Response(
               stream.pipeThrough(new TextEncoderStream()),
-              {
-                headers: {
-                  "cache-control": "no-store",
-                  "content-type": "text/event-stream",
-                },
-              },
+              init,
             );
           };
           break;

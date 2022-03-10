@@ -32,7 +32,7 @@ export type HttpAction = {
   ) => Promise<HttpResponse>;
   beforeFn: (
     request: HttpRequest,
-  ) => void | HttpResponse | Promise<HttpResponse>;
+  ) => void | ResponseInit | HttpResponse | Promise<HttpResponse>;
 };
 
 export type HttpRoute = {

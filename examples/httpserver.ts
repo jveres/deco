@@ -138,6 +138,9 @@ class TestServer {
   }
 
   @HttpServer.Get()
+  @HttpServer.Before(() => {
+    return { headers: { "content-type": "text/event-stream" } };
+  })
   async *stream({ signal }: { signal: AbortSignal }) {
     yield SSE({ comment: this.#priv });
     const it = multicast[Symbol.asyncIterator]();
