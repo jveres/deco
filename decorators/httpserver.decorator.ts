@@ -75,7 +75,7 @@ export class HttpServer {
   }
 
   /**
-   * Defines multiple Http GET endpoints.
+   * Defines multiple Http GET endpoints for static serving.
    *
    * @param static Destructuring parameters.
    * @param static.assets Array of the static assets with fileName, path?, contentType.
@@ -111,7 +111,7 @@ export class HttpServer {
       const origFn = descriptor.value!;
       descriptor.value = function (...args: any[]) {
         origFn.apply(this, args);
-        const { path, init = {} } = args[0];
+        const [{ path, init = {} }] = args;
         const res = map.get(path);
         return new Response(res.body, deepMerge(res.init, init));
       };
