@@ -41,7 +41,7 @@ class TestServer {
     return new Response();
   }
 
-  @HttpServer.Get()
+  @HttpServer.Route({ method: "GET" })
   test() {
     return new Response("Hello from Deco! 😎");
   }

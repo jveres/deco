@@ -33,6 +33,13 @@ consoleHook({
 export class HttpServer {
   static router = new HttpRouter();
 
+  /**
+   * Defines an Http endpoint.
+   *
+   * @param route Destructuring parameters.
+   * @param route.method The Http method. Default: "GET".
+   * @param route.path If no path specified, the method name will be used.
+   */
   static Route(
     { method = "GET", path }: { method?: HttpMethod; path?: string },
   ) {
@@ -56,12 +63,24 @@ export class HttpServer {
     };
   }
 
+  /**
+   * Defines an Http GET endpoint.
+   *
+   * @param [path] The route path. If not specified, the method name will be used.
+   */
   static Get(
     path?: string,
   ) {
     return HttpServer.Route({ path });
   }
 
+  /**
+   * Defines multiple Http GET endpoints.
+   *
+   * @param static Destructuring parameters.
+   * @param static.assets Array of the static assets with fileName, path?, contentType.
+   * @param static.path If no path specified, the method name will be used.
+   */
   static Static(
     { assets, path }: {
       assets: Array<{ fileName: string; path?: string; contentType: string }>;
