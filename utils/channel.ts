@@ -50,7 +50,7 @@ export class Channel<T> implements PushAdapter<T> {
     if (this.#closed) {
       return Promise.resolve(DoneResult);
     }
-    if (this.pushBuffer.length === 0) {
+    if (this.pushBuffer.size === 0) {
       const defer = deferred<IteratorResult<T>>();
       // Buffer the pull to be resolved later
       this.pullBuffer.enqueue(defer);
@@ -80,7 +80,7 @@ export class Channel<T> implements PushAdapter<T> {
       value,
       done,
     };
-    if (this.pullBuffer.length > 0) {
+    if (this.pullBuffer.size > 0) {
       return this.pullBuffer.dequeue()!.resolve(result)!;
     }
     const defer = deferred<IteratorResult<T>>();

@@ -13,6 +13,7 @@ export class Queue<T> {
     this.#limit = limit;
     this.#list = new Array<T>(limit);
   }
+
   /**
    * Add an item to the end of the queue.
    */
@@ -23,6 +24,7 @@ export class Queue<T> {
     }
     this.#list.push(value);
   }
+
   /**
    * Return the oldest item from the queue.
    */
@@ -30,18 +32,30 @@ export class Queue<T> {
     return this.#list.shift();
   }
 
-  get length() {
+  /**
+   * Return the current size of the queue.
+   */
+  get size() {
     return this.#list.length;
   }
 
+  /**
+   * Peek the oldest item of the queue without removing.
+   */
   get head() {
     return this.#list[0];
   }
 
+  /**
+   * Clear the queue.
+   */
   clear(): void {
     this.#list = [];
   }
 
+  /**
+   * Iterate over the items of the queue.
+   */
   forEach(f: (value: T) => void): void {
     this.#list.forEach(f);
   }

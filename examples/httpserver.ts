@@ -17,8 +17,10 @@ const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 
 const multicast = new class {
   constructor(private multicast = new Multicast(), private ticker = 0) {
-    this.multicast.onReceiverAdded = () => console.log("receiver added");
-    this.multicast.onReceiverRemoved = () => console.log("receiver removed");
+    this.multicast.onReceiverAdded = () =>
+      console.log(`receiver added (${this.multicast.size})`);
+    this.multicast.onReceiverRemoved = () =>
+      console.log(`receiver removed (${this.multicast.size})`);
     setInterval(() => {
       const tick = `tick: ${this.ticker++}, receivers: ${this.multicast.size}`;
       console.log(tick);
