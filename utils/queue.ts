@@ -1,6 +1,8 @@
-// Copyright 2022 Janos Veres. All rights reserved.
-// Use of this source code is governed by an MIT-style
-// license that can be found in the LICENSE file.
+/**
+ * Copyright 2022 Janos Veres. All rights reserved.
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file.
+ */
 
 export class Queue<T> {
   #limit = 0;
@@ -33,7 +35,7 @@ export class Queue<T> {
   }
 
   /**
-   * Return the current size of the queue.
+   * Return the current length of the queue.
    */
   get size() {
     return this.#list.length;
