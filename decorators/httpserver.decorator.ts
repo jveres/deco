@@ -78,7 +78,7 @@ export class HttpServer {
    * Defines multiple Http GET endpoints for static serving.
    *
    * @param static Destructuring parameters.
-   * @param static.assets Array of the static assets with fileName, path?, contentType.
+   * @param static.assets Array of the static assets.
    * @param static.path If no path specified, the method name will be used.
    */
   static Static(
