@@ -177,7 +177,7 @@ class TestServer {
     const controller = new AbortController();
     const { socket: ws, response } = Deno.upgradeWebSocket(http.request);
     ws.onopen = async () => {
-      console.log("Websocket connected");
+      console.log("websocket connected");
       const it = multicast[Symbol.asyncIterator]();
       try {
         ws.send(this.#priv);
@@ -185,15 +185,19 @@ class TestServer {
           ws.send(tick);
         }
       } catch (e) {
-        it.return!();
         if (!(e instanceof DOMException)) throw e;
+      } finally {
+        it.return!();
       }
     };
+    ws.onmessage = ({ data }) => {
+      console.info("websocket message reveiced:", data);
+    };
     ws.onclose = () => {
-      console.log("Websocket closed");
+      console.log("websocket closed");
       controller.abort();
     };
-    ws.onerror = (e) => console.error("Websocket error:", e);
+    ws.onerror = (e) => console.error("websocket error:", e);
     return response;
   }
 }
