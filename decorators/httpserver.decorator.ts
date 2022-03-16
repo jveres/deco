@@ -235,7 +235,7 @@ export class HttpServer {
             };
             if (action.beforeFn !== undefined) {
               const res = await action.beforeFn(request);
-              if (res instanceof Response) return res;
+              if (res instanceof HttpResponse) return res;
               else if (typeof res === "object") {
                 init = deepMerge(init, res as object); // use to init the response
               }
