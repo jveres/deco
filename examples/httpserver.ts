@@ -18,7 +18,7 @@ import { abortable } from "https://deno.land/std@0.129.0/async/mod.ts";
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 
 const multicast = new class {
-  constructor(private multicast = new Multicast(), private ticker = 0) {
+  constructor(private multicast = new Multicast<string>(), private ticker = 0) {
     this.multicast.onReceiverAdded = () =>
       console.log(`receiver added (${this.multicast.size})`);
     this.multicast.onReceiverRemoved = () =>
@@ -167,6 +167,34 @@ class TestServer {
     } finally {
       it.return!();
     }
+  }
+
+  @HttpServer.Get()
+  ws({ http }: { http: Deno.RequestEvent }) {
+    if (http.request.headers.get("upgrade") !== "websocket") {
+      return new Response(null, { status: 501 });
+    }
+    const controller = new AbortController();
+    const { socket: ws, response } = Deno.upgradeWebSocket(http.request);
+    ws.onopen = async () => {
+      console.log("Websocket connected");
+      const it = multicast[Symbol.asyncIterator]();
+      try {
+        ws.send(this.#priv);
+        for await (const tick of abortable(it, controller.signal)) {
+          ws.send(tick);
+        }
+      } catch (e) {
+        it.return!();
+        if (!(e instanceof DOMException)) throw e;
+      }
+    };
+    ws.onclose = () => {
+      console.log("Websocket closed");
+      controller.abort();
+    };
+    ws.onerror = (e) => console.error("Websocket error:", e);
+    return response;
   }
 }
 

@@ -237,7 +237,7 @@ export class HttpServer {
               const res = await action.beforeFn(request);
               if (res instanceof HttpResponse) return res;
               else if (typeof res === "object") {
-                init = deepMerge(init, res as object); // use to init the response
+                init = deepMerge(init, res as object); // ResponseInit
               }
             }
             const it = fn(request) as AsyncIterableIterator<unknown>;
