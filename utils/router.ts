@@ -22,7 +22,7 @@ export type HttpRequest = {
   signal: AbortSignal;
 };
 
-export type HttpResponse = Response;
+export class HttpResponse extends Response {}
 
 export type HttpAction = {
   target: { [key: string]: any };
