@@ -34,7 +34,7 @@ export class HttpServer {
   static router = new HttpRouter();
 
   /**
-   * Defines an Http endpoint.
+   * Method decorator to define an Http endpoint.
    *
    * @param route Destructuring parameters.
    * @param route.method The Http method. Default: "GET".
@@ -64,7 +64,7 @@ export class HttpServer {
   }
 
   /**
-   * Defines an Http GET endpoint.
+   * Method decorator to define an Http GET endpoint.
    *
    * @param [path] The route path. If not specified, the method name will be used.
    */
@@ -75,7 +75,7 @@ export class HttpServer {
   }
 
   /**
-   * Defines multiple Http GET endpoints for static serving.
+   * Method decorator to define multiple Http GET endpoints for static serving.
    *
    * @param static Destructuring parameters.
    * @param static.assets Array of the static assets.
