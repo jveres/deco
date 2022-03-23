@@ -155,13 +155,15 @@ class TestServer {
   }))
   async *stream({ signal }: { signal: AbortSignal }) {
     const it = multicast[Symbol.asyncIterator]();
+    let i = 0;
     try {
       yield SSE({ comment: this.#priv });
       for await (const tick of abortable(it, signal)) {
         yield SSE({ event: "tick", data: `${tick}` });
+        if (++i > 3) break;
       }
     } finally {
-      it.return!();
+      it.return?.();
     }
   }
 
@@ -183,7 +185,7 @@ class TestServer {
       } catch (e) {
         if (!(e instanceof DOMException)) throw e;
       } finally {
-        it.return!();
+        it.return?.();
       }
     };
     ws.onmessage = ({ data }) => {

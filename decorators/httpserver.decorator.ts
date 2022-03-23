@@ -249,12 +249,8 @@ export class HttpServer {
                     .then(({ value, done }) => {
                       if (done === true) {
                         controller.close();
-                        return;
                       } else controller.enqueue(value);
                     }).catch((e) => {
-                      controller.close();
-                      it.return?.(null);
-                      chunks.return?.(null);
                       if (!(e instanceof DOMException)) onError?.(e);
                     });
                 }
