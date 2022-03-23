@@ -11,21 +11,21 @@ const cache = new LruCache<{ timeout: number; value: unknown }>();
 export function memoize<T>(fn: () => Promise<T>, options: {
   ttl?: number;
   key: () => string;
-  get?: (value: unknown) => T;
-  set?: (value: T) => unknown;
+  get?: (value: T) => T;
+  set?: (value: T) => T;
 }) {
   return new Promise<T>((resolve) => {
     const key = options.key();
     const cached = cache.get(key);
     if (cached !== undefined && (!options.ttl || cached.timeout > Date.now())) {
       const value = cached.value as T;
-      resolve(options.get?.(value) || value);
+      resolve(options.get ? options.get(value) : value);
     } else {
       const timeout = options.ttl
         ? Date.now() + options.ttl
         : Number.POSITIVE_INFINITY;
       fn().then((result) => {
-        const value = options.set?.(result) || result;
+        const value = options.set ? options.set(result) : result;
         cache.put(key, { timeout, value });
         resolve(result);
       });

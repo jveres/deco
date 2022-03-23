@@ -210,7 +210,7 @@ export class HttpServer {
             action.fn = async (request: HttpRequest) => {
               if (action.beforeFn !== undefined) {
                 const res = await action.beforeFn(request);
-                if (res instanceof HttpResponse) return res; // can return with response
+                if (res instanceof Response) return res; // can return with response
                 if (typeof res === "object") {
                   Object.assign(request, { init: res });
                 }
@@ -235,7 +235,7 @@ export class HttpServer {
             };
             if (action.beforeFn !== undefined) {
               const res = await action.beforeFn(request);
-              if (res instanceof HttpResponse) return res;
+              if (res instanceof Response) return res;
               else if (typeof res === "object") {
                 init = deepMerge(init, res as object); // ResponseInit
               }
