@@ -90,12 +90,8 @@ class TestServer {
     return memoize<HttpResponse>(fn, {
       ttl: (Number(params.get("ttl")) || 5) * 1000,
       key: () => path,
-      get(response) {
-        return (response as HttpResponse).clone();
-      },
-      set(response) {
-        return response.clone();
-      },
+      get: (r) => r.clone(),
+      set: (r) => r.clone(),
     });
   })
   async cached({ pathParams }: { pathParams?: Record<string, unknown> }) {
