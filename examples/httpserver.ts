@@ -11,9 +11,9 @@ import {
 import { SSE } from "../utils/sse.ts";
 import { Multicast } from "../utils/multicast.ts";
 import { memoize } from "../utils/memoize.ts";
-import { delay } from "https://deno.land/std@0.130.0/async/mod.ts";
-import { deadline } from "https://deno.land/std@0.130.0/async/mod.ts";
-import { abortable } from "https://deno.land/std@0.130.0/async/mod.ts";
+import { delay } from "https://deno.land/std@0.131.0/async/mod.ts";
+import { deadline } from "https://deno.land/std@0.131.0/async/mod.ts";
+import { abortable } from "https://deno.land/std@0.131.0/async/mod.ts";
 
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 
@@ -23,9 +23,28 @@ const multicast = new class {
       console.log(`receiver added (${this.multicast.size})`);
     this.multicast.onReceiverRemoved = () =>
       console.log(`receiver removed (${this.multicast.size})`);
+    const ws = new WebSocket("wss://ws.bitstamp.net/");
+    ws.onopen = () => {
+      console.log("subscribing to BTCUSD trades @ bitstamp");
+      ws.send(
+        JSON.stringify({
+          "event": "bts:subscribe",
+          "data": { "channel": "live_trades_btcusd" },
+        }),
+      );
+    };
+    ws.onmessage = (m) => {
+      const data = JSON.parse(m.data);
+      const price = data?.data?.price;
+      if (price) {
+        const tick = `BTCUSD: ${price}`;
+        console.info(tick);
+        this.multicast.push(tick);
+      }
+    };
     setInterval(() => {
       const tick = `tick: ${this.ticker++}, receivers: ${this.multicast.size}`;
-      console.log(tick);
+      console.info(tick);
       this.multicast.push(tick);
     }, 5_000);
   }
@@ -42,8 +61,8 @@ class TestServer {
   }
 
   @HttpServer.Route({ method: "GET" })
-  test() {
-    return new Response("Hello from Deco! 😎");
+  bench() {
+    return new Response("Hello from Bench!");
   }
 
   @HttpServer.Get()
@@ -154,16 +173,14 @@ class TestServer {
     headers: { "content-type": "text/event-stream" },
   }))
   async *stream({ signal }: { signal: AbortSignal }) {
-    const it = multicast[Symbol.asyncIterator]();
-    let i = 0;
+    const stream = multicast[Symbol.asyncIterator]();
     try {
       yield SSE({ comment: this.#priv });
-      for await (const tick of abortable(it, signal)) {
+      for await (const tick of abortable(stream, signal)) {
         yield SSE({ event: "tick", data: `${tick}` });
-        if (++i > 3) break;
       }
     } finally {
-      it.return?.();
+      stream.return?.();
     }
   }
 
@@ -176,16 +193,16 @@ class TestServer {
     const { socket: ws, response } = Deno.upgradeWebSocket(http.request);
     ws.onopen = async () => {
       console.log("websocket connected");
-      const it = multicast[Symbol.asyncIterator]();
+      const stream = multicast[Symbol.asyncIterator]();
       try {
         ws.send(this.#priv);
-        for await (const tick of abortable(it, controller.signal)) {
+        for await (const tick of abortable(stream, controller.signal)) {
           ws.send(tick);
         }
       } catch (e) {
         if (!(e instanceof DOMException)) throw e;
       } finally {
-        it.return?.();
+        stream.return?.();
       }
     };
     ws.onmessage = ({ data }) => {
