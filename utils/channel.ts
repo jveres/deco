@@ -5,7 +5,7 @@
  */
 
 import { Queue } from "./queue.ts";
-import { Deferred, deferred } from "https://deno.land/std@0.130.0/async/mod.ts";
+import { Deferred, deferred } from "https://deno.land/std@0.132.0/async/mod.ts";
 
 export interface PushAdapter<T> extends AsyncIterableIterator<T> {
   push(value: T): Promise<IteratorResult<T>>;

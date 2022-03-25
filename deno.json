@@ -1,7 +1,7 @@
 {
   "tasks": {
     "test": "deno test -A",
-    "upgrade": "udd **/*.ts",
-    "example": "cd examples && deno run --unstable -A --no-check --watch httpserver.ts"
+    "example": "cd examples && deno run -A --watch httpserver.ts",
+    "bench": "wrk -c150 -d10s http://127.0.0.1:8080/bench"
   }
 }

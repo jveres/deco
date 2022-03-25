@@ -5,7 +5,7 @@
  */
 
 import { DoneResult, PushAdapter } from "./channel.ts";
-import { Deferred, deferred } from "https://deno.land/std@0.130.0/async/mod.ts";
+import { Deferred, deferred } from "https://deno.land/std@0.132.0/async/mod.ts";
 
 export class Lastcast<T> implements PushAdapter<T> {
   #buffer: Deferred<IteratorResult<T>> = deferred();
@@ -14,7 +14,7 @@ export class Lastcast<T> implements PushAdapter<T> {
 
   push(value: T, done = false): Promise<IteratorResult<T>> {
     if (this.#closed) {
-      throw new Error("LastResult is closed");
+      throw new Error("Lastcast channel is closed");
     }
     if (this.#resolved) this.#buffer = deferred();
     this.#buffer.resolve({ value, done });
@@ -45,9 +45,7 @@ export class Lastcast<T> implements PushAdapter<T> {
         return this;
       },
       return: (value?: T) => {
-        if (onReturn) {
-          onReturn();
-        }
+        onReturn?.();
         return this.return(value);
       },
     };
