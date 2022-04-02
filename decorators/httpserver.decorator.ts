@@ -13,10 +13,10 @@ import {
   HttpRouter,
 } from "../utils/router.ts";
 import consoleHook from "../utils/consoleHook.ts";
-import * as Colors from "https://deno.land/std@0.132.0/fmt/colors.ts";
-import { abortable } from "https://deno.land/std@0.132.0/async/mod.ts";
-import { deepMerge } from "https://deno.land/std@0.132.0/collections/mod.ts";
-import { basename } from "https://deno.land/std@0.132.0/path/mod.ts";
+import * as Colors from "https://deno.land/std@0.133.0/fmt/colors.ts";
+import { abortable } from "https://deno.land/std@0.133.0/async/mod.ts";
+import { deepMerge } from "https://deno.land/std@0.133.0/collections/mod.ts";
+import { basename } from "https://deno.land/std@0.133.0/path/mod.ts";
 
 export type { HttpMethod, HttpRequest, HttpResponse };
 
