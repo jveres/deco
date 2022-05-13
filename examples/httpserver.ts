@@ -11,9 +11,9 @@ import {
 import { SSE } from "../utils/sse.ts";
 import { memoize } from "../utils/memoize.ts";
 import { Multicast } from "https://deno.land/x/channel@0.0.1/mod.ts";
-import { delay } from "https://deno.land/std@0.136.0/async/mod.ts";
-import { deadline } from "https://deno.land/std@0.136.0/async/mod.ts";
-import { abortable } from "https://deno.land/std@0.136.0/async/mod.ts";
+import { delay } from "https://deno.land/std@0.139.0/async/mod.ts";
+import { deadline } from "https://deno.land/std@0.139.0/async/mod.ts";
+import { abortable } from "https://deno.land/std@0.139.0/async/mod.ts";
 
 const CACHE_TTL = 48 * 60 * 60 * 1000; // 48 hours
 
