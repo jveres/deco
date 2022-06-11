@@ -9,7 +9,7 @@
 import {
   createRouter,
   RadixRouter,
-} from "https://cdn.skypack.dev/radix3@0.1.0?dts";
+} from "https://cdn.skypack.dev/radix3@0.1.2?dts";
 
 export type HttpMethod = "GET";
 
